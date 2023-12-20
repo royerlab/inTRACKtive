@@ -1,0 +1,22 @@
+{
+  "name": "three-experiments",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "preact": "^10.19.3",
+    "three": "^0.159.0",
+    "zarr": "^0.6.2"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.7.0",
+    "@types/three": "^0.159.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
+  }
+}
