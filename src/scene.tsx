@@ -59,7 +59,8 @@ class Scene extends Component {
             this.base?.appendChild(this.renderer.domElement);
         }, 1);
 
-        this.fetchData();
+        // this.fetchData();
+        this.fetchPointsAtTime(0);
     }
 
 
@@ -111,6 +112,62 @@ class Scene extends Component {
         // }
         console.log(data);
         this.rerender();
+    }
+
+    async fetchPointsAtTime(timeIndex: number) {
+        const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
+        const path = "ZSNS001_tracks.zarr";
+        const array = await openArray({
+            store: store,
+            path: path,
+            mode: "r"
+        });
+        const numTracks = array.shape[1] / 3;
+        const trackChunkSize = 100000;
+
+        // Initialize the geometry attributes.
+        const geometry = this.points.geometry;
+        const positions = new Float32Array( 3 * numTracks );
+        const colors = new Float32Array( 3 * numTracks );
+        geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
+        geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+        geometry.setDrawRange( 0, 0 )
+    
+        // Initialize all the colors immediately.
+        const color = new THREE.Color();
+        const colorAttribute = geometry.getAttribute( 'color' );
+        for ( let i = 0; i < numTracks; i++ ) {
+            const r = Math.random();
+            const g = Math.random();
+            const b = Math.random();
+            color.setRGB( r, g, b, THREE.SRGBColorSpace );
+            colorAttribute.setXYZ( i, color.r, color.g, color.b );
+        }
+        colorAttribute.needsUpdate = true;
+
+        // Load the positions progressively.
+        const positionAttribute = geometry.getAttribute('position');
+        for (let i = 0, pointIndex = 0; i < numTracks; i += trackChunkSize) {
+            const start = 3 * i;
+            const end = 3 * (i + trackChunkSize);
+            const points = await array.get([timeIndex, slice(start, end)]);
+            const coords = points.data;
+
+            for (let j = 0; j < coords.length; j += 3) {
+                if (coords[j] >= 0) {
+                    positionAttribute.setXYZ(pointIndex, coords[j], coords[j + 1], coords[j + 2]);
+                    pointIndex++;
+                }
+            }
+            positionAttribute.needsUpdate = true;
+
+            geometry.setDrawRange(0, pointIndex)
+            geometry.computeBoundingSphere();
+
+            this.rerender()
+
+            console.log("added points up to %d as %d", i + trackChunkSize, pointIndex);
+        }
     }
 }
 
