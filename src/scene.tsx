@@ -1,6 +1,7 @@
 import { Component } from 'preact';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// @ts-expect-error
 import { slice, openArray } from "zarr";
 
 class Scene extends Component {
