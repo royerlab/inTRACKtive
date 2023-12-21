@@ -9,6 +9,8 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
 
+const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_tracks.zarr"
+
 class Scene extends Component {
 
     private renderer: THREE.WebGLRenderer;
@@ -18,8 +20,10 @@ class Scene extends Component {
     private points: THREE.Points;
     private composer: EffectComposer;
     private array: ZarrArray;
+    private store: string;
+    private path: string;
 
-    state = { numTimes: 0 };
+    state = { numTimes: 0, curTime: 0 };
 
     constructor() {
         super();
@@ -58,6 +62,11 @@ class Scene extends Component {
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         this.points = new THREE.Points(geometry, material);
+
+        const url = new URL(DEFAULT_ZARR_URL);
+        const pathParts = url.pathname.split('/');
+        this.path = pathParts.pop() || "";
+        this.store = url.origin + pathParts.join('/');
     }
 
     handleTimeChange(event: ChangeEvent) {
@@ -67,11 +76,46 @@ class Scene extends Component {
         this.fetchPointsAtTime(timeIndex);
     }
 
+    handleURLChange(event: ChangeEvent) {
+        console.log('handleURLChange: %s', event);
+        const input = event.target as HTMLInputElement;
+        const url = input.value;
+        this.setStoreAndPath(new URL(url));
+        const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
+        const t = Math.floor(Number(timeSlider.value));
+        this.fetchPointsAtTime(t);
+    }
+
+    setStoreAndPath(url: URL) {
+        const pathParts = url.pathname.split('/');
+        const newPath = pathParts.pop() || "";
+        const newStore = url.origin + pathParts.join('/');
+        if (newStore !== this.store || newPath !== this.path) {
+            this.store = newStore;
+            this.path = newPath;
+            this.array = undefined;
+        }
+    }
+
     render() {
-        let handleChange = this.handleTimeChange.bind(this);
+        let handleTimeChange = this.handleTimeChange.bind(this);
+        let handleURLChange = this.handleURLChange.bind(this);
+        let url = this.store + '/' + this.path;
         return (
-            <div class="slidecontainer">
-                <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange" onChange={handleChange} />
+            <div class="inputcontainer">
+                <input
+                    type="text" class="textinput" id="zarrURL"
+                    value={url}
+                    onChange={handleURLChange}
+                    style={{ color: this.array ? "black" : "red" }}
+                />
+                <input
+                    type="range" min="0" max={this.state.numTimes - 1}
+                    disabled={this.array === undefined}
+                    value={this.state.curTime}
+                    class="slider" id="timeSlider" onChange={handleTimeChange}
+                />
+                <label for="timeSlider">{this.state.numTimes}</label>
             </div>
         );
     }
@@ -92,73 +136,28 @@ class Scene extends Component {
         this.fetchPointsAtTime(0);
     }
 
-
-    async fetchData() {
-        const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
-        const path = "ZSNS001_nodes.zarr";
-        const array = await openArray({
-            store: store,
-            path: path,
-            mode: "r"
-        });
-
-        const T = array.shape[0];
-        const N = array.shape[1] / 3;
-        const data = new Float32Array(T * N * 3);
-        const color = new Float32Array(T * N * 3);
-        this.points.geometry.setAttribute('position', new THREE.BufferAttribute(data, 3));
-        this.points.geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
-        const positionAttribute = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
-        const colorAttribute = this.points.geometry.getAttribute('color');
-        // TODO: efficient fetch - this is against the chunk grain
-        for (let t = 0; t < T; t++) {
-            console.log(t);
-            // for (let chunk = 0; chunk < array.chunks[1]; chunk++) {
-            //     console.log(chunk);
-            // }
-            // TODO: await each chunk
-            let frame = await array.get([t, slice(null)]);
-            this.setState({ numTimes: t + 1 });
-            // data.set(point.data, t * N * 3);
-            positionAttribute.set(frame.data, t * N * 3);
-            // TODO: is there a way to do this via the buffer?
-            color.fill(t / T, t * N * 3, (t + 1) * N * 3);
-            this.points.geometry.setDrawRange(0, (t + 1) * N);
-            positionAttribute.needsUpdate = true;
-            colorAttribute.needsUpdate = true;
-            // console.log(frame);
-            this.rerender();
-        }
-        // TODO: fetch more than one point at a time, this is a lot of requests
-        // for (let i = 0; i < N; i++) {
-        //     let point = await array.get([0, slice(i * 3, (i + 1) * 3)]);
-        //     data.set(point.data, i * 3);
-        //     this.points_geometry.setAttribute('position', new THREE.BufferAttribute(data, 3));
-        //     // console.log(point);
-        //     if (i % 100 == 0) {
-        //         this.rerender();
-        //     }
-        // }
-        console.log(data);
-        this.rerender();
-    }
-
     async loadArray() {
         console.log('loadArray');
-        const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
-        const path = "ZSNS001_tracks.zarr";
-        this.array = await openArray({
-            store: store,
-            path: path,
-            mode: "r"
-        });
-        this.setState({ numTimes: this.array.shape[0] });
+        try {
+            this.array = await openArray({
+                store: this.store,
+                path: this.path,
+                mode: "r"
+            });
+        } catch (err) {
+            console.error("Error opening array: %s", err);
+            this.array = undefined;
+        }
+        const numTimes = this.array?.shape[0] ?? 0;
+        this.setState({ numTimes: numTimes });
+        return numTimes > 0;
     }
 
     async fetchPointsAtTime(timeIndex: number) {
+        this.setState({ curTime: timeIndex });
         console.log('fetchPointsAtTime: %d', timeIndex);
-        if (this.array === undefined) {
-            await this.loadArray();
+        if (this.array === undefined && !(await this.loadArray())) {
+            return;
         }
         const array = this.array;
         const numTracks = array.shape[1] / 3;
@@ -188,12 +187,13 @@ class Scene extends Component {
         const positionAttribute = geometry.getAttribute('position');
         for (let i = 0, pointIndex = 0; i < numTracks; i += trackChunkSize) {
             const start = 3 * i;
-            const end = Math.min(array.shape[1],  3 * (i + trackChunkSize));
+            const end = Math.min(array.shape[1], 3 * (i + trackChunkSize));
             const points = await array.get([timeIndex, slice(start, end)]);
             const coords = points.data;
 
             for (let j = 0; j < coords.length; j += 3) {
-                if (coords[j] >= 0) {
+                // TODO: this seems to work for the int8 data, but not sure it's correct
+                if (coords[j] > -128) {
                     positionAttribute.setXYZ(pointIndex, coords[j], coords[j + 1], coords[j + 2]);
                     pointIndex++;
                 }

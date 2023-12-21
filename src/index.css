@@ -67,11 +67,16 @@ button:focus-visible {
   }
 }
 
-.slidecontainer {
+.inputcontainer {
   width: 100%; /* Width of the outside container */
 }
 
-.slider {
+.textinput {
+  font-size: 12pt;
   width: 100%; /* Full-width */
-  height: 25px; /* Specified height */
+}
+
+.slider {
+  width: 95%;
+  vertical-align: middle;
 }
