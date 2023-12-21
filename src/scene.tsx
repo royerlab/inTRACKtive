@@ -1,8 +1,13 @@
 import { Component } from 'preact';
+import { ChangeEvent } from 'preact/compat';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 // @ts-expect-error
-import { slice, openArray } from "zarr";
+import { ZarrArray, slice, openArray } from "zarr";
 
 class Scene extends Component {
 
@@ -11,8 +16,10 @@ class Scene extends Component {
     private camera: THREE.Camera;
     private controls: OrbitControls;
     private points: THREE.Points;
+    private composer: EffectComposer;
+    private array: ZarrArray;
 
-    state = { n_time_points: 0 };
+    state = { numTimes: 0 };
 
     constructor() {
         super();
@@ -29,28 +36,51 @@ class Scene extends Component {
         this.camera.position.set(-500, 10, 15);
         this.camera.lookAt(this.scene.position);
 
+        // postprocessing
+        const renderModel = new RenderPass(this.scene, this.camera);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(800, 600), // resolution
+            0.5, // strength
+            0, // radius
+            0  // threshold
+        );
+        const outputPass = new OutputPass();
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(renderModel);
+        this.composer.addPass(bloomPass);
+        this.composer.addPass(outputPass);
+
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         // bind so that "this" refers to the class instance
         let rerender = this.rerender.bind(this);
         this.controls.addEventListener('change', rerender);
 
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.PointsMaterial({ size: 10.0, vertexColors: true });
+        const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         this.points = new THREE.Points(geometry, material);
     }
 
+    handleTimeChange(event: ChangeEvent) {
+        console.log('handleTimeChange: %s', event);
+        const slider = event.target as HTMLInputElement;
+        const timeIndex = Math.floor(Number(slider.value));
+        this.fetchPointsAtTime(timeIndex);
+    }
+
     render() {
-        let n = this.state.n_time_points;
-        return <div class="scene">Time points loaded: {n}</div>;
+        let handleChange = this.handleTimeChange.bind(this);
+        return (
+            <div class="slidecontainer">
+                <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange" onChange={handleChange} />
+            </div>
+        );
     }
 
     rerender() {
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 
     componentDidMount() {
-        this.renderer.setClearColor(0x225555, 1);
-
         this.scene.add(this.points);
 
         this.rerender();
@@ -59,7 +89,7 @@ class Scene extends Component {
             this.base?.appendChild(this.renderer.domElement);
         }, 1);
 
-        this.fetchData();
+        this.fetchPointsAtTime(0);
     }
 
 
@@ -88,7 +118,7 @@ class Scene extends Component {
             // }
             // TODO: await each chunk
             let frame = await array.get([t, slice(null)]);
-            this.setState({ n_time_points: t + 1 });
+            this.setState({ numTimes: t + 1 });
             // data.set(point.data, t * N * 3);
             positionAttribute.set(frame.data, t * N * 3);
             // TODO: is there a way to do this via the buffer?
@@ -111,6 +141,72 @@ class Scene extends Component {
         // }
         console.log(data);
         this.rerender();
+    }
+
+    async loadArray() {
+        console.log('loadArray');
+        const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
+        const path = "ZSNS001_tracks.zarr";
+        this.array = await openArray({
+            store: store,
+            path: path,
+            mode: "r"
+        });
+        this.setState({ numTimes: this.array.shape[0] });
+    }
+
+    async fetchPointsAtTime(timeIndex: number) {
+        console.log('fetchPointsAtTime: %d', timeIndex);
+        if (this.array === undefined) {
+            await this.loadArray();
+        }
+        const array = this.array;
+        const numTracks = array.shape[1] / 3;
+        const trackChunkSize = 100_000;
+
+        // Initialize the geometry attributes.
+        const geometry = this.points.geometry;
+        const positions = new Float32Array(3 * numTracks);
+        const colors = new Float32Array(3 * numTracks);
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setDrawRange(0, 0)
+
+        // Initialize all the colors immediately.
+        const color = new THREE.Color();
+        const colorAttribute = geometry.getAttribute('color');
+        for (let i = 0; i < numTracks; i++) {
+            const r = Math.random();
+            const g = Math.random();
+            const b = Math.random();
+            color.setRGB(r, g, b, THREE.SRGBColorSpace);
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+
+        // Load the positions progressively.
+        const positionAttribute = geometry.getAttribute('position');
+        for (let i = 0, pointIndex = 0; i < numTracks; i += trackChunkSize) {
+            const start = 3 * i;
+            const end = Math.min(array.shape[1],  3 * (i + trackChunkSize));
+            const points = await array.get([timeIndex, slice(start, end)]);
+            const coords = points.data;
+
+            for (let j = 0; j < coords.length; j += 3) {
+                if (coords[j] >= 0) {
+                    positionAttribute.setXYZ(pointIndex, coords[j], coords[j + 1], coords[j + 2]);
+                    pointIndex++;
+                }
+            }
+            positionAttribute.needsUpdate = true;
+
+            geometry.setDrawRange(0, pointIndex)
+            geometry.computeBoundingSphere();
+
+            this.rerender()
+
+            console.log("added points up to %d as %d", i + trackChunkSize, pointIndex);
+        }
     }
 }
 
