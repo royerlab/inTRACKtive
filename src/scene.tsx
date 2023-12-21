@@ -6,6 +6,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { SelectionBox } from 'three/addons/interactive/SelectionBox.js';
+import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
 
@@ -22,6 +24,8 @@ class Scene extends Component {
     private array: ZarrArray;
     private store: string;
     private path: string;
+    private selectionBox: SelectionBox;
+    private selectionHelper: SelectionHelper;
 
     state = { numTimes: 0, curTime: 0 };
 
@@ -48,11 +52,12 @@ class Scene extends Component {
             10000       // Far
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.target.set(target.x, target.y, target.z);
-        this.controls.update();
-        // bind so that "this" refers to the class instance
-        this.controls.addEventListener('change', rerender);
+        this.camera.lookAt(target.x, target.y, target.z);
+        // this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        // this.controls.target.set(target.x, target.y, target.z);
+        // this.controls.update();
+        // // bind so that "this" refers to the class instance
+        // this.controls.addEventListener('change', rerender);
 
         // postprocessing
         const renderModel = new RenderPass(this.scene, this.camera);
@@ -71,6 +76,16 @@ class Scene extends Component {
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         this.points = new THREE.Points(geometry, material);
+
+        // From https://github.com/mrdoob/three.js/blob/master/examples/misc_boxselection.html
+        this.selectionBox = new SelectionBox( this.camera, this.scene );
+        this.selectionHelper = new SelectionHelper( this.renderer, 'selectBox' );
+        const handlePointerDown = this.handlePointerDown.bind(this);
+        const handlePointerMove = this.handlePointerMove.bind(this);
+        const handlePointerUp = this.handlePointerUp.bind(this);
+        document.addEventListener('pointerdown', handlePointerDown);
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
 
         const url = new URL(DEFAULT_ZARR_URL);
         const pathParts = url.pathname.split('/');
@@ -93,6 +108,54 @@ class Scene extends Component {
         const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
         const t = Math.floor(Number(timeSlider.value));
         this.fetchPointsAtTime(t);
+    }
+
+    handlePointerDown(event: PointerEvent) {
+        console.log('handlePointerDown: %d, %d', event.clientX, event.clientY);
+
+        //for ( const item of this.selectionBox.collection ) {
+        //    item.material.emissive.set( 0x000000 );
+        //}
+
+        this.selectionBox.startPoint.set(
+            ( event.clientX / 800 ) * 2 - 1,
+            - ( event.clientY / 600 ) * 2 + 1,
+            0.5 );
+    }
+
+    handlePointerMove(event: PointerEvent) {
+        if ( this.selectionHelper.isDown ) {
+            //for ( let i = 0; i < this.selectionBox.collection.length; i ++ ) {
+            //    this.selectionBox.collection[i].material.emissive.set( 0x000000 );
+            //}
+
+            console.log('handlePointerMove: %d, %d', event.clientX, event.clientY);
+            this.selectionBox.endPoint.set(
+                ( event.clientX / 800 ) * 2 - 1,
+                - ( event.clientY / 600 ) * 2 + 1,
+                0.5 );
+
+            const allSelected = this.selectionBox.select();
+            console.log('handlePointerMove: selected %d points', allSelected.length);
+            //for ( let i = 0; i < allSelected.length; i ++ ) {
+            //    allSelected[i].material.emissive.set( 0xffffff );
+            //}
+        }
+    }
+
+    handlePointerUp(event: PointerEvent) {
+        console.log('handlePointerUp: %d, %d', event.clientX, event.clientY);
+
+        this.selectionBox.endPoint.set(
+            ( event.clientX / 800 ) * 2 - 1,
+            - ( event.clientY / 600 ) * 2 + 1,
+            0.5 );
+
+        const allSelected = this.selectionBox.select();
+        console.log('handlePointerUp: selected %d points', allSelected.length);
+        //for ( let i = 0; i < allSelected.length; i ++ ) {
+        //    allSelected[i].material.emissive.set( 0xffffff );
+        //}
     }
 
     setStoreAndPath(url: URL) {
