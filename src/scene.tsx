@@ -1,4 +1,5 @@
 import { Component } from 'preact';
+import { ChangeEvent } from 'preact/compat';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -6,7 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 // @ts-expect-error
-import { slice, openArray } from "zarr";
+import { ZarrArray, slice, openArray } from "zarr";
 
 class Scene extends Component {
 
@@ -16,6 +17,7 @@ class Scene extends Component {
     private controls: OrbitControls;
     private points: THREE.Points;
     private composer: THREE.EffectComposer;
+    private array: ZarrArray;
 
     state = { numTimes : 0 };
 
@@ -58,9 +60,20 @@ class Scene extends Component {
         this.points = new THREE.Points(geometry, material);
     }
 
+    handleTimeChange(event: ChangeEvent) {
+        console.log( 'handleTimeChange: %s', event);
+        const timeIndex = Math.floor(event.target.value);
+        this.fetchPointsAtTime(timeIndex);
+    }
+
     render() {
         const n = this.state.numTimes - 1;
-        return <div class="slidecontainer"> <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange"> </input> </div>;
+        let handleChange = this.handleTimeChange.bind(this);
+        return (
+            <div class="slidecontainer">
+                <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange" onChange={handleChange}/>
+            </div>
+        );
     }
 
     rerender() {
@@ -76,6 +89,7 @@ class Scene extends Component {
             this.base?.appendChild(this.renderer.domElement);
         }, 1);
 
+        this.loadArray();
         this.fetchPointsAtTime(0);
     }
 
@@ -130,15 +144,24 @@ class Scene extends Component {
         this.rerender();
     }
 
-    async fetchPointsAtTime(timeIndex: number) {
+    async loadArray() {
+        console.log( 'loadArray' );
         const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
         const path = "ZSNS001_tracks.zarr";
-        const array = await openArray({
+        this.array = await openArray({
             store: store,
             path: path,
             mode: "r"
         });
-        this.setState({ numTimes : array.shape[0] });
+        this.setState({ numTimes : this.array.shape[0] });
+    }
+
+    async fetchPointsAtTime(timeIndex: number) {
+        console.log( 'fetchPointsAtTime: %d', timeIndex );
+        const array = this.array;
+        if ( array === undefined ) {
+            return;
+        }
         const numTracks = array.shape[1] / 3;
         const trackChunkSize = 100000;
 
