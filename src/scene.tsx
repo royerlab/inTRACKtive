@@ -23,7 +23,7 @@ class Scene extends Component {
     private store: string;
     private path: string;
 
-    state = { numTimes: 0 };
+    state = { numTimes: 0, curTime: 0 };
 
     constructor() {
         super();
@@ -112,7 +112,8 @@ class Scene extends Component {
                 <input
                     type="range" min="0" max={this.state.numTimes - 1}
                     disabled={this.array === undefined}
-                    value="0" class="slider" id="myRange" onChange={handleTimeChange}
+                    value={this.state.curTime}
+                    class="slider" id="myRange" onChange={handleTimeChange}
                 />
                 <label for="myRange">{this.state.numTimes}</label>
             </div>
@@ -153,6 +154,7 @@ class Scene extends Component {
     }
 
     async fetchPointsAtTime(timeIndex: number) {
+        this.setState({ curTime: timeIndex });
         console.log('fetchPointsAtTime: %d', timeIndex);
         if (this.array === undefined && !(await this.loadArray())) {
             return;
