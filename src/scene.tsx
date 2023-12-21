@@ -192,7 +192,8 @@ class Scene extends Component {
             const coords = points.data;
 
             for (let j = 0; j < coords.length; j += 3) {
-                if (coords[j] >= 0) {
+                // TODO: this seems to work for the int8 data, but not sure it's correct
+                if (coords[j] > -128) {
                     positionAttribute.setXYZ(pointIndex, coords[j], coords[j + 1], coords[j + 2]);
                     pointIndex++;
                 }
