@@ -81,7 +81,7 @@ class Scene extends Component {
         const input = event.target as HTMLInputElement;
         const url = input.value;
         this.setStoreAndPath(new URL(url));
-        const timeSlider = document.getElementById("myRange") as HTMLInputElement;
+        const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
         const t = Math.floor(Number(timeSlider.value));
         this.fetchPointsAtTime(t);
     }
@@ -113,9 +113,9 @@ class Scene extends Component {
                     type="range" min="0" max={this.state.numTimes - 1}
                     disabled={this.array === undefined}
                     value={this.state.curTime}
-                    class="slider" id="myRange" onChange={handleTimeChange}
+                    class="slider" id="timeSlider" onChange={handleTimeChange}
                 />
-                <label for="myRange">{this.state.numTimes}</label>
+                <label for="timeSlider">{this.state.numTimes}</label>
             </div>
         );
     }
