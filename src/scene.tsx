@@ -16,10 +16,10 @@ class Scene extends Component {
     private camera: THREE.Camera;
     private controls: OrbitControls;
     private points: THREE.Points;
-    private composer: THREE.EffectComposer;
+    private composer: EffectComposer;
     private array: ZarrArray;
 
-    state = { numTimes : 0 };
+    state = { numTimes: 0 };
 
     constructor() {
         super();
@@ -39,7 +39,7 @@ class Scene extends Component {
         // postprocessing
         const renderModel = new RenderPass(this.scene, this.camera);
         const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2( 800, 600 ), // resolution
+            new THREE.Vector2(800, 600), // resolution
             0.5, // strength
             0, // radius
             0  // threshold
@@ -56,22 +56,22 @@ class Scene extends Component {
         this.controls.addEventListener('change', rerender);
 
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.PointsMaterial({ size: 10.0, vertexColors: true });
+        const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         this.points = new THREE.Points(geometry, material);
     }
 
     handleTimeChange(event: ChangeEvent) {
-        console.log( 'handleTimeChange: %s', event);
-        const timeIndex = Math.floor(event.target.value);
+        console.log('handleTimeChange: %s', event);
+        const slider = event.target as HTMLInputElement;
+        const timeIndex = Math.floor(Number(slider.value));
         this.fetchPointsAtTime(timeIndex);
     }
 
     render() {
-        const n = this.state.numTimes - 1;
         let handleChange = this.handleTimeChange.bind(this);
         return (
             <div class="slidecontainer">
-                <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange" onChange={handleChange}/>
+                <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange" onChange={handleChange} />
             </div>
         );
     }
@@ -89,7 +89,6 @@ class Scene extends Component {
             this.base?.appendChild(this.renderer.domElement);
         }, 1);
 
-        this.loadArray();
         this.fetchPointsAtTime(0);
     }
 
@@ -119,7 +118,7 @@ class Scene extends Component {
             // }
             // TODO: await each chunk
             let frame = await array.get([t, slice(null)]);
-            this.setState({ numTimes : t + 1 });
+            this.setState({ numTimes: t + 1 });
             // data.set(point.data, t * N * 3);
             positionAttribute.set(frame.data, t * N * 3);
             // TODO: is there a way to do this via the buffer?
@@ -145,7 +144,7 @@ class Scene extends Component {
     }
 
     async loadArray() {
-        console.log( 'loadArray' );
+        console.log('loadArray');
         const store = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark";
         const path = "ZSNS001_tracks.zarr";
         this.array = await openArray({
@@ -153,35 +152,35 @@ class Scene extends Component {
             path: path,
             mode: "r"
         });
-        this.setState({ numTimes : this.array.shape[0] });
+        this.setState({ numTimes: this.array.shape[0] });
     }
 
     async fetchPointsAtTime(timeIndex: number) {
-        console.log( 'fetchPointsAtTime: %d', timeIndex );
-        const array = this.array;
-        if ( array === undefined ) {
-            return;
+        console.log('fetchPointsAtTime: %d', timeIndex);
+        if (this.array === undefined) {
+            await this.loadArray();
         }
+        const array = this.array;
         const numTracks = array.shape[1] / 3;
-        const trackChunkSize = 100000;
+        const trackChunkSize = 100_000;
 
         // Initialize the geometry attributes.
         const geometry = this.points.geometry;
-        const positions = new Float32Array( 3 * numTracks );
-        const colors = new Float32Array( 3 * numTracks );
-        geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
-        geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-        geometry.setDrawRange( 0, 0 )
-    
+        const positions = new Float32Array(3 * numTracks);
+        const colors = new Float32Array(3 * numTracks);
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setDrawRange(0, 0)
+
         // Initialize all the colors immediately.
         const color = new THREE.Color();
-        const colorAttribute = geometry.getAttribute( 'color' );
-        for ( let i = 0; i < numTracks; i++ ) {
+        const colorAttribute = geometry.getAttribute('color');
+        for (let i = 0; i < numTracks; i++) {
             const r = Math.random();
             const g = Math.random();
             const b = Math.random();
-            color.setRGB( r, g, b, THREE.SRGBColorSpace );
-            colorAttribute.setXYZ( i, color.r, color.g, color.b );
+            color.setRGB(r, g, b, THREE.SRGBColorSpace);
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
         colorAttribute.needsUpdate = true;
 
@@ -189,7 +188,7 @@ class Scene extends Component {
         const positionAttribute = geometry.getAttribute('position');
         for (let i = 0, pointIndex = 0; i < numTracks; i += trackChunkSize) {
             const start = 3 * i;
-            const end = 3 * (i + trackChunkSize);
+            const end = Math.min(array.shape[1],  3 * (i + trackChunkSize));
             const points = await array.get([timeIndex, slice(start, end)]);
             const coords = points.data;
 
