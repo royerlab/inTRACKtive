@@ -1,6 +1,10 @@
 import { Component } from 'preact';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 // @ts-expect-error
 import { slice, openArray } from "zarr";
 
@@ -11,6 +15,7 @@ class Scene extends Component {
     private camera: THREE.Camera;
     private controls: OrbitControls;
     private points: THREE.Points;
+    private composer: THREE.EffectComposer;
 
     state = { n_time_points: 0 };
 
@@ -29,6 +34,20 @@ class Scene extends Component {
         this.camera.position.set(-500, 10, 15);
         this.camera.lookAt(this.scene.position);
 
+        // postprocessing
+        const renderModel = new RenderPass(this.scene, this.camera);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2( 800, 600 ), // resolution
+            0.5, // strength
+            0, // radius
+            0  // threshold
+        );
+        const outputPass = new OutputPass();
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(renderModel);
+        this.composer.addPass(bloomPass);
+        this.composer.addPass(outputPass);
+
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         // bind so that "this" refers to the class instance
         let rerender = this.rerender.bind(this);
@@ -45,12 +64,10 @@ class Scene extends Component {
     }
 
     rerender() {
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 
     componentDidMount() {
-        this.renderer.setClearColor(0x225555, 1);
-
         this.scene.add(this.points);
 
         this.rerender();
@@ -59,7 +76,6 @@ class Scene extends Component {
             this.base?.appendChild(this.renderer.domElement);
         }, 1);
 
-        // this.fetchData();
         this.fetchPointsAtTime(0);
     }
 
