@@ -17,7 +17,7 @@ class Scene extends Component {
     private points: THREE.Points;
     private composer: THREE.EffectComposer;
 
-    state = { n_time_points: 0 };
+    state = { numTimes : 0 };
 
     constructor() {
         super();
@@ -59,8 +59,8 @@ class Scene extends Component {
     }
 
     render() {
-        let n = this.state.n_time_points;
-        return <div class="scene">Time points loaded: {n}</div>;
+        const n = this.state.numTimes - 1;
+        return <div class="slidecontainer"> <input type="range" min="0" max="{n}" value="0" class="slider" id="myRange"> </input> </div>;
     }
 
     rerender() {
@@ -105,7 +105,7 @@ class Scene extends Component {
             // }
             // TODO: await each chunk
             let frame = await array.get([t, slice(null)]);
-            this.setState({ n_time_points: t + 1 });
+            this.setState({ numTimes : t + 1 });
             // data.set(point.data, t * N * 3);
             positionAttribute.set(frame.data, t * N * 3);
             // TODO: is there a way to do this via the buffer?
@@ -138,6 +138,7 @@ class Scene extends Component {
             path: path,
             mode: "r"
         });
+        this.setState({ numTimes : array.shape[0] });
         const numTracks = array.shape[1] / 3;
         const trackChunkSize = 100000;
 
