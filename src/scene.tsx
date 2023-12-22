@@ -62,7 +62,6 @@ class Scene extends Component {
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
         this.controls.autoRotateSpeed = 4;
-        this.setControlCamera(true);
         this.controls.update();
         // bind so that "this" refers to the class instance
         this.controls.addEventListener('change', rerender);
@@ -91,14 +90,20 @@ class Scene extends Component {
         const handlePointerDown = this.handlePointerDown.bind(this);
         const handlePointerMove = this.handlePointerMove.bind(this);
         const handlePointerUp = this.handlePointerUp.bind(this);
+        const handleKeyDown = this.handleKeyDown.bind(this);
+        const handleKeyUp = this.handleKeyUp.bind(this);
         document.addEventListener('pointerdown', handlePointerDown);
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
 
         const url = new URL(DEFAULT_ZARR_URL);
         const pathParts = url.pathname.split('/');
         this.path = pathParts.pop() || "";
         this.store = url.origin + pathParts.join('/');
+
+        this.setControlCamera(true);
     }
 
     handleTimeChange(event: ChangeEvent) {
@@ -116,6 +121,20 @@ class Scene extends Component {
         const timeSlider = document.getElementById("timeSlider") as HTMLInputElement;
         const t = Math.floor(Number(timeSlider.value));
         this.fetchPointsAtTime(t);
+    }
+
+    handleKeyUp(event: KeyboardEvent) {
+        console.log('handleKeyUp: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(true);
+        }
+    }
+
+    handleKeyDown(event: KeyboardEvent) {
+        console.log('handleKeyDown: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(false);
+        }
     }
 
     handlePointerDown(event: PointerEvent) {
