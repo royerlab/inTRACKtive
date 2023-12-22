@@ -9,7 +9,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
 
-const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_tracks.zarr"
+const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr"
 
 class Scene extends Component {
 
@@ -23,27 +23,43 @@ class Scene extends Component {
     private store: string;
     private path: string;
 
-    state = { numTimes: 0, curTime: 0 };
+    state = { numTimes: 0, curTime: 0, autoRotate: false };
 
     constructor() {
         super();
+        
+        const renderWidth = 800;
+        const renderHeight = 600;
+
+        // bind so that "this" refers to the class instance
+        const rerender = this.rerender.bind(this);
+
         this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setSize(800, 600);
+        this.renderer.setSize(renderWidth, renderHeight);
 
         this.scene = new THREE.Scene();
+
+        // Default position from interacting with ZSNS001
+        const target = new THREE.Vector3(500, 500, 250);
         this.camera = new THREE.PerspectiveCamera(
             35,         // FOV
-            800 / 640,  // Aspect
+            renderWidth / renderHeight,  // Aspect
             0.1,        // Near
             10000       // Far
         );
-        this.camera.position.set(-500, 10, 15);
-        this.camera.lookAt(this.scene.position);
+        this.camera.position.set(target.x, target.y, target.z - 1500);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.target.set(target.x, target.y, target.z);
+        this.controls.autoRotate = this.state.autoRotate;
+        this.controls.autoRotateSpeed = 4;
+        this.controls.update();
+        // bind so that "this" refers to the class instance
+        this.controls.addEventListener('change', rerender);
 
         // postprocessing
         const renderModel = new RenderPass(this.scene, this.camera);
         const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(800, 600), // resolution
+            new THREE.Vector2(renderWidth, renderHeight), // resolution
             0.5, // strength
             0, // radius
             0  // threshold
@@ -53,11 +69,6 @@ class Scene extends Component {
         this.composer.addPass(renderModel);
         this.composer.addPass(bloomPass);
         this.composer.addPass(outputPass);
-
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        // bind so that "this" refers to the class instance
-        let rerender = this.rerender.bind(this);
-        this.controls.addEventListener('change', rerender);
 
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
@@ -86,6 +97,17 @@ class Scene extends Component {
         this.fetchPointsAtTime(t);
     }
 
+    handlePlayClick() {
+        console.log('handlePlayClick');
+        this.setAutoRotate(!this.state.autoRotate);
+        this.animate();
+    }
+
+    setAutoRotate(value: boolean) {
+        this.controls.autoRotate = value;
+        this.setState({autoRotate: value});
+    }
+
     setStoreAndPath(url: URL) {
         const pathParts = url.pathname.split('/');
         const newPath = pathParts.pop() || "";
@@ -100,7 +122,9 @@ class Scene extends Component {
     render() {
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
+        let handlePlayClick = this.handlePlayClick.bind(this);
         let url = this.store + '/' + this.path;
+        const playLabel = this.state.autoRotate ? "Stop" : "Spin";
         return (
             <div class="inputcontainer">
                 <input
@@ -109,19 +133,29 @@ class Scene extends Component {
                     onChange={handleURLChange}
                     style={{ color: this.array ? "black" : "red" }}
                 />
+                <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
                 <input
                     type="range" min="0" max={this.state.numTimes - 1}
                     disabled={this.array === undefined}
                     value={this.state.curTime}
                     class="slider" id="timeSlider" onChange={handleTimeChange}
                 />
-                <label for="timeSlider">{this.state.numTimes}</label>
+                <label for="timeSlider">{this.state.curTime} / {this.state.numTimes}</label>
             </div>
         );
     }
 
     rerender() {
         this.composer.render();
+    }
+
+    animate() {
+        if (this.controls.autoRotate) {
+            const animate = this.animate.bind(this);
+            requestAnimationFrame( animate );
+            this.controls.update();
+            this.rerender();
+        }
     }
 
     componentDidMount() {
@@ -160,13 +194,15 @@ class Scene extends Component {
             return;
         }
         const array = this.array;
-        const numTracks = array.shape[1] / 3;
+        const maxPoints = array.shape[1] / 3;
+        // TODO: somewhat arbitrary right. Should calculate some number that would
+        // be reasonable for slow connections or use the chunk size.
         const trackChunkSize = 100_000;
 
         // Initialize the geometry attributes.
         const geometry = this.points.geometry;
-        const positions = new Float32Array(3 * numTracks);
-        const colors = new Float32Array(3 * numTracks);
+        const positions = new Float32Array(3 * maxPoints);
+        const colors = new Float32Array(3 * maxPoints);
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
         geometry.setDrawRange(0, 0)
@@ -174,7 +210,7 @@ class Scene extends Component {
         // Initialize all the colors immediately.
         const color = new THREE.Color();
         const colorAttribute = geometry.getAttribute('color');
-        for (let i = 0; i < numTracks; i++) {
+        for (let i = 0; i < maxPoints; i++) {
             const r = Math.random();
             const g = Math.random();
             const b = Math.random();
@@ -185,7 +221,7 @@ class Scene extends Component {
 
         // Load the positions progressively.
         const positionAttribute = geometry.getAttribute('position');
-        for (let i = 0, pointIndex = 0; i < numTracks; i += trackChunkSize) {
+        for (let i = 0, pointIndex = 0; i < maxPoints; i += trackChunkSize) {
             const start = 3 * i;
             const end = Math.min(array.shape[1], 3 * (i + trackChunkSize));
             const points = await array.get([timeIndex, slice(start, end)]);
