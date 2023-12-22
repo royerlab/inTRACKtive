@@ -27,7 +27,7 @@ class Scene extends Component {
     private selectionBox: SelectionBox;
     private selectionHelper: SelectionHelper;
 
-    state = { numTimes: 0, curTime: 0 };
+    state = { numTimes: 0, curTime: 0, autoRotate: false };
 
     constructor() {
         super();
@@ -55,6 +55,8 @@ class Scene extends Component {
         this.camera.lookAt(target.x, target.y, target.z);
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
+        this.controls.autoRotate = this.state.autoRotate;
+        this.controls.autoRotateSpeed = 4;
         this.controls.update();
         // bind so that "this" refers to the class instance
         this.controls.addEventListener('change', rerender);
@@ -175,6 +177,17 @@ class Scene extends Component {
         }
     }
 
+    handlePlayClick() {
+        console.log('handlePlayClick');
+        this.setAutoRotate(!this.state.autoRotate);
+        this.animate();
+    }
+
+    setAutoRotate(value: boolean) {
+        this.controls.autoRotate = value;
+        this.setState({autoRotate: value});
+    }
+
     setStoreAndPath(url: URL) {
         const pathParts = url.pathname.split('/');
         const newPath = pathParts.pop() || "";
@@ -190,7 +203,9 @@ class Scene extends Component {
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
         let handleKeyDown = this.handleKeyDown.bind(this);
+        let handlePlayClick = this.handlePlayClick.bind(this);
         let url = this.store + '/' + this.path;
+        const playLabel = this.state.autoRotate ? "Stop" : "Spin";
         return (
             <div class="inputcontainer" onKeyDown={handleKeyDown} onKeyUp={this.handleKeyUp}>
                 <input
@@ -199,19 +214,29 @@ class Scene extends Component {
                     onChange={handleURLChange}
                     style={{ color: this.array ? "black" : "red" }}
                 />
+                <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
                 <input
                     type="range" min="0" max={this.state.numTimes - 1}
                     disabled={this.array === undefined}
                     value={this.state.curTime}
                     class="slider" id="timeSlider" onChange={handleTimeChange}
                 />
-                <label for="timeSlider">{this.state.numTimes}</label>
+                <label for="timeSlider">{this.state.curTime} / {this.state.numTimes}</label>
             </div>
         );
     }
 
     rerender() {
         this.composer.render();
+    }
+
+    animate() {
+        if (this.controls.autoRotate) {
+            const animate = this.animate.bind(this);
+            requestAnimationFrame( animate );
+            this.controls.update();
+            this.rerender();
+        }
     }
 
     componentDidMount() {
