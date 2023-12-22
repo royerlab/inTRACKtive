@@ -53,11 +53,11 @@ class Scene extends Component {
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
         this.camera.lookAt(target.x, target.y, target.z);
-        // this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        // this.controls.target.set(target.x, target.y, target.z);
-        // this.controls.update();
-        // // bind so that "this" refers to the class instance
-        // this.controls.addEventListener('change', rerender);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.target.set(target.x, target.y, target.z);
+        this.controls.update();
+        // bind so that "this" refers to the class instance
+        this.controls.addEventListener('change', rerender);
 
         // postprocessing
         const renderModel = new RenderPass(this.scene, this.camera);
@@ -112,19 +112,20 @@ class Scene extends Component {
 
     handlePointerDown(event: PointerEvent) {
         console.log('handlePointerDown: %d, %d', event.clientX, event.clientY);
+        if (!this.controls.enabled) {
+            //for ( const item of this.selectionBox.collection ) {
+            //    item.material.emissive.set( 0x000000 );
+            //}
 
-        //for ( const item of this.selectionBox.collection ) {
-        //    item.material.emissive.set( 0x000000 );
-        //}
-
-        this.selectionBox.startPoint.set(
-            ( event.clientX / 800 ) * 2 - 1,
-            - ( event.clientY / 600 ) * 2 + 1,
-            0.5 );
+            this.selectionBox.startPoint.set(
+                ( event.clientX / 800 ) * 2 - 1,
+                - ( event.clientY / 600 ) * 2 + 1,
+                0.5 );
+        }
     }
 
     handlePointerMove(event: PointerEvent) {
-        if ( this.selectionHelper.isDown ) {
+        if ( !this.controls.enabled && this.selectionHelper.isDown ) {
             //for ( let i = 0; i < this.selectionBox.collection.length; i ++ ) {
             //    this.selectionBox.collection[i].material.emissive.set( 0x000000 );
             //}
@@ -144,18 +145,34 @@ class Scene extends Component {
     }
 
     handlePointerUp(event: PointerEvent) {
-        console.log('handlePointerUp: %d, %d', event.clientX, event.clientY);
+        if (!this.controls.enabled) {
+            console.log('handlePointerUp: %d, %d', event.clientX, event.clientY);
 
-        this.selectionBox.endPoint.set(
-            ( event.clientX / 800 ) * 2 - 1,
-            - ( event.clientY / 600 ) * 2 + 1,
-            0.5 );
+            this.selectionBox.endPoint.set(
+                ( event.clientX / 800 ) * 2 - 1,
+                - ( event.clientY / 600 ) * 2 + 1,
+                0.5 );
 
-        const allSelected = this.selectionBox.select();
-        console.log('handlePointerUp: selected %d points', allSelected.length);
-        //for ( let i = 0; i < allSelected.length; i ++ ) {
-        //    allSelected[i].material.emissive.set( 0xffffff );
-        //}
+            const allSelected = this.selectionBox.select();
+            console.log('handlePointerUp: selected %d points', allSelected.length);
+            //for ( let i = 0; i < allSelected.length; i ++ ) {
+            //    allSelected[i].material.emissive.set( 0xffffff );
+            //}
+        }
+    }
+
+    handleKeyDown(event: KeyboardEvent) {
+        console.log('handleKeyDown: %s', event.key);
+        if (event.key === "Shift") {
+            this.controls.enabled = false;
+        }
+    }
+
+    handleKeyUp(event: KeyboardEvent) {
+        console.log('handleKeyUp: %s', event.key);
+        if (event.key === "Shift") {
+            this.controls.enabled = true;
+        }
     }
 
     setStoreAndPath(url: URL) {
@@ -172,9 +189,10 @@ class Scene extends Component {
     render() {
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
+        let handleKeyDown = this.handleKeyDown.bind(this);
         let url = this.store + '/' + this.path;
         return (
-            <div class="inputcontainer">
+            <div class="inputcontainer" onKeyDown={handleKeyDown} onKeyUp={this.handleKeyUp}>
                 <input
                     type="text" class="textinput" id="zarrURL"
                     value={url}
