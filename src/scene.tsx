@@ -27,7 +27,12 @@ class Scene extends Component {
     private selectionBox: SelectionBox;
     private selectionHelper: SelectionHelper;
 
-    state = { numTimes: 0, curTime: 0, autoRotate: false };
+    state = { 
+        numTimes: 0,
+        curTime: 0,
+        autoRotate: false,
+        controlCamera: true,
+    };
 
     constructor() {
         super();
@@ -57,6 +62,7 @@ class Scene extends Component {
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
         this.controls.autoRotateSpeed = 4;
+        this.setControlCamera(true);
         this.controls.update();
         // bind so that "this" refers to the class instance
         this.controls.addEventListener('change', rerender);
@@ -163,18 +169,15 @@ class Scene extends Component {
         }
     }
 
-    handleKeyDown(event: KeyboardEvent) {
-        console.log('handleKeyDown: %s', event.key);
-        if (event.key === "Shift") {
-            this.controls.enabled = false;
-        }
+    handleControlClick() {
+        console.log('handleControlClick');
+        this.setControlCamera(!this.controls.enabled)
     }
 
-    handleKeyUp(event: KeyboardEvent) {
-        console.log('handleKeyUp: %s', event.key);
-        if (event.key === "Shift") {
-            this.controls.enabled = true;
-        }
+    setControlCamera(value: boolean) {
+        this.controls.enabled = value;
+        this.selectionHelper.enabled = !value;
+        this.setState({controlCamera: value});
     }
 
     handlePlayClick() {
@@ -202,18 +205,20 @@ class Scene extends Component {
     render() {
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
-        let handleKeyDown = this.handleKeyDown.bind(this);
         let handlePlayClick = this.handlePlayClick.bind(this);
+        let handleControlClick = this.handleControlClick.bind(this);
         let url = this.store + '/' + this.path;
         const playLabel = this.state.autoRotate ? "Stop" : "Spin";
+        const controlLabel = this.state.controlCamera ? "Camera" : "Select";
         return (
-            <div class="inputcontainer" onKeyDown={handleKeyDown} onKeyUp={this.handleKeyUp}>
+            <div class="inputcontainer">
                 <input
                     type="text" class="textinput" id="zarrURL"
                     value={url}
                     onChange={handleURLChange}
                     style={{ color: this.array ? "black" : "red" }}
                 />
+                <button id="controlButton" onClick={handleControlClick}>{controlLabel}</button>
                 <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
                 <input
                     type="range" min="0" max={this.state.numTimes - 1}
