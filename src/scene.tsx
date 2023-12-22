@@ -97,7 +97,7 @@ class Scene extends Component {
         this.fetchPointsAtTime(t);
     }
 
-    handlePlayClick(event: Event) {
+    handlePlayClick() {
         console.log('handlePlayClick');
         this.setAutoRotate(!this.state.autoRotate);
         this.animate();
