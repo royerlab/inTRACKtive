@@ -4,7 +4,7 @@ import Scene from './scene.tsx'
 export function App() {
     return (
         <>
-            <Scene />
+            <Scene renderWidth={800} renderHeight={600}/>
         </>
     )
 }
