@@ -124,7 +124,11 @@ class Scene extends Component<SceneProps> {
         }
     }
 
-    render() {
+    render(props: SceneProps) {
+        console.log(props);
+        if (props.renderWidth !== undefined && props.renderHeight !== undefined) {
+            this.renderer.setSize(props.renderWidth, props.renderHeight);
+        }
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
         let handlePlayClick = this.handlePlayClick.bind(this);
