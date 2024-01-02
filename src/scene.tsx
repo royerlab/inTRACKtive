@@ -32,6 +32,7 @@ class Scene extends Component<SceneProps> {
 
     constructor(props: SceneProps) {
         super(props);
+        console.debug("Scene.constructor", props);
 
         const renderWidth = props.renderWidth || 800;
         const renderHeight = props.renderHeight || 600;
@@ -125,7 +126,7 @@ class Scene extends Component<SceneProps> {
     }
 
     render(props: SceneProps) {
-        console.log(props);
+        console.debug("Scene.render", props);
         if (props.renderWidth !== undefined && props.renderHeight !== undefined) {
             this.renderer.setSize(props.renderWidth, props.renderHeight);
         }

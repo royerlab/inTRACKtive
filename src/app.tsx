@@ -22,15 +22,18 @@ class App extends Component {
     }
 
     calculateRenderWidth(windowWidth: number) {
+        const appPadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-padding'));
+        let w: number;
         if (windowWidth < 800) {
-            return windowWidth;
+            w = windowWidth;
         } else if (windowWidth < 1200) {
-            return 800;
+            w = 800;
         } else if (windowWidth < 1600) {
-            return 1024;
+            w = 1024;
         } else {
-            return 1200;
+            w = 1200;
         }
+        return w - appPadding * 2;
     }
 
     componentDidMount() {
@@ -42,8 +45,7 @@ class App extends Component {
         const windowWidth = window.innerWidth;
         this.setState({
             windowWidth: windowWidth,
-            // TODO: 64 is a magic value based on the CSS padding
-            renderWidth: this.calculateRenderWidth(windowWidth) - 64,
+            renderWidth: this.calculateRenderWidth(windowWidth),
         });
     }
 

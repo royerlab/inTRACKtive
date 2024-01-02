@@ -1,6 +1,10 @@
+:root {
+  --app-padding: 32px;
+}
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px;
+  padding: var(--app-padding);
   text-align: center;
 }
