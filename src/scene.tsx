@@ -127,7 +127,7 @@ class Scene extends Component<SceneProps> {
 
     render(props: SceneProps) {
         console.debug("Scene.render", props);
-        if (props.renderWidth !== undefined && props.renderHeight !== undefined) {
+        if (props.renderWidth && props.renderHeight) {
             this.renderer.setSize(props.renderWidth, props.renderHeight);
             this.composer.setSize(props.renderWidth, props.renderHeight);
             this.rerender();
