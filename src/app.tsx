@@ -50,8 +50,8 @@ class App extends Component {
     }
 
     render() {
-        const { renderWidth } = this.state;
-        const renderHeight = renderWidth ? renderWidth / aspectRatio : 800;
+        const renderWidth = this.state.renderWidth || 800;
+        const renderHeight = renderWidth / aspectRatio;
         return (
             <>
                 <Scene renderWidth={renderWidth} renderHeight={renderHeight} />
