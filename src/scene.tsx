@@ -129,6 +129,8 @@ class Scene extends Component<SceneProps> {
         console.debug("Scene.render", props);
         if (props.renderWidth !== undefined && props.renderHeight !== undefined) {
             this.renderer.setSize(props.renderWidth, props.renderHeight);
+            this.composer.setSize(props.renderWidth, props.renderHeight);
+            this.rerender();
         }
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
