@@ -5,8 +5,7 @@ import Scene from './scene.tsx'
 const aspectRatio = 4 / 3;
 
 interface AppState {
-    windowWidth?: number;
-    renderWidth?: number;
+    renderWidth: number;
 }
 
 class App extends Component {
@@ -14,14 +13,13 @@ class App extends Component {
 
     constructor() {
         super();
-        const windowWidth = window.innerWidth;
         this.state = {
-            windowWidth: windowWidth,
-            renderWidth: this.calculateRenderWidth(windowWidth)
+            renderWidth: this.calculateRenderWidth(),
         };
     }
 
-    calculateRenderWidth(windowWidth: number) {
+    calculateRenderWidth() {
+        const windowWidth = window.innerWidth;
         const appPadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-padding'));
         let w: number;
         if (windowWidth < 800) {
@@ -33,7 +31,8 @@ class App extends Component {
         } else {
             w = 1200;
         }
-        return w - appPadding * 2;
+        const renderWidth = w - appPadding * 2;
+        return renderWidth < 0 ? windowWidth : renderWidth;
     }
 
     componentDidMount() {
@@ -42,10 +41,8 @@ class App extends Component {
     }
 
     handleWindowResize() {
-        const windowWidth = window.innerWidth;
         this.setState({
-            windowWidth: windowWidth,
-            renderWidth: this.calculateRenderWidth(windowWidth),
+            renderWidth: this.calculateRenderWidth(),
         });
     }
 
