@@ -191,9 +191,7 @@ class Scene extends Component<SceneProps> {
             planes[2].setFromCoplanarPoints(bottomRightNear, bottomLeftNear, cameraPos); // bottom
             planes[3].setFromCoplanarPoints(bottomLeftNear, topLeftNear, cameraPos); // left
             planes[4].setFromCoplanarPoints(topRightNear, bottomRightNear, bottomLeftNear); // near
-            planes[5].setFromCoplanarPoints(bottomRightFar, topRightFar, topLeftFar); // far
-            // TODO: change order of points instead?
-            planes[5].normal.multiplyScalar(-1);
+            planes[5].setFromCoplanarPoints(topLeftFar, topRightFar, bottomRightFar); // far
 
             const geometry = this.points.geometry;
             const colors = geometry.getAttribute('color');
