@@ -62,7 +62,6 @@ class Scene extends Component<SceneProps> {
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
         this.camera.lookAt(target.x, target.y, target.z);
-        // this.camera.matrixWorldAutoUpdate = true;
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
@@ -173,7 +172,7 @@ class Scene extends Component<SceneProps> {
             this.camera.updateProjectionMatrix();
             this.camera.updateMatrixWorld(true);
 
-			const cameraPos = new THREE.Vector3().setFromMatrixPosition( this.camera.matrixWorld );
+			const cameraPos = new THREE.Vector3().setFromMatrixPosition(this.camera.matrixWorld);
 
             const topLeftNear = new THREE.Vector3(left, top, 0).unproject(this.camera);
             const bottomRightNear = new THREE.Vector3(right, bottom, 0).unproject(this.camera);
