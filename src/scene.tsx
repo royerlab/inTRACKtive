@@ -12,7 +12,12 @@ import { ZarrArray, slice, openArray } from "zarr";
 
 const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr"
 
-class Scene extends Component {
+interface SceneProps {
+    renderWidth?: number;
+    renderHeight?: number;
+}
+
+class Scene extends Component<SceneProps> {
 
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
@@ -32,11 +37,12 @@ class Scene extends Component {
         controlCamera: true,
     };
 
-    constructor() {
-        super();
-        
-        const renderWidth = 800;
-        const renderHeight = 600;
+    constructor(props: SceneProps) {
+        super(props);
+        console.debug("Scene.constructor", props);
+
+        const renderWidth = props.renderWidth || 800;
+        const renderHeight = props.renderHeight || 600;
 
         // bind so that "this" refers to the class instance
         const rerender = this.rerender.bind(this);
@@ -233,7 +239,7 @@ class Scene extends Component {
 
     setAutoRotate(value: boolean) {
         this.controls.autoRotate = value;
-        this.setState({autoRotate: value});
+        this.setState({ autoRotate: value });
     }
 
     setStoreAndPath(url: URL) {
@@ -247,7 +253,13 @@ class Scene extends Component {
         }
     }
 
-    render() {
+    render(props: SceneProps) {
+        console.debug("Scene.render", props);
+        if (props.renderWidth && props.renderHeight) {
+            this.renderer.setSize(props.renderWidth, props.renderHeight);
+            this.composer.setSize(props.renderWidth, props.renderHeight);
+            this.rerender();
+        }
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
         let handlePlayClick = this.handlePlayClick.bind(this);
@@ -283,7 +295,7 @@ class Scene extends Component {
     animate() {
         if (this.controls.autoRotate) {
             const animate = this.animate.bind(this);
-            requestAnimationFrame( animate );
+            requestAnimationFrame(animate);
             this.controls.update();
             this.rerender();
         }
