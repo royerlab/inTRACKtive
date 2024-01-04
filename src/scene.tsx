@@ -6,7 +6,6 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { SelectionBox } from 'three/addons/interactive/SelectionBox.js';
 import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
@@ -17,14 +16,13 @@ class Scene extends Component {
 
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
-    private camera: THREE.Camera;
+    private camera: THREE.PerspectiveCamera;
     private controls: OrbitControls;
     private points: THREE.Points;
     private composer: EffectComposer;
     private array: ZarrArray;
     private store: string;
     private path: string;
-    private selectionBox: SelectionBox;
     private selectionHelper: SelectionHelper;
 
     state = { 
@@ -58,6 +56,7 @@ class Scene extends Component {
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
         this.camera.lookAt(target.x, target.y, target.z);
+        // this.camera.matrixWorldAutoUpdate = true;
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
@@ -85,15 +84,10 @@ class Scene extends Component {
         this.points = new THREE.Points(geometry, material);
 
         // From https://github.com/mrdoob/three.js/blob/master/examples/misc_boxselection.html
-        this.selectionBox = new SelectionBox( this.camera, this.scene );
-        this.selectionHelper = new SelectionHelper( this.renderer, 'selectBox' );
-        const handlePointerDown = this.handlePointerDown.bind(this);
-        const handlePointerMove = this.handlePointerMove.bind(this);
+        this.selectionHelper = new SelectionHelper(this.renderer, 'selectBox');
         const handlePointerUp = this.handlePointerUp.bind(this);
         const handleKeyDown = this.handleKeyDown.bind(this);
         const handleKeyUp = this.handleKeyUp.bind(this);
-        document.addEventListener('pointerdown', handlePointerDown);
-        document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
         document.addEventListener('keydown', handleKeyDown);
         document.addEventListener('keyup', handleKeyUp);
@@ -137,54 +131,86 @@ class Scene extends Component {
         }
     }
 
-    handlePointerDown(event: PointerEvent) {
-        console.log('handlePointerDown: %d, %d', event.clientX, event.clientY);
-        if (!this.controls.enabled) {
-            //for ( const item of this.selectionBox.collection ) {
-            //    item.material.emissive.set( 0x000000 );
-            //}
-
-            this.selectionBox.startPoint.set(
-                ( event.clientX / 800 ) * 2 - 1,
-                - ( event.clientY / 600 ) * 2 + 1,
-                0.5 );
-        }
-    }
-
-    handlePointerMove(event: PointerEvent) {
-        if ( !this.controls.enabled && this.selectionHelper.isDown ) {
-            //for ( let i = 0; i < this.selectionBox.collection.length; i ++ ) {
-            //    this.selectionBox.collection[i].material.emissive.set( 0x000000 );
-            //}
-
-            console.log('handlePointerMove: %d, %d', event.clientX, event.clientY);
-            this.selectionBox.endPoint.set(
-                ( event.clientX / 800 ) * 2 - 1,
-                - ( event.clientY / 600 ) * 2 + 1,
-                0.5 );
-
-            const allSelected = this.selectionBox.select();
-            console.log('handlePointerMove: selected %d points', allSelected.length);
-            //for ( let i = 0; i < allSelected.length; i ++ ) {
-            //    allSelected[i].material.emissive.set( 0xffffff );
-            //}
-        }
+    nearToFar(near: THREE.Vector3, cameraPos: THREE.Vector3) {
+        const far = new THREE.Vector3();
+        far.copy(near);
+        far.sub(cameraPos);
+        far.normalize();
+        far.multiplyScalar(Number.MAX_VALUE)
+        far.add(cameraPos);
+        return far;
     }
 
     handlePointerUp(event: PointerEvent) {
         if (!this.controls.enabled) {
             console.log('handlePointerUp: %d, %d', event.clientX, event.clientY);
 
-            this.selectionBox.endPoint.set(
-                ( event.clientX / 800 ) * 2 - 1,
-                - ( event.clientY / 600 ) * 2 + 1,
-                0.5 );
+            // Mouse to normalized render/canvas coords from:
+            // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+            const canvas = this.renderer.domElement.getBoundingClientRect();
 
-            const allSelected = this.selectionBox.select();
-            console.log('handlePointerUp: selected %d points', allSelected.length);
-            //for ( let i = 0; i < allSelected.length; i ++ ) {
-            //    allSelected[i].material.emissive.set( 0xffffff );
-            //}
+            const topLeft = this.selectionHelper.pointTopLeft;
+            const bottomRight = this.selectionHelper.pointBottomRight;
+
+            // TODO: unsure if we need to subtract canvas top-left.
+            let left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
+            let top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
+            let right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
+            let bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
+
+            console.log('top = %f, left = %f, right = %f, bottom = %f', top, left, right, bottom);
+
+            // Adapted from SelectionBox.js:
+            // https://github.com/mrdoob/three.js/blob/2ab27ea33ef2c991558e392d4f476ac08975be0d/examples/jsm/interactive/SelectionBox.js#L87
+
+            // TODO: unsure if we need this here.
+            this.camera.updateProjectionMatrix();
+            this.camera.updateMatrixWorld(true);
+
+			const cameraPos = new THREE.Vector3().setFromMatrixPosition( this.camera.matrixWorld );
+
+            const topLeftNear = new THREE.Vector3(left, top, 0).unproject(this.camera);
+            const bottomRightNear = new THREE.Vector3(right, bottom, 0).unproject(this.camera);
+            const topRightNear = new THREE.Vector3(right, top, 0).unproject(this.camera);
+			const bottomLeftNear = new THREE.Vector3(left, bottom, 0).unproject(this.camera);
+
+            const topLeftFar = this.nearToFar(topLeftNear, cameraPos);
+            const topRightFar = this.nearToFar(topRightNear, cameraPos);
+            const bottomRightFar = this.nearToFar(bottomRightNear, cameraPos);
+
+            const frustum = new THREE.Frustum();
+            const planes = frustum.planes;
+            planes[0].setFromCoplanarPoints(cameraPos, topLeftNear, topRightNear); // top
+            planes[1].setFromCoplanarPoints(cameraPos, topRightNear, bottomRightNear); // right
+            planes[2].setFromCoplanarPoints(bottomRightNear, bottomLeftNear, cameraPos); // bottom
+            planes[3].setFromCoplanarPoints(bottomLeftNear, topLeftNear, cameraPos); // left
+            planes[4].setFromCoplanarPoints(topRightNear, bottomRightNear, bottomLeftNear); // near
+            planes[5].setFromCoplanarPoints(bottomRightFar, topRightFar, topLeftFar); // far
+            // TODO: change order of points instead?
+            planes[5].normal.multiplyScalar(-1);
+
+            const geometry = this.points.geometry;
+            const colors = geometry.getAttribute('color');
+            const positions = geometry.getAttribute('position');
+            let numSelected = 0;
+            for (let i = 0; i < positions.array.length; i += 3) {
+                const pos = new THREE.Vector3(
+                    positions.array[i],
+                    positions.array[i+1],
+                    positions.array[i+2],
+                );
+                if (frustum.containsPoint(pos)) {
+                    colors.array[i] = 1;
+                    colors.array[i+1] = 1;
+                    colors.array[i+2] = 1;
+                    numSelected++;
+                }
+            }
+            console.log('selected: %d', numSelected);
+            if (numSelected > 0) {
+                colors.needsUpdate = true;
+                this.rerender();
+            }
         }
     }
 
