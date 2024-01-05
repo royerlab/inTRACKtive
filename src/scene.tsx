@@ -6,8 +6,12 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
+import { PointSelectionBox } from './PointSelectionBox';
+
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
+
 
 const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr"
 
@@ -20,15 +24,22 @@ class Scene extends Component<SceneProps> {
 
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
-    private camera: THREE.Camera;
+    private camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
     private controls: OrbitControls;
     private points: THREE.Points;
     private composer: EffectComposer;
     private array: ZarrArray;
     private store: string;
     private path: string;
+    private selectionHelper: SelectionHelper;
+    private selectionBox: PointSelectionBox;
 
-    state = { numTimes: 0, curTime: 0, autoRotate: false };
+    state = {
+        numTimes: 0,
+        curTime: 0,
+        autoRotate: false,
+        controlCamera: true,
+    };
 
     constructor(props: SceneProps) {
         super(props);
@@ -54,12 +65,13 @@ class Scene extends Component<SceneProps> {
             10000       // Far
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
+        this.camera.lookAt(target.x, target.y, target.z);
+
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
         this.controls.autoRotateSpeed = 4;
         this.controls.update();
-        // bind so that "this" refers to the class instance
         this.controls.addEventListener('change', rerender);
 
         // postprocessing
@@ -80,10 +92,75 @@ class Scene extends Component<SceneProps> {
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         this.points = new THREE.Points(geometry, material);
 
+        // From https://github.com/mrdoob/three.js/blob/master/examples/misc_boxselection.html
+        this.selectionHelper = new SelectionHelper(this.renderer, 'selectBox');
+        this.selectionBox = new PointSelectionBox(this.camera, this.scene);
+        const handlePointerUp = this.handlePointerUp.bind(this);
+        const handleKeyDown = this.handleKeyDown.bind(this);
+        const handleKeyUp = this.handleKeyUp.bind(this);
+        document.addEventListener('pointerup', handlePointerUp);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+
         const url = new URL(DEFAULT_ZARR_URL);
         const pathParts = url.pathname.split('/');
         this.path = pathParts.pop() || "";
         this.store = url.origin + pathParts.join('/');
+
+        this.setControlCamera(true);
+    }
+
+    handlePointerUp() {
+        if (this.selectionHelper.enabled) {
+            // Mouse to normalized render/canvas coords from:
+            // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+            const canvas = this.renderer.domElement.getBoundingClientRect();
+
+            const topLeft = this.selectionHelper.pointTopLeft;
+            const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
+            const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
+
+            const bottomRight = this.selectionHelper.pointBottomRight;
+            const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
+            const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
+            console.debug(
+                'selectionHelper, top = %f, left = %f, bottom = %f, right = %f',
+                top, left, bottom, right,
+            );
+
+            // TODO: check the z-value of these points
+            this.selectionBox.startPoint.set(left, top, 0.5);
+            this.selectionBox.endPoint.set(right, bottom, 0.5);
+
+            // TODO: consider restricting selection to a specific object
+            const selection = this.selectionBox.select();
+            console.debug("selected points:", selection);
+
+            if (this.points.id in selection) {
+                const geometry = this.points.geometry as THREE.BufferGeometry;
+                const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
+                const color = new THREE.Color(0xffffff);
+                for (const i of selection[this.points.id]) {
+                    colors.setXYZ(i, color.r, color.g, color.b);
+                }
+                colors.needsUpdate = true;
+                this.rerender();
+            }
+        }
+    }
+
+    handleKeyUp(event: KeyboardEvent) {
+        console.debug('handleKeyUp: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(true);
+        }
+    }
+
+    handleKeyDown(event: KeyboardEvent) {
+        console.debug('handleKeyDown: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(false);
+        }
     }
 
     handleTimeChange(event: ChangeEvent) {
@@ -103,10 +180,31 @@ class Scene extends Component<SceneProps> {
         this.fetchPointsAtTime(t);
     }
 
+    nearToFar(near: THREE.Vector3, cameraPos: THREE.Vector3) {
+        const far = new THREE.Vector3();
+        far.copy(near);
+        far.sub(cameraPos);
+        far.normalize();
+        far.multiplyScalar(Number.MAX_VALUE)
+        far.add(cameraPos);
+        return far;
+    }
+
+    handleControlClick() {
+        console.log('handleControlClick');
+        this.setControlCamera(!this.controls.enabled)
+    }
+
     handlePlayClick() {
         console.log('handlePlayClick');
         this.setAutoRotate(!this.state.autoRotate);
         this.animate();
+    }
+
+    setControlCamera(value: boolean) {
+        this.controls.enabled = value;
+        this.selectionHelper.enabled = !value;
+        this.setState({ controlCamera: value });
     }
 
     setAutoRotate(value: boolean) {
@@ -135,8 +233,10 @@ class Scene extends Component<SceneProps> {
         let handleTimeChange = this.handleTimeChange.bind(this);
         let handleURLChange = this.handleURLChange.bind(this);
         let handlePlayClick = this.handlePlayClick.bind(this);
+        let handleControlClick = this.handleControlClick.bind(this);
         let url = this.store + '/' + this.path;
         const playLabel = this.state.autoRotate ? "Stop" : "Spin";
+        const controlLabel = this.state.controlCamera ? "Camera" : "Select";
         return (
             <div class="inputcontainer">
                 <input
@@ -145,6 +245,7 @@ class Scene extends Component<SceneProps> {
                     onChange={handleURLChange}
                     style={{ color: this.array ? "black" : "red" }}
                 />
+                <button id="controlButton" onClick={handleControlClick}>{controlLabel}</button>
                 <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
                 <input
                     type="range" min="0" max={this.state.numTimes - 1}
