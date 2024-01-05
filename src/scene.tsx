@@ -139,7 +139,9 @@ class Scene extends Component<SceneProps> {
             for (const i of selection[this.points.id]) {
                 colors.setXYZ(i, color.r, color.g, color.b);
             }
-            colors.needsUpdate = true;
+            if (selection[this.points.id].length > 0) {
+                colors.needsUpdate = true;
+            }
             console.log('handlePointerUp: %s', event);
             this.rerender();
         }
