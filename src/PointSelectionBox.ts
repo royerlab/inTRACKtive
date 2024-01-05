@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /**
  * This is a class to check whether points in a Points object are in a selection area in 3D space
- * This is heavily borrowed from https://github.com/mrdoob/three.js/blob/r160/examples/jsm/interactive/SelectionBox.js
+ * This borrows heavily from https://github.com/mrdoob/three.js/blob/r160/examples/jsm/interactive/SelectionBox.js
  */
 
 const _frustum = new THREE.Frustum();

@@ -142,7 +142,6 @@ class Scene extends Component<SceneProps> {
             if (selection[this.points.id].length > 0) {
                 colors.needsUpdate = true;
             }
-            console.log('handlePointerUp: %s', event);
             this.rerender();
         }
     }
