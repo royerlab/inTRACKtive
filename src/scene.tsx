@@ -7,8 +7,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
+import { PointSelectionBox } from './PointSelectionBox';
+
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
+
 
 const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr"
 
@@ -21,7 +24,7 @@ class Scene extends Component<SceneProps> {
 
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
-    private camera: THREE.PerspectiveCamera;
+    private camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
     private controls: OrbitControls;
     private points: THREE.Points;
     private composer: EffectComposer;
@@ -29,6 +32,7 @@ class Scene extends Component<SceneProps> {
     private store: string;
     private path: string;
     private selectionHelper: SelectionHelper;
+    private selectionBox: PointSelectionBox;
 
     state = { 
         numTimes: 0,
@@ -62,12 +66,12 @@ class Scene extends Component<SceneProps> {
         );
         this.camera.position.set(target.x, target.y, target.z - 1500);
         this.camera.lookAt(target.x, target.y, target.z);
+
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotate = this.state.autoRotate;
         this.controls.autoRotateSpeed = 4;
         this.controls.update();
-        // bind so that "this" refers to the class instance
         this.controls.addEventListener('change', rerender);
 
         // postprocessing
@@ -90,6 +94,7 @@ class Scene extends Component<SceneProps> {
 
         // From https://github.com/mrdoob/three.js/blob/master/examples/misc_boxselection.html
         this.selectionHelper = new SelectionHelper(this.renderer, 'selectBox');
+        this.selectionBox = new PointSelectionBox(this.camera, this.scene);
         const handlePointerUp = this.handlePointerUp.bind(this);
         const handleKeyDown = this.handleKeyDown.bind(this);
         const handleKeyUp = this.handleKeyUp.bind(this);
@@ -103,6 +108,55 @@ class Scene extends Component<SceneProps> {
         this.store = url.origin + pathParts.join('/');
 
         this.setControlCamera(true);
+    }
+
+    handlePointerUp(event: PointerEvent) {
+        if (this.selectionHelper.enabled) {
+            // Mouse to normalized render/canvas coords from:
+            // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+            const canvas = this.renderer.domElement.getBoundingClientRect();
+
+            const bottomRight = this.selectionHelper.pointBottomRight;
+            const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
+            const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
+            console.log('right = %f, bottom = %f', right, bottom);
+
+            const topLeft = this.selectionHelper.pointTopLeft;
+            const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
+            const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
+            console.log('top = %f, left = %f', top, left);
+
+            // TODO: check the z-value of these points
+            this.selectionBox.startPoint.set(left, top, 0.5);
+            this.selectionBox.endPoint.set(right, bottom, 0.5);
+
+            const selection = this.selectionBox.select();
+            console.debug("selected points:", selection);
+            const geometry = this.points.geometry as THREE.BufferGeometry;
+            const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
+            const color = new THREE.Color();
+            color.setRGB(1.0, 1.0, 1.0, THREE.SRGBColorSpace);
+            for (const i of selection[this.points.id]) {
+                colors.setXYZ(i, color.r, color.g, color.b);
+            }
+            colors.needsUpdate = true;
+            console.log('handlePointerUp: %s', event);
+            this.rerender();
+        }
+    }
+
+    handleKeyUp(event: KeyboardEvent) {
+        console.debug('handleKeyUp: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(true);
+        }
+    }
+
+    handleKeyDown(event: KeyboardEvent) {
+        console.debug('handleKeyDown: %s', event.key);
+        if (event.key === "Shift") {
+            this.setControlCamera(false);
+        }
     }
 
     handleTimeChange(event: ChangeEvent) {
@@ -122,20 +176,6 @@ class Scene extends Component<SceneProps> {
         this.fetchPointsAtTime(t);
     }
 
-    handleKeyUp(event: KeyboardEvent) {
-        console.log('handleKeyUp: %s', event.key);
-        if (event.key === "Shift") {
-            this.setControlCamera(true);
-        }
-    }
-
-    handleKeyDown(event: KeyboardEvent) {
-        console.log('handleKeyDown: %s', event.key);
-        if (event.key === "Shift") {
-            this.setControlCamera(false);
-        }
-    }
-
     nearToFar(near: THREE.Vector3, cameraPos: THREE.Vector3) {
         const far = new THREE.Vector3();
         far.copy(near);
@@ -146,92 +186,21 @@ class Scene extends Component<SceneProps> {
         return far;
     }
 
-    handlePointerUp(event: PointerEvent) {
-        if (!this.controls.enabled) {
-            console.log('handlePointerUp: %d, %d', event.clientX, event.clientY);
-
-            // Mouse to normalized render/canvas coords from:
-            // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
-            const canvas = this.renderer.domElement.getBoundingClientRect();
-
-            const topLeft = this.selectionHelper.pointTopLeft;
-            const bottomRight = this.selectionHelper.pointBottomRight;
-
-            // TODO: unsure if we need to subtract canvas top-left.
-            let left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
-            let top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
-            let right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
-            let bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
-
-            console.log('top = %f, left = %f, right = %f, bottom = %f', top, left, right, bottom);
-
-            // Adapted from SelectionBox.js:
-            // https://github.com/mrdoob/three.js/blob/2ab27ea33ef2c991558e392d4f476ac08975be0d/examples/jsm/interactive/SelectionBox.js#L87
-
-            // TODO: unsure if we need this here.
-            this.camera.updateProjectionMatrix();
-            this.camera.updateMatrixWorld(true);
-
-			const cameraPos = new THREE.Vector3().setFromMatrixPosition(this.camera.matrixWorld);
-
-            const topLeftNear = new THREE.Vector3(left, top, 0).unproject(this.camera);
-            const bottomRightNear = new THREE.Vector3(right, bottom, 0).unproject(this.camera);
-            const topRightNear = new THREE.Vector3(right, top, 0).unproject(this.camera);
-			const bottomLeftNear = new THREE.Vector3(left, bottom, 0).unproject(this.camera);
-
-            const topLeftFar = this.nearToFar(topLeftNear, cameraPos);
-            const topRightFar = this.nearToFar(topRightNear, cameraPos);
-            const bottomRightFar = this.nearToFar(bottomRightNear, cameraPos);
-
-            const frustum = new THREE.Frustum();
-            const planes = frustum.planes;
-            planes[0].setFromCoplanarPoints(cameraPos, topLeftNear, topRightNear); // top
-            planes[1].setFromCoplanarPoints(cameraPos, topRightNear, bottomRightNear); // right
-            planes[2].setFromCoplanarPoints(bottomRightNear, bottomLeftNear, cameraPos); // bottom
-            planes[3].setFromCoplanarPoints(bottomLeftNear, topLeftNear, cameraPos); // left
-            planes[4].setFromCoplanarPoints(topRightNear, bottomRightNear, bottomLeftNear); // near
-            planes[5].setFromCoplanarPoints(topLeftFar, topRightFar, bottomRightFar); // far
-
-            const geometry = this.points.geometry;
-            const colors = geometry.getAttribute('color');
-            const positions = geometry.getAttribute('position');
-            let numSelected = 0;
-            for (let i = 0; i < positions.array.length; i += 3) {
-                const pos = new THREE.Vector3(
-                    positions.array[i],
-                    positions.array[i+1],
-                    positions.array[i+2],
-                );
-                if (frustum.containsPoint(pos)) {
-                    colors.array[i] = 1;
-                    colors.array[i+1] = 1;
-                    colors.array[i+2] = 1;
-                    numSelected++;
-                }
-            }
-            console.log('selected: %d', numSelected);
-            if (numSelected > 0) {
-                colors.needsUpdate = true;
-                this.rerender();
-            }
-        }
-    }
-
     handleControlClick() {
         console.log('handleControlClick');
         this.setControlCamera(!this.controls.enabled)
-    }
-
-    setControlCamera(value: boolean) {
-        this.controls.enabled = value;
-        this.selectionHelper.enabled = !value;
-        this.setState({controlCamera: value});
     }
 
     handlePlayClick() {
         console.log('handlePlayClick');
         this.setAutoRotate(!this.state.autoRotate);
         this.animate();
+    }
+
+    setControlCamera(value: boolean) {
+        this.controls.enabled = value;
+        this.selectionHelper.enabled = !value;
+        this.setState({controlCamera: value});
     }
 
     setAutoRotate(value: boolean) {
