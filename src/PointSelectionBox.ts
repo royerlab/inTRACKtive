@@ -43,18 +43,15 @@ class PointSelectionBox {
         scene: THREE.Scene,
         deep = Number.MAX_VALUE
     ) {
-
         this.camera = camera;
         this.scene = scene;
         this.startPoint = new THREE.Vector3();
         this.endPoint = new THREE.Vector3();
         this.collection = {};
         this.deep = deep;
-
     }
 
     select(startPoint?: THREE.Vector3, endPoint?: THREE.Vector3) {
-
         this.startPoint = startPoint ?? this.startPoint;
         this.endPoint = endPoint ?? this.endPoint;
         this.collection = {}
@@ -63,33 +60,25 @@ class PointSelectionBox {
         this.searchChildInFrustum(_frustum, this.scene);
 
         return this.collection;
-
     }
 
     updateFrustum(startPoint: THREE.Vector3, endPoint: THREE.Vector3) {
-
         startPoint = startPoint || this.startPoint;
         endPoint = endPoint || this.endPoint;
 
         // Avoid invalid frustum
-
         if (startPoint.x === endPoint.x) {
-
             endPoint.x += Number.EPSILON;
-
         }
 
         if (startPoint.y === endPoint.y) {
-
             endPoint.y += Number.EPSILON;
-
         }
 
         this.camera.updateProjectionMatrix();
         this.camera.updateMatrixWorld();
 
         if (isPerspectiveCamera(this.camera)) {
-
             _tmpPoint.copy(startPoint);
             _tmpPoint.x = Math.min(startPoint.x, endPoint.x);
             _tmpPoint.y = Math.max(startPoint.y, endPoint.y);
@@ -130,9 +119,7 @@ class PointSelectionBox {
             planes[4].setFromCoplanarPoints(_vecTopRight, _vecDownRight, _vecDownLeft);
             planes[5].setFromCoplanarPoints(_vectemp3, _vectemp2, _vectemp1);
             planes[5].normal.multiplyScalar(- 1);
-
         } else if (isOrthographicCamera(this.camera)) {
-
             const left = Math.min(startPoint.x, endPoint.x);
             const top = Math.max(startPoint.y, endPoint.y);
             const right = Math.max(startPoint.x, endPoint.x);
@@ -167,13 +154,9 @@ class PointSelectionBox {
             planes[4].setFromCoplanarPoints(_vecTopRight, _vecDownRight, _vecDownLeft);
             planes[5].setFromCoplanarPoints(_vecFarDownRight, _vecFarTopRight, _vecFarTopLeft);
             planes[5].normal.multiplyScalar(- 1);
-
         } else {
-
-            console.error('THREE.SelectionBox: Unsupported camera type.');
-
+            console.error('PointSelectionBox: Unsupported camera type.', this.camera);
         }
-
     }
 
     searchChildInFrustum(frustum: THREE.Frustum, object: THREE.Object3D) {
