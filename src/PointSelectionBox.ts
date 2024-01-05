@@ -1,28 +1,36 @@
-import * as THREE from 'three';
+import {
+    Frustum,
+    Object3D,
+    OrthographicCamera,
+    PerspectiveCamera,
+    Points,
+    Scene,
+    Vector3,
+} from 'three';
 
 /**
  * This is a class to check whether points in a Points object are in a selection area in 3D space
  * This borrows heavily from https://github.com/mrdoob/three.js/blob/r160/examples/jsm/interactive/SelectionBox.js
  */
 
-const _frustum = new THREE.Frustum();
+const _frustum = new Frustum();
 
-const _tmpPoint = new THREE.Vector3();
+const _tmpPoint = new Vector3();
 
-const _vecNear = new THREE.Vector3();
-const _vecTopLeft = new THREE.Vector3();
-const _vecTopRight = new THREE.Vector3();
-const _vecDownRight = new THREE.Vector3();
-const _vecDownLeft = new THREE.Vector3();
+const _vecNear = new Vector3();
+const _vecTopLeft = new Vector3();
+const _vecTopRight = new Vector3();
+const _vecDownRight = new Vector3();
+const _vecDownLeft = new Vector3();
 
-const _vecFarTopLeft = new THREE.Vector3();
-const _vecFarTopRight = new THREE.Vector3();
-const _vecFarDownRight = new THREE.Vector3();
-const _vecFarDownLeft = new THREE.Vector3();
+const _vecFarTopLeft = new Vector3();
+const _vecFarTopRight = new Vector3();
+const _vecFarDownRight = new Vector3();
+const _vecFarDownLeft = new Vector3();
 
-const _vectemp1 = new THREE.Vector3();
-const _vectemp2 = new THREE.Vector3();
-const _vectemp3 = new THREE.Vector3();
+const _vectemp1 = new Vector3();
+const _vectemp2 = new Vector3();
+const _vectemp3 = new Vector3();
 
 interface PointsCollection {
     // object_id : [point_index, point_index, ...]
@@ -31,27 +39,27 @@ interface PointsCollection {
 
 class PointSelectionBox {
 
-    camera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
-    scene: THREE.Scene;
-    startPoint: THREE.Vector3;
-    endPoint: THREE.Vector3;
+    camera: OrthographicCamera | PerspectiveCamera;
+    scene: Scene;
+    startPoint: Vector3;
+    endPoint: Vector3;
     collection: PointsCollection;
     deep: number;
 
     constructor(
-        camera: THREE.OrthographicCamera | THREE.PerspectiveCamera,
-        scene: THREE.Scene,
+        camera: OrthographicCamera | PerspectiveCamera,
+        scene: Scene,
         deep = Number.MAX_VALUE
     ) {
         this.camera = camera;
         this.scene = scene;
-        this.startPoint = new THREE.Vector3();
-        this.endPoint = new THREE.Vector3();
+        this.startPoint = new Vector3();
+        this.endPoint = new Vector3();
         this.collection = {};
         this.deep = deep;
     }
 
-    select(startPoint?: THREE.Vector3, endPoint?: THREE.Vector3) {
+    select(startPoint?: Vector3, endPoint?: Vector3) {
         this.startPoint = startPoint ?? this.startPoint;
         this.endPoint = endPoint ?? this.endPoint;
         this.collection = {}
@@ -62,7 +70,7 @@ class PointSelectionBox {
         return this.collection;
     }
 
-    updateFrustum(startPoint?: THREE.Vector3, endPoint?: THREE.Vector3) {
+    updateFrustum(startPoint?: Vector3, endPoint?: Vector3) {
         startPoint = startPoint || this.startPoint;
         endPoint = endPoint || this.endPoint;
 
@@ -159,11 +167,11 @@ class PointSelectionBox {
         }
     }
 
-    searchChildInFrustum(frustum: THREE.Frustum, object: THREE.Object3D) {
+    searchChildInFrustum(frustum: Frustum, object: Object3D) {
         if (isPoints(object)) {
             const geometry = object.geometry;
             const positionAttribute = geometry.getAttribute('position');
-            let _vec3 = new THREE.Vector3();
+            let _vec3 = new Vector3();
             for (let i = 0; i < positionAttribute.count; i++) {
                 _vec3.set(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
                 if (frustum.containsPoint(_vec3)) {
@@ -185,15 +193,15 @@ class PointSelectionBox {
 }
 
 // Type guards
-function isOrthographicCamera(obj: any): obj is THREE.OrthographicCamera {
+function isOrthographicCamera(obj: any): obj is OrthographicCamera {
     return obj && obj.isOrthographicCamera;
 }
 
-function isPerspectiveCamera(obj: any): obj is THREE.PerspectiveCamera {
+function isPerspectiveCamera(obj: any): obj is PerspectiveCamera {
     return obj && obj.isPerspectiveCamera;
 }
 
-function isPoints(obj: any): obj is THREE.Points {
+function isPoints(obj: any): obj is Points {
     return obj && obj.isPoints;
 }
 
