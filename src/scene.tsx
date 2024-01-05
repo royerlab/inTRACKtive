@@ -34,7 +34,7 @@ class Scene extends Component<SceneProps> {
     private selectionHelper: SelectionHelper;
     private selectionBox: PointSelectionBox;
 
-    state = { 
+    state = {
         numTimes: 0,
         curTime: 0,
         autoRotate: false,
@@ -110,39 +110,42 @@ class Scene extends Component<SceneProps> {
         this.setControlCamera(true);
     }
 
-    handlePointerUp(event: PointerEvent) {
+    handlePointerUp() {
         if (this.selectionHelper.enabled) {
             // Mouse to normalized render/canvas coords from:
             // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
             const canvas = this.renderer.domElement.getBoundingClientRect();
 
-            const bottomRight = this.selectionHelper.pointBottomRight;
-            const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
-            const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
-            console.log('right = %f, bottom = %f', right, bottom);
-
             const topLeft = this.selectionHelper.pointTopLeft;
             const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
             const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
-            console.log('top = %f, left = %f', top, left);
+
+            const bottomRight = this.selectionHelper.pointBottomRight;
+            const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
+            const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
+            console.debug(
+                'selectionHelper, top = %f, left = %f, bottom = %f, right = %f',
+                top, left, bottom, right,
+            );
 
             // TODO: check the z-value of these points
             this.selectionBox.startPoint.set(left, top, 0.5);
             this.selectionBox.endPoint.set(right, bottom, 0.5);
 
+            // TODO: consider restricting selection to a specific object
             const selection = this.selectionBox.select();
             console.debug("selected points:", selection);
-            const geometry = this.points.geometry as THREE.BufferGeometry;
-            const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
-            const color = new THREE.Color();
-            color.setRGB(1.0, 1.0, 1.0, THREE.SRGBColorSpace);
-            for (const i of selection[this.points.id]) {
-                colors.setXYZ(i, color.r, color.g, color.b);
-            }
-            if (selection[this.points.id].length > 0) {
+
+            if (this.points.id in selection) {
+                const geometry = this.points.geometry as THREE.BufferGeometry;
+                const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
+                const color = new THREE.Color(0xffffff);
+                for (const i of selection[this.points.id]) {
+                    colors.setXYZ(i, color.r, color.g, color.b);
+                }
                 colors.needsUpdate = true;
+                this.rerender();
             }
-            this.rerender();
         }
     }
 
@@ -201,7 +204,7 @@ class Scene extends Component<SceneProps> {
     setControlCamera(value: boolean) {
         this.controls.enabled = value;
         this.selectionHelper.enabled = !value;
-        this.setState({controlCamera: value});
+        this.setState({ controlCamera: value });
     }
 
     setAutoRotate(value: boolean) {

@@ -62,7 +62,7 @@ class PointSelectionBox {
         return this.collection;
     }
 
-    updateFrustum(startPoint: THREE.Vector3, endPoint: THREE.Vector3) {
+    updateFrustum(startPoint?: THREE.Vector3, endPoint?: THREE.Vector3) {
         startPoint = startPoint || this.startPoint;
         endPoint = endPoint || this.endPoint;
 
