@@ -76,7 +76,6 @@ export default function Scene(props: SceneProps) {
                 blending: THREE.AdditiveBlending,
                 depthTest: false,
                 transparent: true,
-                dithering: true,
             }
         );
         points.current = new THREE.Points(geometry, material);
