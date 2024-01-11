@@ -276,7 +276,7 @@ class Scene extends Component<SceneProps> {
 
         this.rerender();
 
-        this.node.appendChild(this.renderer.domElement);
+        this.node?.appendChild(this.renderer.domElement);
         // setTimeout(() => {
         //     this.base?.appendChild(this.renderer.domElement);
         // }, 1);
