@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "preact": "^10.19.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "three": "^0.159.0",
     "zarr": "^0.6.2"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.7.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
     "@types/three": "^0.159.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"

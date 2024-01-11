@@ -1,4 +1,4 @@
-This is TypeScript, using [Preact](https://preactjs.com/) bundled with [Vite](https://vitejs.dev/).
+This is TypeScript, using [React](https://react.dev/) bundled with [Vite](https://vitejs.dev/).
 
 Install with `npm install`
 

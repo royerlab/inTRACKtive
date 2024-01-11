@@ -1,5 +1,4 @@
-import { Component } from 'preact';
-import { ChangeEvent } from 'preact/compat';
+import { Component, ChangeEvent } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -33,6 +32,7 @@ class Scene extends Component<SceneProps> {
     private path: string;
     private selectionHelper: SelectionHelper;
     private selectionBox: PointSelectionBox;
+    private node: HTMLDivElement | null = null;
 
     state = {
         numTimes: 0,
@@ -106,8 +106,6 @@ class Scene extends Component<SceneProps> {
         const pathParts = url.pathname.split('/');
         this.path = pathParts.pop() || "";
         this.store = url.origin + pathParts.join('/');
-
-        this.setControlCamera(true);
     }
 
     handlePointerUp() {
@@ -223,11 +221,11 @@ class Scene extends Component<SceneProps> {
         }
     }
 
-    render(props: SceneProps) {
-        console.debug("Scene.render", props);
-        if (props.renderWidth && props.renderHeight) {
-            this.renderer.setSize(props.renderWidth, props.renderHeight);
-            this.composer.setSize(props.renderWidth, props.renderHeight);
+    render() {
+        console.debug("Scene.render", this.props);
+        if (this.props.renderWidth && this.props.renderHeight) {
+            this.renderer.setSize(this.props.renderWidth, this.props.renderHeight);
+            this.composer.setSize(this.props.renderWidth, this.props.renderHeight);
             this.rerender();
         }
         let handleTimeChange = this.handleTimeChange.bind(this);
@@ -238,22 +236,24 @@ class Scene extends Component<SceneProps> {
         const playLabel = this.state.autoRotate ? "Stop" : "Spin";
         const controlLabel = this.state.controlCamera ? "Camera" : "Select";
         return (
-            <div class="inputcontainer">
-                <input
-                    type="text" class="textinput" id="zarrURL"
-                    value={url}
-                    onChange={handleURLChange}
-                    style={{ color: this.array ? "black" : "red" }}
-                />
-                <button id="controlButton" onClick={handleControlClick}>{controlLabel}</button>
-                <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
-                <input
-                    type="range" min="0" max={this.state.numTimes - 1}
-                    disabled={this.array === undefined}
-                    value={this.state.curTime}
-                    class="slider" id="timeSlider" onChange={handleTimeChange}
-                />
-                <label for="timeSlider">{this.state.curTime} / {this.state.numTimes}</label>
+            <div ref={node => this.node = node}>
+                <div className="inputcontainer">
+                    <input
+                        type="text" className="textinput" id="zarrURL"
+                        value={url}
+                        onChange={handleURLChange}
+                        style={{ color: this.array ? "black" : "red" }}
+                    />
+                    <button id="controlButton" onClick={handleControlClick}>{controlLabel}</button>
+                    <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
+                    <input
+                        type="range" min="0" max={this.state.numTimes - 1}
+                        disabled={this.array === undefined}
+                        value={this.state.curTime}
+                        className="slider" id="timeSlider" onChange={handleTimeChange}
+                    />
+                    <label htmlFor="timeSlider">{this.state.curTime} / {this.state.numTimes}</label>
+                </div>
             </div>
         );
     }
@@ -276,11 +276,14 @@ class Scene extends Component<SceneProps> {
 
         this.rerender();
 
-        setTimeout(() => {
-            this.base?.appendChild(this.renderer.domElement);
-        }, 1);
+        this.node.appendChild(this.renderer.domElement);
+        // setTimeout(() => {
+        //     this.base?.appendChild(this.renderer.domElement);
+        // }, 1);
 
         this.fetchPointsAtTime(0);
+
+        this.setControlCamera(true);
     }
 
     async loadArray() {

@@ -1,21 +1,22 @@
-import { Component } from 'preact';
+import { Component } from 'react';
 import './app.css'
 import Scene from './scene.tsx'
 
 const aspectRatio = 4 / 3;
+
+interface AppProps {}
 
 interface AppState {
     renderWidth: number;
 }
 
 class App extends Component {
-    state: AppState;
+    state: AppState = {
+        renderWidth: 800,
+    }
 
-    constructor() {
-        super();
-        this.state = {
-            renderWidth: this.calculateRenderWidth(),
-        };
+    constructor(props: AppProps) {
+        super(props);
     }
 
     calculateRenderWidth() {
@@ -38,6 +39,7 @@ class App extends Component {
     componentDidMount() {
         const handleWindowResize = this.handleWindowResize.bind(this);
         window.addEventListener('resize', handleWindowResize);
+        this.handleWindowResize();
     }
 
     handleWindowResize() {
