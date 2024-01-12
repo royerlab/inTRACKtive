@@ -15,10 +15,12 @@
     "zarr": "^0.6.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
     "@types/three": "^0.159.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-config-react-app": "^7.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
