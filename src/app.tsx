@@ -1,27 +1,17 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import './app.css'
 import Scene from './scene.tsx'
 
 const aspectRatio = 4 / 3;
 
-interface AppProps {}
+export default function App() {
+    const [renderWidth, setRenderWidth] = useState(800);
 
-interface AppState {
-    renderWidth: number;
-}
-
-class App extends Component {
-    state: AppState = {
-        renderWidth: 800,
-    }
-
-    constructor(props: AppProps) {
-        super(props);
-    }
-
-    calculateRenderWidth() {
+    function handleWindowResize() {
         const windowWidth = window.innerWidth;
-        const appPadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-padding'));
+        const appPadding = parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--app-padding')
+        );
         let w: number;
         if (windowWidth < 800) {
             w = windowWidth;
@@ -32,31 +22,24 @@ class App extends Component {
         } else {
             w = 1200;
         }
-        const renderWidth = w - appPadding * 2;
-        return renderWidth < 0 ? windowWidth : renderWidth;
+        let renderWidth = w - appPadding * 2;
+        renderWidth = renderWidth < 0 ? windowWidth : renderWidth;
+        setRenderWidth(renderWidth);
     }
 
-    componentDidMount() {
-        const handleWindowResize = this.handleWindowResize.bind(this);
+    useEffect(() => {
+        handleWindowResize();
         window.addEventListener('resize', handleWindowResize);
-        this.handleWindowResize();
-    }
+        return () => {
+            window.removeEventListener('resize', handleWindowResize);
+        }
+    }, [renderWidth]);
 
-    handleWindowResize() {
-        this.setState({
-            renderWidth: this.calculateRenderWidth(),
-        });
-    }
 
-    render() {
-        const renderWidth = this.state.renderWidth || 800;
-        const renderHeight = renderWidth / aspectRatio;
-        return (
-            <>
-                <Scene renderWidth={renderWidth} renderHeight={renderHeight} />
-            </>
-        )
-    }
+    return (
+        <>
+            <Scene renderWidth={renderWidth} renderHeight={renderWidth / aspectRatio} />
+        </>
+    )
+
 }
-
-export default App;
