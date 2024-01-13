@@ -22,7 +22,7 @@ interface SceneProps {
 export default function Scene(props: SceneProps) {
 
     // TODO: make this a state variable?
-    const array = useRef<ZarrArray>();
+    const [array, setArray] = useState<ZarrArray>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useState(0);
@@ -31,7 +31,9 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    // Use references here to avoid adding dependencies in the below useEffect
+    // Use references here for two things:
+    // * to manage objects that should never change, even when the component re-renders
+    // * to avoid triggering re-renders when these change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const renderer = useRef<THREE.WebGLRenderer>();
     const scene = useRef<THREE.Scene>();
@@ -40,8 +42,8 @@ export default function Scene(props: SceneProps) {
     const controls = useRef<OrbitControls>();
     const aspect = useRef(renderWidth / renderHeight);
 
-
-    // useEffect here is intended to make this part run only on mount
+    // this useEffect is intended to make this part run only on mount
+    // this requires keeping the dependency array empty
     useEffect(() => {
         // Initialize renderer
         renderer.current = new THREE.WebGLRenderer();
@@ -83,6 +85,7 @@ export default function Scene(props: SceneProps) {
             }
             controls.current?.update();
         };
+        // start animating - this keeps the scene rendering when controls change, etc.
         animate()
 
         // TODO: add clean-up by returning another closure
@@ -94,9 +97,10 @@ export default function Scene(props: SceneProps) {
         const pathParts = dataUrl.pathname.split('/');
         const path = pathParts.pop() || "";
         const store = dataUrl.origin + pathParts.join('/');
-        array.current = loadArray(store, path);
+        const array = loadArray(store, path);
         // TODO: add clean-up by returning another closure
-        array.current?.then((array: ZarrArray) => {
+        array.then((array: ZarrArray) => {
+            setArray(array);
             setNumTimes(array.shape[0]);
             setCurTime(0);
         });
@@ -104,11 +108,11 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        array.current.then((array: ZarrArray) => {
+        if (array) {
             fetchPointsAtTime(array, curTime, points.current!);
-        });
+        }
         // TODO: add clean-up by returning another closure
-    }, [numTimes, curTime]);
+    }, [array, numTimes, curTime]);
 
     renderer.current?.setSize(renderWidth, renderHeight);
 
