@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -15,25 +16,25 @@ import { ZarrArray, slice, openArray } from "zarr";
 const DEFAULT_ZARR_URL = new URL("https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr");
 
 interface SceneProps {
-    renderWidth?: number;
+    renderWidth: number;
     renderHeight?: number;
 }
 
 export default function Scene(props: SceneProps) {
 
-    // TODO: make this a state variable?
+    const renderWidth = props.renderWidth || 800;
+    const renderHeight = props.renderHeight || 600;
+
     const [array, setArray] = useState<ZarrArray>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useState(0);
-    // const [autoRotate, setAutoRotate] = useState(false);
-
-    const renderWidth = props.renderWidth || 800;
-    const renderHeight = props.renderHeight || 600;
+    const [autoRotate, setAutoRotate] = useState(false);
+    const [playing, setPlaying] = useState(false);
 
     // Use references here for two things:
-    // * to manage objects that should never change, even when the component re-renders
-    // * to avoid triggering re-renders when these change
+    // * manage objects that should never change, even when the component re-renders
+    // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const renderer = useRef<THREE.WebGLRenderer>();
     const scene = useRef<THREE.Scene>();
@@ -45,9 +46,13 @@ export default function Scene(props: SceneProps) {
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
+        const divCurrent = divRef.current;
         // Initialize renderer
-        renderer.current = new THREE.WebGLRenderer();
-        divRef.current?.appendChild(renderer.current.domElement);
+        const rendererCurrent = new THREE.WebGLRenderer();
+        renderer.current = rendererCurrent;
+        // append renderer canvas
+        divCurrent?.appendChild(rendererCurrent.domElement);
+
         scene.current = new THREE.Scene();
         camera.current = new THREE.PerspectiveCamera(
             35,              // FOV
@@ -71,9 +76,9 @@ export default function Scene(props: SceneProps) {
 
         // TODO: add clean-up by returning another closure
         // Set up controls
-        controls.current = new OrbitControls(camera.current, renderer.current.domElement);
+        controls.current = new OrbitControls(camera.current, rendererCurrent.domElement);
         controls.current.target.set(target.x, target.y, target.z);
-        controls.current.autoRotateSpeed = 4;
+        controls.current.autoRotateSpeed = 1;
 
         // Animation function
         const animate = () => {
@@ -81,14 +86,17 @@ export default function Scene(props: SceneProps) {
 
             // Render the scene
             if (scene.current && camera.current) {
-                renderer.current?.render(scene.current, camera.current);
+                rendererCurrent?.render(scene.current, camera.current);
             }
             controls.current?.update();
         };
         // start animating - this keeps the scene rendering when controls change, etc.
         animate()
 
-        // TODO: add clean-up by returning another closure
+        return () => {
+            divCurrent?.removeChild(rendererCurrent?.domElement);
+            rendererCurrent?.dispose();
+        }
     }, []); // dependency array must be empty to run only on mount!
 
     // update the array when the dataUrl changes
@@ -106,48 +114,94 @@ export default function Scene(props: SceneProps) {
         });
     }, [dataUrl]);
 
+    // set the controls to auto-rotate
+    useEffect(() => {
+        controls.current && (controls.current.autoRotate = autoRotate);
+    }, [autoRotate]);
+
+    // playback time points
+    // TODO: this is basic and may drop frames
+    useEffect(() => {
+        if (playing) {
+            const frameDelay = 1000 / 8;  // 1000 / fps
+            const interval = setInterval(() => {
+                setCurTime((curTime + 1) % numTimes);
+            }, frameDelay);
+            return () => {
+                clearInterval(interval)
+            };
+        }
+    }, [numTimes, curTime, playing]);
+
     // update the points when the array or timepoint changes
     useEffect(() => {
-        if (array) {
+        let ignore = false;
+        // TODO: this is a very basic attempt to prevent stale data, and I don't
+        // know it actually works given how the fetching and rendering are done
+        // together in `fetchPointsAtTime`
+        // instead, perhaps debounce the input and verify the data is current
+        // before rendering it
+        if (array && !ignore) {
+            console.log('fetch points at time %d', curTime);
             fetchPointsAtTime(array, curTime, points.current!);
+        } else {
+            console.log('IGNORE fetch points at time %d', curTime);
         }
-        // TODO: add clean-up by returning another closure
-    }, [array, numTimes, curTime]);
+        return () => {
+            ignore = true;
+        }
+    }, [array, curTime]);
 
     renderer.current?.setSize(renderWidth, renderHeight);
+
+    // set up marks for the time slider
+    const spacing = 100;
+    const marks = [...Array(Math.round(numTimes / spacing)).keys()].map((i) => ({ value: i * spacing, label: i * spacing }));
+    marks.push({ value: numTimes - 1, label: numTimes - 1 });
 
     return (
         <div ref={divRef}>
             <div className="inputcontainer">
-                <input
-                    type="text" className="textinput" id="zarrURL"
+                <InputText
+                    id='url-input'
+                    label='Zarr URL'
+                    placeholder={DEFAULT_ZARR_URL.toString()}
                     value={dataUrl.toString()}
-                    onChange={(event) => setDataUrl(() => new URL(event.target.value))}
-                    style={{ color: array ? "black" : "red" }}
+                    onChange={e => setDataUrl(new URL(e.target.value))}
+                    fullWidth={true}
+                    intent={array ? "default" : "error"}
+                />
+                <InputSlider
+                    id="time-frame-slider"
+                    aria-labelledby="input-slider-time-frame"
+                    disabled={array === undefined}
+                    min={0}
+                    max={numTimes - 1}
+                    valueLabelDisplay='on'
+                    onChange={(_, value) => setCurTime(value as number)}
+                    marks={marks}
+                    value={curTime}
+                />
+                <InputToggle
+                    onLabel="Spin"
+                    offLabel="Spin"
+                    disabled={array === undefined}
+                    onChange={(e) => {
+                        setAutoRotate((e.target as HTMLInputElement).checked)
+                    }}
+                />
+                <InputToggle
+                    onLabel="Play"
+                    offLabel="Play"
+                    disabled={array === undefined}
+                    onChange={(e) => {
+                        setPlaying((e.target as HTMLInputElement).checked)
+                    }}
                 />
             </div>
         </div>
     );
 }
-//             <div ref={node => this.node = node}>
-//                 <div className="inputcontainer">
-//                     <input
-//                         type="text" className="textinput" id="zarrURL"
-//                         value={url}
-//                         onChange={handleURLChange}
-//                         style={{ color: this.array ? "black" : "red" }}
-//                     />
-//                     <button id="controlButton" onClick={handleControlClick}>{controlLabel}</button>
-//                     <button id="playButton" onClick={handlePlayClick}>{playLabel}</button>
-//                     <input
-//                         type="range" min="0" max={this.state.numTimes - 1}
-//                         disabled={this.array === undefined}
-//                         value={this.state.curTime}
-//                         className="slider" id="timeSlider" onChange={handleTimeChange}
-//                     />
-//                     <label htmlFor="timeSlider">{this.state.curTime} / {this.state.numTimes}</label>
-//                 </div>
-//             </div>
 
 
 async function loadArray(store: string, path: string) {
@@ -168,6 +222,7 @@ async function loadArray(store: string, path: string) {
 
 
 async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: THREE.Points) {
+    // TODO: split this function - it fetches points *and* renders them
     console.log('fetchPointsAtTime: %d', timeIndex);
     const maxPoints = array.shape[1] / 3;
     // TODO: somewhat arbitrary right. Should calculate some number that would
@@ -176,11 +231,21 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: TH
 
     // Initialize the geometry attributes.
     const geometry = points.geometry;
-    const positions = new Float32Array(3 * maxPoints);
-    const colors = new Float32Array(3 * maxPoints);
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geometry.setDrawRange(0, 0)
+    if (!geometry.getAttribute('position')) {
+        geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
+        );
+        // prevent drawing uninitialized points at the origin
+        geometry.setDrawRange(0, 0)
+    }
+    if (!geometry.getAttribute('color')) {
+        geometry.setAttribute(
+            'color',
+            new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
+        );
+    }
+    // don't reset draw range here, it causes flickering
 
     // Initialize all the colors immediately.
     const color = new THREE.Color();
@@ -199,6 +264,7 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: TH
     for (let i = 0, pointIndex = 0; i < maxPoints; i += trackChunkSize) {
         const start = 3 * i;
         const end = Math.min(array.shape[1], 3 * (i + trackChunkSize));
+        // TODO: try/catch here as some requests will fail
         const points = await array.get([timeIndex, slice(start, end)]);
         const coords = points.data;
 
@@ -209,11 +275,15 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: TH
                 pointIndex++;
             }
         }
-        positionAttribute.needsUpdate = true;
-
         geometry.setDrawRange(0, pointIndex)
+        positionAttribute.needsUpdate = true;
         geometry.computeBoundingSphere();
 
-        console.log("added points up to %d as %d", i + trackChunkSize, pointIndex);
+        console.log(
+            "added points for timepoint %d, up to %d as %d",
+            timeIndex,
+            i + trackChunkSize,
+            pointIndex
+        );
     }
 }
