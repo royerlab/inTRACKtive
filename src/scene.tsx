@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 // import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 // import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-// import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
+import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 // import { PointSelectionBox } from './PointSelectionBox';
 
 // @ts-expect-error
@@ -31,6 +31,7 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useState(0);
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
+    const [selecting, setSelecting] = useState(false);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
@@ -41,16 +42,18 @@ export default function Scene(props: SceneProps) {
     const points = useRef<THREE.Points>();
     const camera = useRef<THREE.PerspectiveCamera>();
     const controls = useRef<OrbitControls>();
+    const selectionHelper = useRef<SelectionHelper>();
     const aspect = useRef(renderWidth / renderHeight);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
-        const divCurrent = divRef.current;
         // Initialize renderer
         const rendererCurrent = new THREE.WebGLRenderer();
         renderer.current = rendererCurrent;
+
         // append renderer canvas
+        const divCurrent = divRef.current;
         divCurrent?.appendChild(rendererCurrent.domElement);
 
         scene.current = new THREE.Scene();
@@ -60,6 +63,22 @@ export default function Scene(props: SceneProps) {
             0.1,             // Near
             10000            // Far
         );
+
+        selectionHelper.current = new SelectionHelper(rendererCurrent, 'selectBox');
+        selectionHelper.current.enabled = false;
+        const keydown = (event) => {
+            if (event.repeat) { return; } // ignore repeats (key held down)
+            if (event.key === 's') {
+                setSelecting(true);
+            }
+        };
+        const keyup = (event) => {
+            if (event.key === 's') {
+                setSelecting(false);
+            }
+        };
+        document.addEventListener('keydown', keydown);
+        document.addEventListener('keyup', keyup);
 
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
@@ -96,8 +115,18 @@ export default function Scene(props: SceneProps) {
         return () => {
             divCurrent?.removeChild(rendererCurrent?.domElement);
             rendererCurrent?.dispose();
+            points.current?.geometry.dispose();
+            points.current?.material.dispose();
+            selectionHelper.current?.dispose();
+            document.removeEventListener('keydown', keydown);
+            document.removeEventListener('keyup', keyup);
         }
     }, []); // dependency array must be empty to run only on mount!
+
+    if (selectionHelper.current && controls.current) {
+        selectionHelper.current.enabled = selecting;
+        controls.current.enabled = !selecting;
+    }
 
     // update the array when the dataUrl changes
     useEffect(() => {
