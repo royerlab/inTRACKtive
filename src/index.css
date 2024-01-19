@@ -21,18 +21,20 @@
 }
 
 .inputcontainer {
-  width: 100%; /* Width of the outside container */
-  padding: 0.5em 0.5em 0.5em 0.5em; /* Add some padding */
-}
-
-.textinput {
-  font-size: 12pt;
   width: 100%; /* Full-width */
+  margin: 1em 0;
+  display: flex;
+  gap: 1em;
+  flex-direction: column;
 }
 
-.slider {
-  width: 80%;
-  vertical-align: middle;
+.buttoncontainer {
+  width: 100%; /* Full-width */
+  margin: 1em 0;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  justify-content: flex-start;
 }
 
 /* From https://github.com/mrdoob/three.js/blob/master/examples/misc_boxselection.html */

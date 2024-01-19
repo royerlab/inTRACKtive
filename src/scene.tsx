@@ -73,7 +73,7 @@ export default function Scene(props: SceneProps) {
         scene.current.add(points.current);
 
         // Default position from interacting with ZSNS001
-        // TODO: this should be reset when the data changes
+        // TODO: this should be set/reset when the data changes
         const target = new THREE.Vector3(500, 500, 250);
         camera.current.position.set(target.x, target.y, target.z - 1500);
         camera.current.lookAt(target.x, target.y, target.z);
@@ -265,22 +265,24 @@ export default function Scene(props: SceneProps) {
                     marks={marks}
                     value={curTime}
                 />
-                <InputToggle
-                    onLabel="Spin"
-                    offLabel="Spin"
-                    disabled={array === undefined}
-                    onChange={(e) => {
-                        setAutoRotate((e.target as HTMLInputElement).checked)
-                    }}
-                />
-                <InputToggle
-                    onLabel="Play"
-                    offLabel="Play"
-                    disabled={array === undefined}
-                    onChange={(e) => {
-                        setPlaying((e.target as HTMLInputElement).checked)
-                    }}
-                />
+                <div className="buttoncontainer">
+                    <InputToggle
+                        onLabel="Spin"
+                        offLabel="Spin"
+                        disabled={array === undefined}
+                        onChange={(e) => {
+                            setAutoRotate((e.target as HTMLInputElement).checked)
+                        }}
+                    />
+                    <InputToggle
+                        onLabel="Play"
+                        offLabel="Play"
+                        disabled={array === undefined}
+                        onChange={(e) => {
+                            setPlaying((e.target as HTMLInputElement).checked)
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );
