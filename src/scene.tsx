@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 // import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
-// import { PointSelectionBox } from './PointSelectionBox';
+import { PointSelectionBox } from './PointSelectionBox';
 
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
@@ -43,6 +43,7 @@ export default function Scene(props: SceneProps) {
     const camera = useRef<THREE.PerspectiveCamera>();
     const controls = useRef<OrbitControls>();
     const selectionHelper = useRef<SelectionHelper>();
+    const selectionBox = useRef<PointSelectionBox>();
     const aspect = useRef(renderWidth / renderHeight);
 
     // this useEffect is intended to make this part run only on mount
@@ -64,22 +65,6 @@ export default function Scene(props: SceneProps) {
             10000            // Far
         );
 
-        selectionHelper.current = new SelectionHelper(rendererCurrent, 'selectBox');
-        selectionHelper.current.enabled = false;
-        const keydown = (event) => {
-            if (event.repeat) { return; } // ignore repeats (key held down)
-            if (event.key === 's') {
-                setSelecting(true);
-            }
-        };
-        const keyup = (event) => {
-            if (event.key === 's') {
-                setSelecting(false);
-            }
-        };
-        document.addEventListener('keydown', keydown);
-        document.addEventListener('keyup', keyup);
-
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
         points.current = new THREE.Points(geometry, material);
@@ -92,6 +77,68 @@ export default function Scene(props: SceneProps) {
         const target = new THREE.Vector3(500, 500, 250);
         camera.current.position.set(target.x, target.y, target.z - 1500);
         camera.current.lookAt(target.x, target.y, target.z);
+
+        selectionHelper.current = new SelectionHelper(rendererCurrent, 'selectBox');
+        selectionHelper.current.enabled = false;
+        const keyDown = (event: KeyboardEvent) => {
+            if (event.repeat) { return; } // ignore repeats (key held down)
+            if (event.key === 'Shift') {
+                setSelecting(true);
+            }
+        };
+        const keyUp = (event: KeyboardEvent) => {
+            if (event.key === 'Shift') {
+                setSelecting(false);
+            }
+        };
+        // key listeners are added to the document because we don't want the
+        // canvase to have to be selected prior to listening for them
+        document.addEventListener('keydown', keyDown);
+        document.addEventListener('keyup', keyUp);
+        selectionBox.current = new PointSelectionBox(camera.current, scene.current);
+
+        const pointerUp = () => {
+            if (
+                selectionBox.current
+                && selectionHelper.current
+                && selectionHelper.current.enabled
+            ) {
+                // Mouse to normalized render/canvas coords from:
+                // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+                const canvas = rendererCurrent.domElement.getBoundingClientRect();
+
+                const topLeft = selectionHelper.current.pointTopLeft;
+                const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
+                const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
+
+                const bottomRight = selectionHelper.current.pointBottomRight;
+                const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
+                const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
+                console.debug(
+                    'selectionHelper, top = %f, left = %f, bottom = %f, right = %f',
+                    top, left, bottom, right,
+                );
+
+                // TODO: check the z-value of these points
+                selectionBox.current.startPoint.set(left, top, 0.5);
+                selectionBox.current.endPoint.set(right, bottom, 0.5);
+
+                // TODO: consider restricting selection to a specific object
+                const selection = selectionBox.current.select();
+                console.debug("selected points:", selection);
+
+                if (points.current && points.current.id in selection) {
+                    const geometry = points.current.geometry as THREE.BufferGeometry;
+                    const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
+                    const color = new THREE.Color(0xffffff);
+                    for (const i of selection[points.current.id]) {
+                        colors.setXYZ(i, color.r, color.g, color.b);
+                    }
+                    colors.needsUpdate = true;
+                }
+            }
+        }
+        rendererCurrent.domElement.addEventListener('pointerup', pointerUp);
 
         // TODO: add clean-up by returning another closure
         // Set up controls
@@ -113,13 +160,20 @@ export default function Scene(props: SceneProps) {
         animate()
 
         return () => {
-            divCurrent?.removeChild(rendererCurrent?.domElement);
-            rendererCurrent?.dispose();
+            rendererCurrent.domElement.removeEventListener('pointerup', pointerUp);
+            rendererCurrent.domElement.remove();
+            rendererCurrent.dispose();
             points.current?.geometry.dispose();
-            points.current?.material.dispose();
+            if (Array.isArray(points.current?.material)) {
+                for (const material of points.current?.material) {
+                    material.dispose();
+                }
+            } else {
+                points.current?.material.dispose();
+            }
             selectionHelper.current?.dispose();
-            document.removeEventListener('keydown', keydown);
-            document.removeEventListener('keyup', keyup);
+            document.removeEventListener('keydown', keyDown);
+            document.removeEventListener('keyup', keyUp);
         }
     }, []); // dependency array must be empty to run only on mount!
 
