@@ -316,7 +316,10 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: TH
 
     // Initialize the geometry attributes.
     const geometry = points.geometry;
-    if (!geometry.getAttribute('position')) {
+    if (
+        !geometry.getAttribute('position')
+        || geometry.getAttribute('position').count !== maxPoints
+    ) {
         geometry.setAttribute(
             'position',
             new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
@@ -324,7 +327,10 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: TH
         // prevent drawing uninitialized points at the origin
         geometry.setDrawRange(0, 0)
     }
-    if (!geometry.getAttribute('color')) {
+    if (
+        !geometry.getAttribute('color')
+        || geometry.getAttribute('color').count !== maxPoints
+    ) {
         geometry.setAttribute(
             'color',
             new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
