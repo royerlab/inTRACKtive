@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-// import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-// import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-// import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-// import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 import { PointSelectionBox } from './PointSelectionBox';
 
@@ -38,9 +38,11 @@ export default function Scene(props: SceneProps) {
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const renderer = useRef<THREE.WebGLRenderer>();
+    const composer = useRef<EffectComposer>();
+    const bloomPass = useRef<UnrealBloomPass>();
     const scene = useRef<THREE.Scene>();
-    const points = useRef<THREE.Points>();
     const camera = useRef<THREE.PerspectiveCamera>();
+    const points = useRef<THREE.Points>();
     const controls = useRef<OrbitControls>();
     const selectionHelper = useRef<SelectionHelper>();
     const selectionBox = useRef<PointSelectionBox>();
@@ -77,6 +79,19 @@ export default function Scene(props: SceneProps) {
         const target = new THREE.Vector3(500, 500, 250);
         camera.current.position.set(target.x, target.y, target.z - 1500);
         camera.current.lookAt(target.x, target.y, target.z);
+
+        const renderModel = new RenderPass(scene.current, camera.current);
+        bloomPass.current = new UnrealBloomPass(
+            new THREE.Vector2(renderWidth, renderHeight), // resolution
+            0.5, // strength
+            0, // radius
+            0  // threshold
+        );
+        const outputPass = new OutputPass();
+        composer.current = new EffectComposer(rendererCurrent);
+        composer.current.addPass(renderModel);
+        composer.current.addPass(bloomPass.current);
+        composer.current.addPass(outputPass);
 
         selectionHelper.current = new SelectionHelper(rendererCurrent, 'selectBox');
         selectionHelper.current.enabled = false;
@@ -154,9 +169,7 @@ export default function Scene(props: SceneProps) {
             requestAnimationFrame(animate);
 
             // Render the scene
-            if (scene.current && camera.current) {
-                rendererCurrent?.render(scene.current, camera.current);
-            }
+            composer.current?.render();
             controls.current?.update();
         };
         // start animating - this keeps the scene rendering when controls change, etc.
@@ -238,7 +251,11 @@ export default function Scene(props: SceneProps) {
         }
     }, [array, curTime]);
 
+    // update the renderer and composer when the render size changes
+    // TODO: check performance and avoid if unchanged
+    bloomPass.current?.resolution.set(renderWidth, renderHeight);
     renderer.current?.setSize(renderWidth, renderHeight);
+    composer.current?.setSize(renderWidth, renderHeight);
 
     // set up marks for the time slider
     const spacing = 100;
