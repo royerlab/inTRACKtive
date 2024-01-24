@@ -97,6 +97,9 @@ export default function Scene(props: SceneProps) {
         document.addEventListener('keyup', keyUp);
         selectionBox.current = new PointSelectionBox(camera.current, scene.current);
 
+        // TODO: move this out of the component and improve the behavior when
+        // pressing/releasing the mouse and shift key in different orders
+        // note: this is a problem in the production version as well
         const pointerUp = () => {
             if (
                 selectionBox.current
