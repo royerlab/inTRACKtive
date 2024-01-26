@@ -58,7 +58,7 @@ class Canvas {
 
         scene.add(new THREE.AxesHelper(128));
         scene.add(this.points);
-        scene.current.fog = new THREE.FogExp2(0x000000, 0.0005);  // default is 0.00025
+        scene.fog = new THREE.FogExp2(0x000000, 0.0005);  // default is 0.00025
 
         // Effect composition.
         const renderModel = new RenderPass(scene, camera);
