@@ -146,6 +146,35 @@ class Canvas {
         this.controls.enabled = !selecting;
     }
 
+    initPointsGeometry(numPoints: number) {
+        const geometry = this.points.geometry;
+        if (!geometry.hasAttribute('position') || geometry.getAttribute('position').count !== numPoints) {
+            geometry.setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(new Float32Array(3 * numPoints), 3),
+            );
+            // prevent drawing uninitialized points at the origin
+            geometry.setDrawRange(0, 0)
+        }
+        if (!geometry.hasAttribute('color') || geometry.getAttribute('color').count !== numPoints) {
+            geometry.setAttribute(
+                'color',
+                new THREE.Float32BufferAttribute(new Float32Array(3 * numPoints), 3),
+            );
+        }
+        // Initialize all the colors immediately.
+        const color = new THREE.Color();
+        const colorAttribute = geometry.getAttribute('color');
+        for (let i = 0; i < numPoints; i++) {
+            const r = Math.random();
+            const g = Math.random();
+            const b = Math.random();
+            color.setRGB(r, g, b, THREE.SRGBColorSpace);
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+    }
+
     dispose() {
         this.renderer.domElement.removeEventListener('pointerup', this.pointerUp);
         this.renderer.dispose();
@@ -263,44 +292,10 @@ export default function Scene(props: SceneProps) {
         }
     }, [numTimes, curTime, playing]);
 
-    // update the buffers when the array changes
+    // update the geometry buffers when the array changes
     useEffect(() => {
         if (!array) return;
-        const maxPoints = array.shape[1] / 3;
-
-        const geometry = canvas.current?.points.geometry as THREE.BufferGeometry;
-        if (
-            !geometry.getAttribute('position')
-            || geometry.getAttribute('position').count !== maxPoints
-        ) {
-            geometry.setAttribute(
-                'position',
-                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-            );
-            // prevent drawing uninitialized points at the origin
-            geometry.setDrawRange(0, 0)
-        }
-        if (
-            !geometry.getAttribute('color')
-            || geometry.getAttribute('color').count !== maxPoints
-        ) {
-            geometry.setAttribute(
-                'color',
-                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-            );
-        }
-
-        // Initialize all the colors immediately.
-        const color = new THREE.Color();
-        const colorAttribute = geometry.getAttribute('color');
-        for (let i = 0; i < maxPoints; i++) {
-            const r = Math.random();
-            const g = Math.random();
-            const b = Math.random();
-            color.setRGB(r, g, b, THREE.SRGBColorSpace);
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
+        canvas.current?.initPointsGeometry(array.shape[1] / 3);
     }, [array]);
 
     // update the points when the array or timepoint changes
