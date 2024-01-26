@@ -1,4 +1,20 @@
-import { AdditiveBlending, AxesHelper, BufferGeometry, Color, Float32BufferAttribute, FogExp2, PerspectiveCamera, Points, PointsMaterial, Scene, SRGBColorSpace, TextureLoader, Vector2, Vector3, WebGLRenderer } from 'three';
+import {
+    AdditiveBlending,
+    AxesHelper,
+    BufferGeometry,
+    Color,
+    Float32BufferAttribute,
+    FogExp2,
+    PerspectiveCamera,
+    Points,
+    PointsMaterial,
+    Scene,
+    SRGBColorSpace,
+    TextureLoader,
+    Vector2,
+    Vector3,
+    WebGLRenderer
+} from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -6,9 +22,6 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 import { PointSelectionBox } from './PointSelectionBox';
-
-// @ts-expect-error
-import { ZarrArray, slice, openArray } from "zarr";
 
 
 export class Canvas {
