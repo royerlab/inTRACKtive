@@ -68,11 +68,22 @@ export default function Scene(props: SceneProps) {
         );
 
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
+        const material = new THREE.PointsMaterial(
+            {
+                size: 16.0,
+                map: new THREE.TextureLoader().load("/spark1.png"),
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true,
+                dithering: true,
+            }
+        );
         points.current = new THREE.Points(geometry, material);
 
         scene.current.add(new THREE.AxesHelper(128));
         scene.current.add(points.current);
+        scene.current.fog = new THREE.FogExp2(0x000000, 0.0007);  // default is 0.00025
 
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
