@@ -290,19 +290,20 @@ export default function Scene(props: SceneProps) {
         // before rendering it
         if (array && !ignore) {
             console.debug('fetch points at time %d', curTime);
-            fetchPointsAtTime(array, curTime).then(([data, pointIndex]) => {
-                console.debug('got %d points for time %d', pointIndex, curTime);
+            fetchPointsAtTime(array, curTime).then(data => {
+                const numPoints = data.length / 3;
+                console.debug('got %d points for time %d', numPoints, curTime);
                 if (ignore) {
                     console.debug('IGNORE SET points at time %d', curTime);
                     return;
                 }
                 const geometry = points.current?.geometry as THREE.BufferGeometry;
                 const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
-                for (let i = 0; i < pointIndex; i++) {
+                for (let i = 0; i < numPoints; i++) {
                     positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
                 }
                 positions.needsUpdate = true;
-                geometry.setDrawRange(0, pointIndex);
+                geometry.setDrawRange(0, numPoints);
                 points.current?.geometry.computeBoundingSphere();
             });
         } else {
@@ -390,34 +391,18 @@ async function loadArray(store: string, path: string) {
 }
 
 
-// TODO: turn this into a class to prevent re-allocating the data array
-// TODO: use local storage to cache the data instead of relying on browser cache
-async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<[Float32Array, number]>{
+async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<Float32Array>{
     console.debug('fetchPointsAtTime: %d', timeIndex);
-    const maxPoints = array.shape[1] / 3;
-    // TODO: somewhat arbitrary right. Should calculate some number that would
-    // be reasonable for slow connections or use the chunk size.
-    const trackChunkSize = 100_000;
 
-    // Load the positions progressively.
-    const data = new Float32Array(3 * maxPoints);
-    let pointIndex = 0;
+    const points: Float32Array = (await array.get([timeIndex, slice(null)])).data;
 
-    for (let i = 0; i < maxPoints; i += trackChunkSize) {
-        const start = 3 * i;
-        const end = Math.min(array.shape[1], 3 * (i + trackChunkSize));
-        // TODO: try/catch here as some requests will fail
-        const points = (await array.get([timeIndex, slice(start, end)])).data;
-
-        for (let j = 0; j < points.length; j += 3) {
-            // TODO: this seems to work for the int8 data, but not sure it's correct
-            if (points[j] > -128) {
-                data[pointIndex * 3] = points[j];
-                data[pointIndex * 3 + 1] = points[j + 1];
-                data[pointIndex * 3 + 2] = points[j + 2];
-                pointIndex++;
-            }
-        }
+    // assume points < -127 are invalid, and all are at the end of the array
+    // this is how the jagged array is stored in the zarr
+    // for Float32 it's actually -9999, but the int8 data is -127
+    let endIndex = points.findIndex(value => value <= -127);
+    if (endIndex % 3 !== 0) {
+        console.error('invalid points - not divisible by 3');
+        endIndex -= endIndex % 3;
     }
-    return [data, pointIndex];
+    return points.subarray(0, endIndex);
 }
