@@ -26,7 +26,7 @@ class Canvas {
 
     constructor(width: number, height: number) {
         const aspect = width / height;
-    
+
         const scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer();
 
@@ -44,17 +44,27 @@ class Canvas {
         camera.lookAt(target.x, target.y, target.z);
 
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.PointsMaterial({ size: 5.0, vertexColors: true });
+        const material = new THREE.PointsMaterial(
+            {
+                size: 16.0,
+                map: new THREE.TextureLoader().load("/spark1.png"),
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true,
+            }
+        );
         this.points = new THREE.Points(geometry, material);
 
         scene.add(new THREE.AxesHelper(128));
         scene.add(this.points);
+        scene.current.fog = new THREE.FogExp2(0x000000, 0.0005);  // default is 0.00025
 
         // Effect composition.
         const renderModel = new RenderPass(scene, camera);
         this.bloomPass = new UnrealBloomPass(
             new THREE.Vector2(width, height), // resolution
-            0.5, // strength
+            0.4, // strength
             0, // radius
             0  // threshold
         );
