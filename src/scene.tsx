@@ -8,7 +8,6 @@ import { ZarrArray, slice, openArray } from "zarr";
 
 const DEFAULT_ZARR_URL = new URL("https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr");
 
-
 interface SceneProps {
     renderWidth: number;
     renderHeight?: number;
@@ -217,7 +216,9 @@ async function loadArray(store: string, path: string) {
 
 async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<Float32Array>{
     console.debug('fetchPointsAtTime: %d', timeIndex);
+
     const points: Float32Array = (await array.get([timeIndex, slice(null)])).data;
+
     // assume points < -127 are invalid, and all are at the end of the array
     // this is how the jagged array is stored in the zarr
     // for Float32 it's actually -9999, but the int8 data is -127
