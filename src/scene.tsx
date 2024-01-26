@@ -175,6 +175,18 @@ class Canvas {
         colorAttribute.needsUpdate = true;
     }
 
+    setPointsPositions(data: Float32Array) {
+        const numPoints = data.length / 3;
+        const geometry = this.points.geometry;
+        const positions = geometry.getAttribute('position');
+        for (let i = 0; i < numPoints; i++) {
+            positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
+        }
+        positions.needsUpdate = true;
+        geometry.setDrawRange(0, numPoints);
+        this.points.geometry.computeBoundingSphere();
+    }
+
     dispose() {
         this.renderer.domElement.removeEventListener('pointerup', this.pointerUp);
         this.renderer.dispose();
@@ -307,21 +319,12 @@ export default function Scene(props: SceneProps) {
         if (array && !ignore) {
             console.debug('fetch points at time %d', curTime);
             fetchPointsAtTime(array, curTime).then(data => {
-                const numPoints = data.length / 3;
-                console.debug('got %d points for time %d', numPoints, curTime);
+                console.debug('got %d points for time %d', data.length / 3, curTime);
                 if (ignore) {
                     console.debug('IGNORE SET points at time %d', curTime);
                     return;
                 }
-                const points = canvas.current!.points;
-                const geometry = points.geometry as THREE.BufferGeometry;
-                const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
-                for (let i = 0; i < numPoints; i++) {
-                    positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
-                }
-                positions.needsUpdate = true;
-                geometry.setDrawRange(0, numPoints);
-                points.geometry.computeBoundingSphere();
+                canvas.current?.setPointsPositions(data);
             });
         } else {
             console.debug('IGNORE FETCH points at time %d', curTime);
