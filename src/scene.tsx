@@ -208,7 +208,7 @@ export default function Scene(props: SceneProps) {
         };
 
         // key listeners are added to the document because we don't want the
-        // canvase to have to be selected prior to listening for them
+        // canvas to have to be selected prior to listening for them
         document.addEventListener('keydown', keyDown);
         document.addEventListener('keyup', keyUp);
 
