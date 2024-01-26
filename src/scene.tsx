@@ -74,8 +74,7 @@ class Canvas {
         this.selectionBox = new PointSelectionBox(camera, scene);
         // TODO: improve the behavior when pressing/releasing the mouse and
         // shift key in different orders
-        const pointerUp = this.pointerUp.bind(this);
-        this.renderer.domElement.addEventListener('pointerup', pointerUp);
+        this.renderer.domElement.addEventListener('pointerup', this.pointerUp);
 
         // TODO: add clean-up by returning another closure
         // Set up controls
@@ -84,26 +83,14 @@ class Canvas {
         this.controls.autoRotateSpeed = 1;
     }
 
-    animate() {
-        const animate = this.animate.bind(this);
-        requestAnimationFrame(animate);
+    animate = () => {
+        requestAnimationFrame(this.animate);
         // Render the scene
         this.composer.render();
         this.controls.update();
     }
 
-    setSize(width: number, height: number) {
-        this.bloomPass.resolution.set(width, height);
-        this.renderer.setSize(width, height);
-        this.composer.setSize(width, height);
-    }
-
-    setSelecting(selecting: boolean) {
-        this.selectionHelper.enabled = selecting;
-        this.controls.enabled = !selecting;
-    }
-
-    pointerUp() {
+    pointerUp = () => {
         console.log("pointerUp: %s", this.selectionHelper.enabled);
         if (this.selectionHelper && this.selectionHelper.enabled) {
             // Mouse to normalized render/canvas coords from:
@@ -140,6 +127,17 @@ class Canvas {
                 colors.needsUpdate = true;
             }
         }
+    }
+
+    setSize(width: number, height: number) {
+        this.bloomPass.resolution.set(width, height);
+        this.renderer.setSize(width, height);
+        this.composer.setSize(width, height);
+    }
+
+    setSelecting(selecting: boolean) {
+        this.selectionHelper.enabled = selecting;
+        this.controls.enabled = !selecting;
     }
 
     dispose() {
