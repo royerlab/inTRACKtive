@@ -242,19 +242,72 @@ export default function Scene(props: SceneProps) {
         }
     }, [numTimes, curTime, playing]);
 
+    // update the buffers when the array changes
+    useEffect(() => {
+        if (!array) return;
+        const maxPoints = array.shape[1] / 3;
+
+        const geometry = points.current?.geometry as THREE.BufferGeometry;
+        if (
+            !geometry.getAttribute('position')
+            || geometry.getAttribute('position').count !== maxPoints
+        ) {
+            geometry.setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
+            );
+            // prevent drawing uninitialized points at the origin
+            geometry.setDrawRange(0, 0)
+        }
+        if (
+            !geometry.getAttribute('color')
+            || geometry.getAttribute('color').count !== maxPoints
+        ) {
+            geometry.setAttribute(
+                'color',
+                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
+            );
+        }
+
+        // Initialize all the colors immediately.
+        const color = new THREE.Color();
+        const colorAttribute = geometry.getAttribute('color');
+        for (let i = 0; i < maxPoints; i++) {
+            const r = Math.random();
+            const g = Math.random();
+            const b = Math.random();
+            color.setRGB(r, g, b, THREE.SRGBColorSpace);
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+    }, [array]);
+
     // update the points when the array or timepoint changes
     useEffect(() => {
         let ignore = false;
-        // TODO: this is a very basic attempt to prevent stale data, and I don't
-        // know it actually works given how the fetching and rendering are done
-        // together in `fetchPointsAtTime`
-        // instead, perhaps debounce the input and verify the data is current
+        // TODO: this is a very basic attempt to prevent stale data
+        // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (array && !ignore) {
-            console.log('fetch points at time %d', curTime);
-            fetchPointsAtTime(array, curTime, points.current!);
+            console.debug('fetch points at time %d', curTime);
+            fetchPointsAtTime(array, curTime).then(data => {
+                const numPoints = data.length / 3;
+                console.debug('got %d points for time %d', numPoints, curTime);
+                if (ignore) {
+                    console.debug('IGNORE SET points at time %d', curTime);
+                    return;
+                }
+                const geometry = points.current?.geometry as THREE.BufferGeometry;
+                const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
+                for (let i = 0; i < numPoints; i++) {
+                    positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
+                }
+                positions.needsUpdate = true;
+                geometry.setDrawRange(0, numPoints);
+                points.current?.geometry.computeBoundingSphere();
+            });
         } else {
-            console.log('IGNORE fetch points at time %d', curTime);
+            console.debug('IGNORE FETCH points at time %d', curTime);
         }
         return () => {
             ignore = true;
@@ -269,7 +322,9 @@ export default function Scene(props: SceneProps) {
 
     // set up marks for the time slider
     const spacing = 100;
-    const marks = [...Array(Math.round(numTimes / spacing)).keys()].map((i) => ({ value: i * spacing, label: i * spacing }));
+    const marks = [...Array(Math.round(numTimes / spacing)).keys()].map(
+        (i) => ({ value: i * spacing, label: i * spacing })
+    );
     marks.push({ value: numTimes - 1, label: numTimes - 1 });
 
     return (
@@ -331,80 +386,23 @@ async function loadArray(store: string, path: string) {
         console.error("Error opening array: %s", err);
         array = undefined;
     }
-    console.log('array: %s', array);
+    console.log('loaded new array: %s', array);
     return array;
 }
 
 
-async function fetchPointsAtTime(array: ZarrArray, timeIndex: number, points: THREE.Points) {
-    // TODO: split this function - it fetches points *and* renders them
-    console.log('fetchPointsAtTime: %d', timeIndex);
-    const maxPoints = array.shape[1] / 3;
-    // TODO: somewhat arbitrary right. Should calculate some number that would
-    // be reasonable for slow connections or use the chunk size.
-    const trackChunkSize = 100_000;
+async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<Float32Array>{
+    console.debug('fetchPointsAtTime: %d', timeIndex);
 
-    // Initialize the geometry attributes.
-    const geometry = points.geometry;
-    if (
-        !geometry.getAttribute('position')
-        || geometry.getAttribute('position').count !== maxPoints
-    ) {
-        geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-        );
-        // prevent drawing uninitialized points at the origin
-        geometry.setDrawRange(0, 0)
+    const points: Float32Array = (await array.get([timeIndex, slice(null)])).data;
+
+    // assume points < -127 are invalid, and all are at the end of the array
+    // this is how the jagged array is stored in the zarr
+    // for Float32 it's actually -9999, but the int8 data is -127
+    let endIndex = points.findIndex(value => value <= -127);
+    if (endIndex % 3 !== 0) {
+        console.error('invalid points - not divisible by 3');
+        endIndex -= endIndex % 3;
     }
-    if (
-        !geometry.getAttribute('color')
-        || geometry.getAttribute('color').count !== maxPoints
-    ) {
-        geometry.setAttribute(
-            'color',
-            new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-        );
-    }
-    // don't reset draw range here, it causes flickering
-
-    // Initialize all the colors immediately.
-    const color = new THREE.Color();
-    const colorAttribute = geometry.getAttribute('color');
-    for (let i = 0; i < maxPoints; i++) {
-        const r = Math.random();
-        const g = Math.random();
-        const b = Math.random();
-        color.setRGB(r, g, b, THREE.SRGBColorSpace);
-        colorAttribute.setXYZ(i, color.r, color.g, color.b);
-    }
-    colorAttribute.needsUpdate = true;
-
-    // Load the positions progressively.
-    const positionAttribute = geometry.getAttribute('position');
-    for (let i = 0, pointIndex = 0; i < maxPoints; i += trackChunkSize) {
-        const start = 3 * i;
-        const end = Math.min(array.shape[1], 3 * (i + trackChunkSize));
-        // TODO: try/catch here as some requests will fail
-        const points = await array.get([timeIndex, slice(start, end)]);
-        const coords = points.data;
-
-        for (let j = 0; j < coords.length; j += 3) {
-            // TODO: this seems to work for the int8 data, but not sure it's correct
-            if (coords[j] > -128) {
-                positionAttribute.setXYZ(pointIndex, coords[j], coords[j + 1], coords[j + 2]);
-                pointIndex++;
-            }
-        }
-        geometry.setDrawRange(0, pointIndex)
-        positionAttribute.needsUpdate = true;
-        geometry.computeBoundingSphere();
-
-        console.log(
-            "added points for timepoint %d, up to %d as %d",
-            timeIndex,
-            i + trackChunkSize,
-            pointIndex
-        );
-    }
+    return points.subarray(0, endIndex);
 }
