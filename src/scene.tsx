@@ -390,7 +390,7 @@ async function loadArray(store: string, path: string) {
 }
 
 
-// TODO: turn this into a class to prevent re-allcoating the data array
+// TODO: turn this into a class to prevent re-allocating the data array
 // TODO: use local storage to cache the data instead of relying on browser cache
 async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<[Float32Array, number]>{
     console.debug('fetchPointsAtTime: %d', timeIndex);
