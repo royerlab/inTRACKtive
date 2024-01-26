@@ -16,8 +16,6 @@ import { ZarrArray, slice, openArray } from "zarr";
 const DEFAULT_ZARR_URL = new URL("https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr");
 
 class Canvas {
-    width: number
-    height: number
     renderer: THREE.WebGLRenderer
     points: THREE.Points
     composer: EffectComposer
@@ -27,8 +25,6 @@ class Canvas {
     selectionHelper: SelectionHelper
 
     constructor(width: number, height: number) {
-        this.width = width;
-        this.height = height;
         const aspect = width / height;
     
         const scene = new THREE.Scene();
