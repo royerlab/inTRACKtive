@@ -9,13 +9,27 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "preact": "^10.19.3",
+    "@czi-sds/components": "^19.2.0",
+    "@emotion/css": "^11.11.2",
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@mui/base": "^5.0.0-beta.31",
+    "@mui/icons-material": "^5.15.4",
+    "@mui/lab": "^5.0.0-alpha.160",
+    "@mui/material": "^5.15.4",
+    "czifui": "^14.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "three": "^0.159.0",
     "zarr": "^0.6.2"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.7.0",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
     "@types/three": "^0.159.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-config-react-app": "^7.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
