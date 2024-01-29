@@ -26,6 +26,7 @@ import { PointSelectionBox } from './PointSelectionBox';
 
 export class Canvas {
     renderer: WebGLRenderer
+    camera: PerspectiveCamera
     points: Points
     composer: EffectComposer
     controls: OrbitControls
@@ -34,23 +35,20 @@ export class Canvas {
     selectionHelper: SelectionHelper
 
     constructor(width: number, height: number) {
-        const aspect = width / height;
-
         const scene = new Scene();
         this.renderer = new WebGLRenderer();
 
-        const camera = new PerspectiveCamera(
+        this.camera = new PerspectiveCamera(
             35,             // FOV
-            aspect,         // Aspect
+            width / height, // Aspect
             0.1,            // Near
             10000           // Far
         );
-
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
         const target = new Vector3(500, 500, 250);
-        camera.position.set(target.x, target.y, target.z - 1500);
-        camera.lookAt(target.x, target.y, target.z);
+        this.camera.position.set(target.x, target.y, target.z - 1500);
+        this.camera.lookAt(target.x, target.y, target.z);
 
         const geometry = new BufferGeometry();
         const material = new PointsMaterial(
@@ -70,7 +68,7 @@ export class Canvas {
         scene.fog = new FogExp2(0x000000, 0.0005);  // default is 0.00025
 
         // Effect composition.
-        const renderModel = new RenderPass(scene, camera);
+        const renderModel = new RenderPass(scene, this.camera);
         this.bloomPass = new UnrealBloomPass(
             new Vector2(width, height), // resolution
             0.4, // strength
@@ -86,13 +84,13 @@ export class Canvas {
         // Point selection
         this.selectionHelper = new SelectionHelper(this.renderer, 'selectBox');
         this.selectionHelper.enabled = false;
-        this.selectionBox = new PointSelectionBox(camera, scene);
+        this.selectionBox = new PointSelectionBox(this.camera, scene);
         // TODO: improve the behavior when pressing/releasing the mouse and
         // shift key in different orders
         this.renderer.domElement.addEventListener('pointerup', this.pointerUp);
 
         // Set up controls
-        this.controls = new OrbitControls(camera, this.renderer.domElement);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotateSpeed = 1;
     }
@@ -147,6 +145,8 @@ export class Canvas {
     }
 
     setSize(width: number, height: number) {
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
         this.bloomPass.resolution.set(width, height);
         this.renderer.setSize(width, height);
         this.composer.setSize(width, height);
