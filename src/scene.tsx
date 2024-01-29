@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
-import { PointSelectionBox } from './PointSelectionBox';
+import { PointCanvas } from './PointCanvas';
 
 // @ts-expect-error
 import { ZarrArray, slice, openArray } from "zarr";
@@ -37,176 +30,50 @@ export default function Scene(props: SceneProps) {
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
-    const renderer = useRef<THREE.WebGLRenderer>();
-    const composer = useRef<EffectComposer>();
-    const bloomPass = useRef<UnrealBloomPass>();
-    const scene = useRef<THREE.Scene>();
-    const camera = useRef<THREE.PerspectiveCamera>();
-    const points = useRef<THREE.Points>();
-    const controls = useRef<OrbitControls>();
-    const selectionHelper = useRef<SelectionHelper>();
-    const selectionBox = useRef<PointSelectionBox>();
-    const aspect = useRef(renderWidth / renderHeight);
+    const canvas = useRef<PointCanvas>();
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
-        // Initialize renderer
-        const rendererCurrent = new THREE.WebGLRenderer();
-        renderer.current = rendererCurrent;
+        // initialize the canvas
+        canvas.current = new PointCanvas(renderWidth, renderHeight);
 
         // append renderer canvas
         const divCurrent = divRef.current;
-        divCurrent?.appendChild(rendererCurrent.domElement);
+        const renderer = canvas.current!.renderer;
+        divCurrent?.appendChild(renderer.domElement);
 
-        scene.current = new THREE.Scene();
-        camera.current = new THREE.PerspectiveCamera(
-            35,              // FOV
-            aspect.current,  // Aspect
-            0.1,             // Near
-            10000            // Far
-        );
-
-        const geometry = new THREE.BufferGeometry();
-        const material = new THREE.PointsMaterial(
-            {
-                size: 16.0,
-                map: new THREE.TextureLoader().load("/spark1.png"),
-                vertexColors: true,
-                blending: THREE.AdditiveBlending,
-                depthTest: false,
-                transparent: true,
-            }
-        );
-        points.current = new THREE.Points(geometry, material);
-
-        scene.current.add(new THREE.AxesHelper(128));
-        scene.current.add(points.current);
-        scene.current.fog = new THREE.FogExp2(0x000000, 0.0005);  // default is 0.00025
-
-        // Default position from interacting with ZSNS001
-        // TODO: this should be set/reset when the data changes
-        const target = new THREE.Vector3(500, 500, 250);
-        camera.current.position.set(target.x, target.y, target.z - 1500);
-        camera.current.lookAt(target.x, target.y, target.z);
-
-        const renderModel = new RenderPass(scene.current, camera.current);
-        bloomPass.current = new UnrealBloomPass(
-            new THREE.Vector2(renderWidth, renderHeight), // resolution
-            0.4, // strength
-            0, // radius
-            0  // threshold
-        );
-        const outputPass = new OutputPass();
-        composer.current = new EffectComposer(rendererCurrent);
-        composer.current.addPass(renderModel);
-        composer.current.addPass(bloomPass.current);
-        composer.current.addPass(outputPass);
-
-        selectionHelper.current = new SelectionHelper(rendererCurrent, 'selectBox');
-        selectionHelper.current.enabled = false;
         const keyDown = (event: KeyboardEvent) => {
+            console.log("keyDown: %s", event.key);
             if (event.repeat) { return; } // ignore repeats (key held down)
             if (event.key === 'Shift') {
                 setSelecting(true);
             }
         };
         const keyUp = (event: KeyboardEvent) => {
+            console.log("keyUp: %s", event.key);
             if (event.key === 'Shift') {
                 setSelecting(false);
             }
         };
+
         // key listeners are added to the document because we don't want the
         // canvas to have to be selected prior to listening for them
         document.addEventListener('keydown', keyDown);
         document.addEventListener('keyup', keyUp);
-        selectionBox.current = new PointSelectionBox(camera.current, scene.current);
 
-        // TODO: move this out of the component and improve the behavior when
-        // pressing/releasing the mouse and shift key in different orders
-        // note: this is a problem in the production version as well
-        const pointerUp = () => {
-            if (
-                selectionBox.current
-                && selectionHelper.current
-                && selectionHelper.current.enabled
-            ) {
-                // Mouse to normalized render/canvas coords from:
-                // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
-                const canvas = rendererCurrent.domElement.getBoundingClientRect();
-
-                const topLeft = selectionHelper.current.pointTopLeft;
-                const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
-                const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
-
-                const bottomRight = selectionHelper.current.pointBottomRight;
-                const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
-                const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
-                console.debug(
-                    'selectionHelper, top = %f, left = %f, bottom = %f, right = %f',
-                    top, left, bottom, right,
-                );
-
-                // TODO: check the z-value of these points
-                selectionBox.current.startPoint.set(left, top, 0.5);
-                selectionBox.current.endPoint.set(right, bottom, 0.5);
-
-                // TODO: consider restricting selection to a specific object
-                const selection = selectionBox.current.select();
-                console.debug("selected points:", selection);
-
-                if (points.current && points.current.id in selection) {
-                    const geometry = points.current.geometry as THREE.BufferGeometry;
-                    const colors = geometry.getAttribute('color') as THREE.BufferAttribute;
-                    const color = new THREE.Color(0xffffff);
-                    for (const i of selection[points.current.id]) {
-                        colors.setXYZ(i, color.r, color.g, color.b);
-                    }
-                    colors.needsUpdate = true;
-                }
-            }
-        }
-        rendererCurrent.domElement.addEventListener('pointerup', pointerUp);
-
-        // TODO: add clean-up by returning another closure
-        // Set up controls
-        controls.current = new OrbitControls(camera.current, rendererCurrent.domElement);
-        controls.current.target.set(target.x, target.y, target.z);
-        controls.current.autoRotateSpeed = 1;
-
-        // Animation function
-        const animate = () => {
-            requestAnimationFrame(animate);
-
-            // Render the scene
-            composer.current?.render();
-            controls.current?.update();
-        };
         // start animating - this keeps the scene rendering when controls change, etc.
-        animate();
+        canvas.current.animate();
 
         return () => {
-            rendererCurrent.domElement.removeEventListener('pointerup', pointerUp);
-            rendererCurrent.domElement.remove();
-            rendererCurrent.dispose();
-            points.current?.geometry.dispose();
-            if (Array.isArray(points.current?.material)) {
-                for (const material of points.current?.material) {
-                    material.dispose();
-                }
-            } else {
-                points.current?.material.dispose();
-            }
-            selectionHelper.current?.dispose();
+            renderer.domElement.remove();
+            canvas.current?.dispose();
             document.removeEventListener('keydown', keyDown);
             document.removeEventListener('keyup', keyUp);
         }
     }, []); // dependency array must be empty to run only on mount!
 
-    if (selectionHelper.current && controls.current) {
-        selectionHelper.current.enabled = selecting;
-        controls.current.enabled = !selecting;
-    }
+    canvas.current?.setSelecting(selecting);
 
     // update the array when the dataUrl changes
     useEffect(() => {
@@ -225,7 +92,7 @@ export default function Scene(props: SceneProps) {
 
     // set the controls to auto-rotate
     useEffect(() => {
-        controls.current && (controls.current.autoRotate = autoRotate);
+        canvas.current && (canvas.current.controls.autoRotate = autoRotate);
     }, [autoRotate]);
 
     // playback time points
@@ -242,44 +109,10 @@ export default function Scene(props: SceneProps) {
         }
     }, [numTimes, curTime, playing]);
 
-    // update the buffers when the array changes
+    // update the geometry buffers when the array changes
     useEffect(() => {
         if (!array) return;
-        const maxPoints = array.shape[1] / 3;
-
-        const geometry = points.current?.geometry as THREE.BufferGeometry;
-        if (
-            !geometry.getAttribute('position')
-            || geometry.getAttribute('position').count !== maxPoints
-        ) {
-            geometry.setAttribute(
-                'position',
-                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-            );
-            // prevent drawing uninitialized points at the origin
-            geometry.setDrawRange(0, 0)
-        }
-        if (
-            !geometry.getAttribute('color')
-            || geometry.getAttribute('color').count !== maxPoints
-        ) {
-            geometry.setAttribute(
-                'color',
-                new THREE.Float32BufferAttribute(new Float32Array(3 * maxPoints), 3),
-            );
-        }
-
-        // Initialize all the colors immediately.
-        const color = new THREE.Color();
-        const colorAttribute = geometry.getAttribute('color');
-        for (let i = 0; i < maxPoints; i++) {
-            const r = Math.random();
-            const g = Math.random();
-            const b = Math.random();
-            color.setRGB(r, g, b, THREE.SRGBColorSpace);
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
+        canvas.current?.initPointsGeometry(array.shape[1] / 3);
     }, [array]);
 
     // update the points when the array or timepoint changes
@@ -291,20 +124,12 @@ export default function Scene(props: SceneProps) {
         if (array && !ignore) {
             console.debug('fetch points at time %d', curTime);
             fetchPointsAtTime(array, curTime).then(data => {
-                const numPoints = data.length / 3;
-                console.debug('got %d points for time %d', numPoints, curTime);
+                console.debug('got %d points for time %d', data.length / 3, curTime);
                 if (ignore) {
                     console.debug('IGNORE SET points at time %d', curTime);
                     return;
                 }
-                const geometry = points.current?.geometry as THREE.BufferGeometry;
-                const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
-                for (let i = 0; i < numPoints; i++) {
-                    positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
-                }
-                positions.needsUpdate = true;
-                geometry.setDrawRange(0, numPoints);
-                points.current?.geometry.computeBoundingSphere();
+                canvas.current?.setPointsPositions(data);
             });
         } else {
             console.debug('IGNORE FETCH points at time %d', curTime);
@@ -316,9 +141,7 @@ export default function Scene(props: SceneProps) {
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
-    bloomPass.current?.resolution.set(renderWidth, renderHeight);
-    renderer.current?.setSize(renderWidth, renderHeight);
-    composer.current?.setSize(renderWidth, renderHeight);
+    canvas.current?.setSize(renderWidth, renderHeight);
 
     // set up marks for the time slider
     const spacing = 100;
