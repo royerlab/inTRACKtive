@@ -96,7 +96,9 @@ export class Canvas {
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotateSpeed = 1;
     }
-
+    
+    // Use an arrow function so that each instance of the class is bound and
+    // can be passed to requestAnimationFrame.
     animate = () => {
         requestAnimationFrame(this.animate);
         // Render the scene
@@ -104,6 +106,8 @@ export class Canvas {
         this.controls.update();
     }
 
+    // Use an arrow function so that each instance of the class is bound and
+    // can be used as a callback.
     pointerUp = () => {
         console.log("pointerUp: %s", this.selectionHelper.enabled);
         if (this.selectionHelper && this.selectionHelper.enabled) {
