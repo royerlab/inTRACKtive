@@ -1,13 +1,13 @@
 :root {
-  --app-padding: 32px;
+    --app-padding: 32px;
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--app-padding);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--app-padding);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }

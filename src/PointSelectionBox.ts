@@ -1,12 +1,4 @@
-import {
-    Frustum,
-    Object3D,
-    OrthographicCamera,
-    PerspectiveCamera,
-    Points,
-    Scene,
-    Vector3,
-} from 'three';
+import { Frustum, Object3D, Camera, OrthographicCamera, PerspectiveCamera, Points, Scene, Vector3 } from "three";
 
 /**
  * This is a class to check whether points in a Points object are in a selection area in 3D space
@@ -38,7 +30,6 @@ interface PointsCollection {
 }
 
 class PointSelectionBox {
-
     camera: OrthographicCamera | PerspectiveCamera;
     scene: Scene;
     startPoint: Vector3;
@@ -46,11 +37,7 @@ class PointSelectionBox {
     collection: PointsCollection;
     deep: number;
 
-    constructor(
-        camera: OrthographicCamera | PerspectiveCamera,
-        scene: Scene,
-        deep = Number.MAX_VALUE
-    ) {
+    constructor(camera: OrthographicCamera | PerspectiveCamera, scene: Scene, deep = Number.MAX_VALUE) {
         this.camera = camera;
         this.scene = scene;
         this.startPoint = new Vector3();
@@ -62,7 +49,7 @@ class PointSelectionBox {
     select(startPoint?: Vector3, endPoint?: Vector3) {
         this.startPoint = startPoint ?? this.startPoint;
         this.endPoint = endPoint ?? this.endPoint;
-        this.collection = {}
+        this.collection = {};
 
         this.updateFrustum(this.startPoint, this.endPoint);
         this.searchChildInFrustum(_frustum, this.scene);
@@ -126,17 +113,17 @@ class PointSelectionBox {
             planes[3].setFromCoplanarPoints(_vecDownLeft, _vecTopLeft, _vecNear);
             planes[4].setFromCoplanarPoints(_vecTopRight, _vecDownRight, _vecDownLeft);
             planes[5].setFromCoplanarPoints(_vectemp3, _vectemp2, _vectemp1);
-            planes[5].normal.multiplyScalar(- 1);
+            planes[5].normal.multiplyScalar(-1);
         } else if (isOrthographicCamera(this.camera)) {
             const left = Math.min(startPoint.x, endPoint.x);
             const top = Math.max(startPoint.y, endPoint.y);
             const right = Math.max(startPoint.x, endPoint.x);
             const down = Math.min(startPoint.y, endPoint.y);
 
-            _vecTopLeft.set(left, top, - 1);
-            _vecTopRight.set(right, top, - 1);
-            _vecDownRight.set(right, down, - 1);
-            _vecDownLeft.set(left, down, - 1);
+            _vecTopLeft.set(left, top, -1);
+            _vecTopRight.set(right, top, -1);
+            _vecDownRight.set(right, down, -1);
+            _vecDownLeft.set(left, down, -1);
 
             _vecFarTopLeft.set(left, top, 1);
             _vecFarTopRight.set(right, top, 1);
@@ -161,17 +148,17 @@ class PointSelectionBox {
             planes[3].setFromCoplanarPoints(_vecFarDownLeft, _vecFarTopLeft, _vecTopLeft);
             planes[4].setFromCoplanarPoints(_vecTopRight, _vecDownRight, _vecDownLeft);
             planes[5].setFromCoplanarPoints(_vecFarDownRight, _vecFarTopRight, _vecFarTopLeft);
-            planes[5].normal.multiplyScalar(- 1);
+            planes[5].normal.multiplyScalar(-1);
         } else {
-            console.error('PointSelectionBox: Unsupported camera type.', this.camera);
+            console.error("PointSelectionBox: Unsupported camera type.", this.camera);
         }
     }
 
     searchChildInFrustum(frustum: Frustum, object: Object3D) {
         if (isPoints(object)) {
             const geometry = object.geometry;
-            const positionAttribute = geometry.getAttribute('position');
-            let _vec3 = new Vector3();
+            const positionAttribute = geometry.getAttribute("position");
+            const _vec3 = new Vector3();
             for (let i = 0; i < positionAttribute.count; i++) {
                 _vec3.set(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
                 if (frustum.containsPoint(_vec3)) {
@@ -193,16 +180,16 @@ class PointSelectionBox {
 }
 
 // Type guards
-function isOrthographicCamera(obj: any): obj is OrthographicCamera {
-    return obj && obj.isOrthographicCamera;
+function isOrthographicCamera(obj: Camera): obj is OrthographicCamera {
+    return Boolean(obj && "isOrthographicCamera" in obj && obj.isOrthographicCamera);
 }
 
-function isPerspectiveCamera(obj: any): obj is PerspectiveCamera {
-    return obj && obj.isPerspectiveCamera;
+function isPerspectiveCamera(obj: Camera): obj is PerspectiveCamera {
+    return Boolean(obj && "isPerspectiveCamera" in obj && obj.isPerspectiveCamera);
 }
 
-function isPoints(obj: any): obj is Points {
-    return obj && obj.isPoints;
+function isPoints(obj: Object3D): obj is Points {
+    return Boolean(obj && "isPoints" in obj && obj.isPoints);
 }
 
 export { PointSelectionBox };
