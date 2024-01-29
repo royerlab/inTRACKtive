@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import './app.css'
-import Scene from './scene.tsx'
+import { useState, useEffect } from "react";
+import "./app.css";
+import Scene from "./scene.tsx";
 
 const aspectRatio = 4 / 3;
 
@@ -9,9 +9,7 @@ export default function App() {
 
     function handleWindowResize() {
         const windowWidth = window.innerWidth;
-        const appPadding = parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue('--app-padding')
-        );
+        const appPadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--app-padding"));
         let w: number;
         if (windowWidth < 800) {
             w = windowWidth;
@@ -29,17 +27,15 @@ export default function App() {
 
     useEffect(() => {
         handleWindowResize();
-        window.addEventListener('resize', handleWindowResize);
+        window.addEventListener("resize", handleWindowResize);
         return () => {
-            window.removeEventListener('resize', handleWindowResize);
-        }
+            window.removeEventListener("resize", handleWindowResize);
+        };
     }, [renderWidth]);
-
 
     return (
         <>
             <Scene renderWidth={renderWidth} renderHeight={renderWidth / aspectRatio} />
         </>
-    )
-
+    );
 }

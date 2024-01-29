@@ -13,36 +13,35 @@ import {
     TextureLoader,
     Vector2,
     Vector3,
-    WebGLRenderer
-} from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
-import { PointSelectionBox } from './PointSelectionBox';
-
+    WebGLRenderer,
+} from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
+import { PointSelectionBox } from "./PointSelectionBox";
 
 export class PointCanvas {
-    renderer: WebGLRenderer
-    camera: PerspectiveCamera
-    points: Points
-    composer: EffectComposer
-    controls: OrbitControls
-    bloomPass: UnrealBloomPass
-    selectionBox: PointSelectionBox
-    selectionHelper: SelectionHelper
+    renderer: WebGLRenderer;
+    camera: PerspectiveCamera;
+    points: Points;
+    composer: EffectComposer;
+    controls: OrbitControls;
+    bloomPass: UnrealBloomPass;
+    selectionBox: PointSelectionBox;
+    selectionHelper: SelectionHelper;
 
     constructor(width: number, height: number) {
         const scene = new Scene();
         this.renderer = new WebGLRenderer();
 
         this.camera = new PerspectiveCamera(
-            35,             // FOV
+            35, // FOV
             width / height, // Aspect
-            0.1,            // Near
-            10000           // Far
+            0.1, // Near
+            10000, // Far
         );
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
@@ -51,21 +50,19 @@ export class PointCanvas {
         this.camera.lookAt(target.x, target.y, target.z);
 
         const geometry = new BufferGeometry();
-        const material = new PointsMaterial(
-            {
-                size: 16.0,
-                map: new TextureLoader().load("/spark1.png"),
-                vertexColors: true,
-                blending: AdditiveBlending,
-                depthTest: false,
-                transparent: true,
-            }
-        );
+        const material = new PointsMaterial({
+            size: 16.0,
+            map: new TextureLoader().load("/spark1.png"),
+            vertexColors: true,
+            blending: AdditiveBlending,
+            depthTest: false,
+            transparent: true,
+        });
         this.points = new Points(geometry, material);
 
         scene.add(new AxesHelper(128));
         scene.add(this.points);
-        scene.fog = new FogExp2(0x000000, 0.0005);  // default is 0.00025
+        scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
         // Effect composition.
         const renderModel = new RenderPass(scene, this.camera);
@@ -73,7 +70,7 @@ export class PointCanvas {
             new Vector2(width, height), // resolution
             0.4, // strength
             0, // radius
-            0  // threshold
+            0, // threshold
         );
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
@@ -82,19 +79,19 @@ export class PointCanvas {
         this.composer.addPass(outputPass);
 
         // Point selection
-        this.selectionHelper = new SelectionHelper(this.renderer, 'selectBox');
+        this.selectionHelper = new SelectionHelper(this.renderer, "selectBox");
         this.selectionHelper.enabled = false;
         this.selectionBox = new PointSelectionBox(this.camera, scene);
         // TODO: improve the behavior when pressing/releasing the mouse and
         // shift key in different orders
-        this.renderer.domElement.addEventListener('pointerup', this.pointerUp);
+        this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
 
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotateSpeed = 1;
     }
-    
+
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
     animate = () => {
@@ -102,7 +99,7 @@ export class PointCanvas {
         // Render the scene
         this.composer.render();
         this.controls.update();
-    }
+    };
 
     // Use an arrow function so that each instance of the class is bound and
     // can be used as a callback.
@@ -114,16 +111,13 @@ export class PointCanvas {
             const canvas = this.renderer.domElement.getBoundingClientRect();
 
             const topLeft = this.selectionHelper.pointTopLeft;
-            const left = (topLeft.x - canvas.left) / canvas.width * 2 - 1;
-            const top = - (topLeft.y - canvas.top) / canvas.height * 2 + 1;
+            const left = ((topLeft.x - canvas.left) / canvas.width) * 2 - 1;
+            const top = (-(topLeft.y - canvas.top) / canvas.height) * 2 + 1;
 
             const bottomRight = this.selectionHelper.pointBottomRight;
-            const right = (bottomRight.x - canvas.left) / canvas.width * 2 - 1;
-            const bottom = - (bottomRight.y - canvas.top) / canvas.height * 2 + 1;
-            console.debug(
-                'selectionHelper, top = %f, left = %f, bottom = %f, right = %f',
-                top, left, bottom, right,
-            );
+            const right = ((bottomRight.x - canvas.left) / canvas.width) * 2 - 1;
+            const bottom = (-(bottomRight.y - canvas.top) / canvas.height) * 2 + 1;
+            console.debug("selectionHelper, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
 
             // TODO: check the z-value of these points
             this.selectionBox.startPoint.set(left, top, 0.5);
@@ -134,7 +128,7 @@ export class PointCanvas {
             console.debug("selected points:", selection);
 
             if (this.points && this.points.id in selection) {
-                const colors = this.points.geometry.getAttribute('color');
+                const colors = this.points.geometry.getAttribute("color");
                 const color = new Color(0xffffff);
                 for (const i of selection[this.points.id]) {
                     colors.setXYZ(i, color.r, color.g, color.b);
@@ -142,7 +136,7 @@ export class PointCanvas {
                 colors.needsUpdate = true;
             }
         }
-    }
+    };
 
     setSize(width: number, height: number) {
         this.camera.aspect = width / height;
@@ -159,23 +153,17 @@ export class PointCanvas {
 
     initPointsGeometry(numPoints: number) {
         const geometry = this.points.geometry;
-        if (!geometry.hasAttribute('position') || geometry.getAttribute('position').count !== numPoints) {
-            geometry.setAttribute(
-                'position',
-                new Float32BufferAttribute(new Float32Array(3 * numPoints), 3),
-            );
+        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== numPoints) {
+            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
             // prevent drawing uninitialized points at the origin
-            geometry.setDrawRange(0, 0)
+            geometry.setDrawRange(0, 0);
         }
-        if (!geometry.hasAttribute('color') || geometry.getAttribute('color').count !== numPoints) {
-            geometry.setAttribute(
-                'color',
-                new Float32BufferAttribute(new Float32Array(3 * numPoints), 3),
-            );
+        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
+            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
         }
         // Initialize all the colors immediately.
         const color = new Color();
-        const colorAttribute = geometry.getAttribute('color');
+        const colorAttribute = geometry.getAttribute("color");
         for (let i = 0; i < numPoints; i++) {
             const r = Math.random();
             const g = Math.random();
@@ -189,7 +177,7 @@ export class PointCanvas {
     setPointsPositions(data: Float32Array) {
         const numPoints = data.length / 3;
         const geometry = this.points.geometry;
-        const positions = geometry.getAttribute('position');
+        const positions = geometry.getAttribute("position");
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
         }
@@ -199,7 +187,7 @@ export class PointCanvas {
     }
 
     dispose() {
-        this.renderer.domElement.removeEventListener('pointerup', this.pointerUp);
+        this.renderer.domElement.removeEventListener("pointerup", this.pointerUp);
         this.renderer.dispose();
         this.points.geometry.dispose();
         if (Array.isArray(this.points.material)) {
