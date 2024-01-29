@@ -91,7 +91,6 @@ export class Canvas {
         // shift key in different orders
         this.renderer.domElement.addEventListener('pointerup', this.pointerUp);
 
-        // TODO: add clean-up by returning another closure
         // Set up controls
         this.controls = new OrbitControls(camera, this.renderer.domElement);
         this.controls.target.set(target.x, target.y, target.z);
