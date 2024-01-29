@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
 
-// @ts-expect-error
+// @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, openArray } from "zarr";
 
 const DEFAULT_ZARR_URL = new URL(

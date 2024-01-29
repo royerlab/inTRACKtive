@@ -1,4 +1,4 @@
-import { Frustum, Object3D, OrthographicCamera, PerspectiveCamera, Points, Scene, Vector3 } from "three";
+import { Frustum, Object3D, Camera, OrthographicCamera, PerspectiveCamera, Points, Scene, Vector3 } from "three";
 
 /**
  * This is a class to check whether points in a Points object are in a selection area in 3D space
@@ -158,7 +158,7 @@ class PointSelectionBox {
         if (isPoints(object)) {
             const geometry = object.geometry;
             const positionAttribute = geometry.getAttribute("position");
-            let _vec3 = new Vector3();
+            const _vec3 = new Vector3();
             for (let i = 0; i < positionAttribute.count; i++) {
                 _vec3.set(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
                 if (frustum.containsPoint(_vec3)) {
@@ -180,16 +180,16 @@ class PointSelectionBox {
 }
 
 // Type guards
-function isOrthographicCamera(obj: any): obj is OrthographicCamera {
-    return obj && obj.isOrthographicCamera;
+function isOrthographicCamera(obj: Camera): obj is OrthographicCamera {
+    return Boolean(obj && "isOrthographicCamera" in obj && obj.isOrthographicCamera);
 }
 
-function isPerspectiveCamera(obj: any): obj is PerspectiveCamera {
-    return obj && obj.isPerspectiveCamera;
+function isPerspectiveCamera(obj: Camera): obj is PerspectiveCamera {
+    return Boolean(obj && "isPerspectiveCamera" in obj && obj.isPerspectiveCamera);
 }
 
-function isPoints(obj: any): obj is Points {
-    return obj && obj.isPoints;
+function isPoints(obj: Object3D): obj is Points {
+    return Boolean(obj && "isPoints" in obj && obj.isPoints);
 }
 
 export { PointSelectionBox };
