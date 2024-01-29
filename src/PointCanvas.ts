@@ -24,7 +24,7 @@ import { SelectionHelper } from 'three/addons/interactive/SelectionHelper.js';
 import { PointSelectionBox } from './PointSelectionBox';
 
 
-export class Canvas {
+export class PointCanvas {
     renderer: WebGLRenderer
     camera: PerspectiveCamera
     points: Points
