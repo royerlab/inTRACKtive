@@ -224,10 +224,8 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<F
     // this is how the jagged array is stored in the zarr
     // for Float32 it's actually -9999, but the int8 data is -127
     let endIndex = points.findIndex((value) => value <= -127);
-    if (endIndex == -1) {
-        endIndex = points.length;
-    } else if (endIndex % 3 !== 0) {
-        console.error("invalid points - %d not divisible by 3", endIndex);
+    if (endIndex % 3 !== 0) {
+        console.error("invalid points - not divisible by 3");
         endIndex -= endIndex % 3;
     }
     return points.subarray(0, endIndex);
