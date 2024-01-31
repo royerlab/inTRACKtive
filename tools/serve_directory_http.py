@@ -25,6 +25,7 @@ if __name__ == "__main__":
     if not path.is_dir():
         raise ValueError('Given path is not a directory.')
 
+    # Define the class here so we can capture the directory to host.
     class CORSRequestHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs) -> None:
             super().__init__(*args, directory=str(path), **kwargs)
