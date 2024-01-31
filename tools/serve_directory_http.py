@@ -12,11 +12,13 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser('Serves data on the file system over HTTP bypassing CORS')
     parser.add_argument('dir', type=str, help='The directory on the filesystem to serve')
+    parser.add_argument('--host', type=str, default="127.0.0.1", help='The host name or IP address.')
     parser.add_argument('--port', type=int, default=8000, help='The port number to serve on.')
 
     args = parser.parse_args()
 
     path = Path(args.dir)
+    host = args.host
     port = args.port
 
     if not path.exists():
@@ -32,6 +34,6 @@ if __name__ == "__main__":
             self.send_header("Access-Control-Allow-Origin", "*")
             super().end_headers()
 
-    with TCPServer((HOST, port), CORSRequestHandler) as httpd:
-        logging.info(f"Serving {path} at: http://{HOST}:{port}")
+    with TCPServer((host, port), CORSRequestHandler) as httpd:
+        logging.info(f"Serving {path} at: http://{host}:{port}")
         httpd.serve_forever()
