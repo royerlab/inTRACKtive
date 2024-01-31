@@ -227,7 +227,7 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<F
     if (endIndex == -1) {
         endIndex = points.length;
     } else if (endIndex % 3 !== 0) {
-        console.error('invalid points - %d not divisible by 3', endIndex);
+        console.error("invalid points - %d not divisible by 3", endIndex);
         endIndex -= endIndex % 3;
     }
     return points.subarray(0, endIndex);
