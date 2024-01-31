@@ -34,4 +34,8 @@ if __name__ == "__main__":
 
     with TCPServer((HOST, port), CORSRequestHandler) as httpd:
         logging.info(f"Serving {path} at: http://{HOST}:{port}")
-        httpd.serve_forever()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            logging.info("Keyboard interrupt received, exiting.")
+            raise SystemExit(0)
