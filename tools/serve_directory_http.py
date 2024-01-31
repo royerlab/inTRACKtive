@@ -1,6 +1,5 @@
 import logging
-from http.server import SimpleHTTPRequestHandler
-from socketserver import TCPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 HOST = "localhost"
@@ -34,6 +33,6 @@ if __name__ == "__main__":
             self.send_header("Access-Control-Allow-Origin", "*")
             super().end_headers()
 
-    with TCPServer((host, port), CORSRequestHandler) as httpd:
+    with ThreadingHTTPServer((host, port), CORSRequestHandler) as httpd:
         logging.info(f"Serving {path} at: http://{host}:{port}")
         httpd.serve_forever()
