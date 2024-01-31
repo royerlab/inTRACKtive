@@ -33,6 +33,10 @@ if __name__ == "__main__":
             self.send_header("Access-Control-Allow-Origin", "*")
             super().end_headers()
 
-    with ThreadingHTTPServer((host, port), CORSRequestHandler) as httpd:
+    with ThreadingHTTPServer((HOST, port), CORSRequestHandler) as httpd:
         logging.info(f"Serving {path} at: http://{host}:{port}")
-        httpd.serve_forever()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            logging.info("Keyboard interrupt received, exiting.")
+            raise SystemExit(0)
