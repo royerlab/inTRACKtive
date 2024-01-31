@@ -34,7 +34,7 @@ if __name__ == "__main__":
             super().end_headers()
 
     with ThreadingHTTPServer((HOST, port), CORSRequestHandler) as httpd:
-        logging.info(f"Serving {path} at: http://{host}:{port}")
+        logging.info(f"Serving %s at http://%s:%s", path, host, port)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
