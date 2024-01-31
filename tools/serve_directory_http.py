@@ -7,7 +7,7 @@ HOST = "localhost"
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser('Serves data on the file system over HTTP')
+    parser = argparse.ArgumentParser('Serves data on the file system over HTTP bypassing CORS')
     parser.add_argument('dir', type=str, help='The directory on the filesystem to serve')
     parser.add_argument('--port', type=int, default=8000, help='The port number to serve on.')
 
