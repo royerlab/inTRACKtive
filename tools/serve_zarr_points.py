@@ -1,47 +1,34 @@
-import os
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 from pathlib import Path
 
-import numpy as np
-import zarr
-
 HOST = "localhost"
-PORT = 8000
-NAME = "sample.zarr"
-
-
-class CORSRequestHandler(SimpleHTTPRequestHandler):
-    def end_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        super().end_headers()
-
-
-def make_sample_data(
-        path: str,
-        n_time_points: int = 500,
-        n_points: int = 25_000,
-) -> zarr.Array:
-    z = zarr.open_array(
-        path,
-        mode="w",
-        shape=(n_time_points, n_points * 3),
-        dtype="f4",
-    )
-    z[:] = np.random.random((n_time_points, n_points * 3)) * 1000
-    return z
 
 
 if __name__ == "__main__":
-    data_dir = Path(__file__).parent.parent.resolve() / "data"
-    if not data_dir.exists():
-        os.mkdir(str(data_dir))
-    assert data_dir.is_dir()
+    import argparse
+    parser = argparse.ArgumentParser('Serves data on the file system over HTTP')
+    parser.add_argument('dir', type=str, help='The directory on the filesystem to serve')
+    parser.add_argument('--port', type=int, default=8000, help='The port number to serve on.')
 
-    path = str(data_dir / NAME)
-    array = make_sample_data(path=path)
-    print(f"made zarr array ({array.shape}) at {path}")
+    args = parser.parse_args()
 
-    with TCPServer((HOST, PORT), CORSRequestHandler) as httpd:
-        print(f"serving at: http://{HOST}:{PORT}/{NAME}")
+    path = Path(args.dir)
+    port = args.port
+
+    if not path.exists():
+        raise ValueError('Given path does not exist.')
+    if not path.is_dir():
+        raise ValueError('Given path is not a directory.')
+
+    class CORSRequestHandler(SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, directory=str(path), **kwargs)
+
+        def end_headers(self):
+            self.send_header("Access-Control-Allow-Origin", "*")
+            super().end_headers()
+
+    with TCPServer((HOST, port), CORSRequestHandler) as httpd:
+        print(f"Serving {path} at: http://{HOST}:{port}")
         httpd.serve_forever()

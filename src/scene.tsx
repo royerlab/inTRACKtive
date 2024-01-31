@@ -6,8 +6,7 @@ import { PointCanvas } from "./PointCanvas";
 import { ZarrArray, slice, openArray } from "zarr";
 
 const DEFAULT_ZARR_URL = new URL(
-    //"https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
-    "http://localhost:8000/data/sample.zarr",
+    "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
 );
 
 interface SceneProps {
