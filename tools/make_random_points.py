@@ -4,8 +4,11 @@ from pathlib import Path
 import numpy as np
 import zarr
 
+logging.basicConfig(level=logging.INFO)
+
 
 def make_random_points(
+        *,
         path: Path,
         num_times: int = 500,
         num_points: int = 25_000,
@@ -14,6 +17,7 @@ def make_random_points(
         path,
         mode="w",
         shape=(num_times, num_points * 3),
+        chunks=(1, num_points * 3),
         dtype="f4",
     )
     z[:] = np.random.random((num_times, num_points * 3)) * 1000
@@ -30,5 +34,9 @@ if __name__ == "__main__":
 
     path = Path(args.path)
 
-    array = make_random_points(path=path)
-    logging.info(f"Made zarr array (%s) at %s", array.shape, path)
+    array = make_random_points(
+        path=path,
+        num_times=args.num_times,
+        num_points=args.num_points,
+    )
+    logging.info(f"Made zarr array with shape %s at %s", array.shape, path)

@@ -1,8 +1,11 @@
+import logging
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 from pathlib import Path
 
 HOST = "localhost"
+
+logging.basicConfig(level=logging.INFO)
 
 
 if __name__ == "__main__":
@@ -30,5 +33,5 @@ if __name__ == "__main__":
             super().end_headers()
 
     with TCPServer((HOST, port), CORSRequestHandler) as httpd:
-        print(f"Serving {path} at: http://{HOST}:{port}")
+        logging.info(f"Serving {path} at: http://{HOST}:{port}")
         httpd.serve_forever()
