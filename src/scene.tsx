@@ -31,7 +31,7 @@ export default function Scene(props: SceneProps) {
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
-    const { setSelectedPoints } = useSelectionBox(canvas.current);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
@@ -52,6 +52,24 @@ export default function Scene(props: SceneProps) {
             canvas.current?.dispose();
         };
     }, []); // dependency array must be empty to run only on mount!
+
+    useEffect(() => {
+        console.log("selected points: %s", selectedPoints);
+        // const pathParts = dataUrl.pathname.split("/");
+        // pathParts.pop() || "";
+        // const store = dataUrl.origin + pathParts.join("/");
+        // for (const p of selectedPoints) {
+        //     // TODO: bad hardcoded path
+        //     fetchTracksForPoint(store, "ZSNS001_points_to_tracks.zarr", p).then((tracks) => {
+        //         console.log("tracks for point %d:", p, tracks);
+        //         for (const t of tracks) {
+        //             fetchPointsForTrack(store, "ZSNS001_tracks_to_points.zarr", t).then((points) => {
+        //                 console.log("points for track %d:", t, points);
+        //             });
+        //         }
+        //     });
+        // }
+    }, [selectedPoints]);
 
     // update the array when the dataUrl changes
     useEffect(() => {
@@ -233,3 +251,5 @@ async function fetchTracksForPoint(store: string, path: string, pointID: number)
 
     return tracks.data;
 }
+
+const fetchPointsForTrack = fetchTracksForPoint;
