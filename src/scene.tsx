@@ -55,20 +55,30 @@ export default function Scene(props: SceneProps) {
 
     useEffect(() => {
         console.log("selected points: %s", selectedPoints);
-        // const pathParts = dataUrl.pathname.split("/");
-        // pathParts.pop() || "";
-        // const store = dataUrl.origin + pathParts.join("/");
-        // for (const p of selectedPoints) {
-        //     // TODO: bad hardcoded path
-        //     fetchTracksForPoint(store, "ZSNS001_points_to_tracks.zarr", p).then((tracks) => {
-        //         console.log("tracks for point %d:", p, tracks);
-        //         for (const t of tracks) {
-        //             fetchPointsForTrack(store, "ZSNS001_tracks_to_points.zarr", t).then((points) => {
-        //                 console.log("points for track %d:", t, points);
-        //             });
-        //         }
-        //     });
-        // }
+        if (!selectedPoints || !(23 in selectedPoints)) return;
+        const pathParts = dataUrl.pathname.split("/");
+        pathParts.pop() || "";
+        const store = dataUrl.origin + pathParts.join("/");
+        const maxPointsPerTimepoint = array?.shape[1] / 3 || 0;
+        for (const p of selectedPoints[23]) {
+            // TODO: bad hardcoded path
+            const pointID = curTime * maxPointsPerTimepoint + p;
+            fetchTracksForPoint(store, "ZSNS001_points_to_tracks.zarr", pointID).then((tracks) => {
+                console.log("tracks for point %d:", p, tracks);
+                for (const t of tracks) {
+                    fetchPointsForTrack(store, "ZSNS001_tracks_to_points.zarr", t).then((points) => {
+                        console.log("points for track %d:", t, points);
+                        if (array) {
+                            fetchPointsById(array, points).then((data) => {
+                                console.log("got %d points for track %d", data.length / 3, t);
+                                // canvas.current?.addTrack(data);
+                                canvas.current?.setPointsPositions(data);
+                            });
+                        }
+                    });
+                }
+            });
+        }
     }, [selectedPoints]);
 
     // update the array when the dataUrl changes
@@ -253,3 +263,15 @@ async function fetchTracksForPoint(store: string, path: string, pointID: number)
 }
 
 const fetchPointsForTrack = fetchTracksForPoint;
+
+async function fetchPointsById(array: ZarrArray, pointIDs: Uint32Array): Promise<Float32Array> {
+    const points = new Float32Array(pointIDs.length * 3);
+    const maxPointsPerTimepoint = array.shape[1] / 3;
+    for (const [index, p] of pointIDs.entries()) {
+        const timeIndex = Math.floor(p / maxPointsPerTimepoint);
+        const offset = 3 * (p % maxPointsPerTimepoint);
+        const data = await array.get([timeIndex, slice(offset, offset + 3)]);
+        points.set(data.data, index * 3);
+    }
+    return points;
+}
