@@ -176,7 +176,7 @@ export default function Scene(props: SceneProps) {
     );
 }
 
-async function loadArray(store: string, path: string) {
+export async function loadArray(store: string, path: string) {
     let array;
     try {
         array = await openArray({
@@ -208,4 +208,28 @@ async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<F
         endIndex -= endIndex % 3;
     }
     return points.subarray(0, endIndex);
+}
+
+async function fetchTracksForPoint(store: string, path: string, pointID: number): Promise<Uint32Array> {
+    // TODO: don't open the arrays every time, this is terrible
+    // TODO: just store the indptr array, it's < 2MB
+    const indptr = await openArray({
+        store: store,
+        path: path + "/indptr",
+        mode: "r",
+    });
+    const rowStartEnd = await indptr.get([slice(pointID, pointID + 2)]);
+    console.log("rowStartEnd", rowStartEnd);
+
+    const indices = await openArray({
+        store: store,
+        path: path + "/indices",
+        mode: "r",
+    });
+    // TODO: when fetching tracks for multiple points we might be able to sort points
+    // into ranges to reduce number of requests
+    const tracks = await indices.get([slice(rowStartEnd.data[0], rowStartEnd.data[1])]);
+    console.log("indices", tracks);
+
+    return tracks.data;
 }
