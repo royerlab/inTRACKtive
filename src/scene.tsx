@@ -6,7 +6,7 @@ import { PointCanvas } from "./PointCanvas";
 import { ZarrArray, slice, openArray } from "zarr";
 
 const DEFAULT_ZARR_URL = new URL(
-    "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
+    "http://127.0.0.1:8000/data.zarr/",
 );
 
 interface SceneProps {
@@ -18,7 +18,11 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    const [array, setArray] = useState<ZarrArray>();
+    const [selected, setSelected] = useState<Array<number>>();
+    const [timeArray, setTimeArray] = useState<ZarrArray>();
+    const [timeIndexArray, setTimeIndexArray] = useState<ZarrArray>();
+    const [trackArray, setTrackArray] = useState<ZarrArray>();
+    const [trackIndexArray, setTrackIndexArray] = useState<ZarrArray>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useState(0);
@@ -36,7 +40,7 @@ export default function Scene(props: SceneProps) {
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        canvas.current = new PointCanvas(renderWidth, renderHeight);
+        canvas.current = new PointCanvas(renderWidth, renderHeight, setSelected);
 
         // append renderer canvas
         const divCurrent = divRef.current;
@@ -77,20 +81,28 @@ export default function Scene(props: SceneProps) {
 
     canvas.current?.setSelecting(selecting);
 
-    // update the array when the dataUrl changes
+    // update the time index array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const pathParts = dataUrl.pathname.split("/");
-        const path = pathParts.pop() || "";
-        const store = dataUrl.origin + pathParts.join("/");
-        const array = loadArray(store, path);
-        // TODO: add clean-up by returning another closure
-        array.then((array: ZarrArray) => {
-            setArray(array);
-            setNumTimes(array.shape[0]);
-            setCurTime(0);
+        const timeIndexArray = loadArray(dataUrl.toString(), "vertices_grouped_by_time_indices")
+        timeIndexArray.then((array: ZarrArray) => {
+            setTimeIndexArray(array);
+            setNumTimes(array.shape[0])
         });
     }, [dataUrl]);
+
+    // update the time array when the time index array changes
+    useEffect(() => {
+        console.log("load data from %s", dataUrl);
+        loadArray(dataUrl.toString(), "vertices_grouped_by_id").then(setTrackArray);
+        loadArray(dataUrl.toString(), "vertices_grouped_by_id_indices").then(setTrackIndexArray);
+        const timeArray = loadArray(dataUrl.toString(), "vertices_grouped_by_time");
+        // TODO: add clean-up by returning another closure
+        timeArray.then((array: ZarrArray) => {
+            setTimeArray(array);
+            setCurTime(0);
+        });
+    }, [timeIndexArray]);
 
     // set the controls to auto-rotate
     useEffect(() => {
@@ -113,9 +125,11 @@ export default function Scene(props: SceneProps) {
 
     // update the geometry buffers when the array changes
     useEffect(() => {
-        if (!array) return;
-        canvas.current?.initPointsGeometry(array.shape[1] / 3);
-    }, [array]);
+        if (!timeIndexArray) return;
+        // TODO: how to get the max number of points?
+        canvas.current?.initPointsGeometry(30000);
+        canvas.current?.initTracksGeometry(timeIndexArray.shape[0]);
+    }, [timeArray]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
@@ -123,10 +137,10 @@ export default function Scene(props: SceneProps) {
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
-        if (array && !ignore) {
+        if (timeArray && !ignore) {
             console.debug("fetch points at time %d", curTime);
-            fetchPointsAtTime(array, curTime).then((data) => {
-                console.debug("got %d points for time %d", data.length / 3, curTime);
+            fetchPointsAtTime(timeArray, timeIndexArray, curTime).then((data) => {
+                console.debug("got %d points for time %d", data.length, curTime);
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", curTime);
                     return;
@@ -139,7 +153,18 @@ export default function Scene(props: SceneProps) {
         return () => {
             ignore = true;
         };
-    }, [array, curTime]);
+    }, [timeArray, curTime]);
+
+    useEffect(() => {
+        console.log("selected changed: %s", selected);
+        if (selected) {
+            const s = selected[0];
+            fetchPointsForTrack(trackArray, trackIndexArray, s).then((data) => {
+                console.debug("got %s points for track %d", data.length, s);
+                canvas.current?.setTracksPositions(data);
+            });
+        }
+    }, [selected]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -163,12 +188,12 @@ export default function Scene(props: SceneProps) {
                     value={dataUrl.toString()}
                     onChange={(e) => setDataUrl(new URL(e.target.value))}
                     fullWidth={true}
-                    intent={array ? "default" : "error"}
+                    intent={timeArray ? "default" : "error"}
                 />
                 <InputSlider
                     id="time-frame-slider"
                     aria-labelledby="input-slider-time-frame"
-                    disabled={array === undefined}
+                    disabled={timeArray === undefined}
                     min={0}
                     max={numTimes - 1}
                     valueLabelDisplay="on"
@@ -180,7 +205,7 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Spin"
                         offLabel="Spin"
-                        disabled={array === undefined}
+                        disabled={timeArray === undefined}
                         onChange={(e) => {
                             setAutoRotate((e.target as HTMLInputElement).checked);
                         }}
@@ -188,7 +213,7 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Play"
                         offLabel="Play"
-                        disabled={array === undefined}
+                        disabled={timeArray === undefined}
                         onChange={(e) => {
                             setPlaying((e.target as HTMLInputElement).checked);
                         }}
@@ -211,24 +236,30 @@ async function loadArray(store: string, path: string) {
         console.error("Error opening array: %s", err);
         array = undefined;
     }
-    console.log("loaded new array: %s", array);
+    console.log("loaded new array: %s", array.shape);
     return array;
 }
 
-async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<Float32Array> {
+async function fetchPointsAtTime(timeArray: ZarrArray, timeIndexArray: ZarrArray, timeIndex: number): Promise<Array<Float32Array>> {
     console.debug("fetchPointsAtTime: %d", timeIndex);
-
-    const points: Float32Array = (await array.get([timeIndex, slice(null)])).data;
-
-    // assume points < -127 are invalid, and all are at the end of the array
-    // this is how the jagged array is stored in the zarr
-    // for Float32 it's actually -9999, but the int8 data is -127
-    let endIndex = points.findIndex((value) => value <= -127);
-    if (endIndex === -1) {
-        endIndex = points.length;
-    } else if (endIndex % 3 !== 0) {
-        console.error("invalid points - %d not divisible by 3", endIndex);
-        endIndex -= endIndex % 3;
+    const startIndex = await timeIndexArray.get([timeIndex]);
+    let endIndex = timeArray.shape[0];
+    if ((timeIndex + 1) < timeArray.shape[0]) {
+        endIndex = await timeIndexArray.get([timeIndex + 1]);
     }
-    return points.subarray(0, endIndex);
+    console.debug("fetching vertices from time row %d to %d", startIndex, endIndex);
+    const points: Array<Float32Array> = (await timeArray.get([slice(startIndex, endIndex), slice(1, 4)])).data;
+    return points;
+}
+
+async function fetchPointsForTrack(trackArray: ZarrArray, trackIndexArray: ZarrArray, trackIndex: number): Promise<Array<Float32Array>> {
+    console.debug("fetchPointsForTrack: %d", trackIndex);
+    const startIndex = await trackIndexArray.get([trackIndex]);
+    let endIndex = trackArray.shape[0];
+    if ((trackIndex + 1) < trackArray.shape[0]) {
+        endIndex = await trackIndexArray.get([trackIndex + 1]);
+    }
+    console.debug("fetching vertices from track row %d to %d", startIndex, endIndex);
+    const points: Array<Float32Array> = (await trackArray.get([slice(startIndex, endIndex), slice(0, 3)])).data;
+    return points;
 }

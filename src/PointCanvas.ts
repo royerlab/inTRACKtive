@@ -5,6 +5,8 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    LineBasicMaterial,
+    LineSegments,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -23,17 +25,24 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { PointSelectionBox } from "./PointSelectionBox";
 
+// @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
+import { ZarrArray, slice, openArray } from "zarr";
+
+
 export class PointCanvas {
     renderer: WebGLRenderer;
     camera: PerspectiveCamera;
     points: Points;
+    tracks: LineSegments;
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     selectionBox: PointSelectionBox;
     selectionHelper: SelectionHelper;
+    onSelectedChanged: Function;
 
-    constructor(width: number, height: number) {
+    constructor(width: number, height: number, onSelectedChanged: Function) {
+        this.onSelectedChanged = onSelectedChanged;
         const scene = new Scene();
         this.renderer = new WebGLRenderer();
 
@@ -60,8 +69,18 @@ export class PointCanvas {
         });
         this.points = new Points(geometry, material);
 
+        const trackGeometry = new BufferGeometry();
+        const trackMaterial = new LineBasicMaterial( {
+            color: 0xffffff,
+            linewidth: 1,
+            linecap: 'round', //ignored by WebGLRenderer
+            linejoin:  'round' //ignored by WebGLRenderer
+        } );
+        this.tracks = new LineSegments(trackGeometry, trackMaterial);
+
         scene.add(new AxesHelper(128));
         scene.add(this.points);
+        scene.add(this.tracks);
         scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
         // Effect composition.
@@ -135,6 +154,8 @@ export class PointCanvas {
                 }
                 colors.needsUpdate = true;
             }
+
+            this.onSelectedChanged(Object.values(selection)[0]);
         }
     };
 
@@ -161,6 +182,7 @@ export class PointCanvas {
         if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
             geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
         }
+
         // Initialize all the colors immediately.
         const color = new Color();
         const colorAttribute = geometry.getAttribute("color");
@@ -174,16 +196,45 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    setPointsPositions(data: Float32Array) {
-        const numPoints = data.length / 3;
+    initTracksGeometry(numPoints: number) {
+        const geometry = this.tracks.geometry;
+        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== numPoints) {
+            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+            // prevent drawing uninitialized points at the origin
+            geometry.setDrawRange(0, 0);
+        }
+        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
+            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+        }
+    }
+
+    setPointsPositions(data: Array<Float32Array>) {
+        console.log("setPointsPositions: %d", data.length);
+        const numPoints = data.length;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
+            const point = data[i];
+            positions.setXYZ(i, point[0], point[1], point[2]);
         }
         positions.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
         this.points.geometry.computeBoundingSphere();
+    }
+
+    setTracksPositions(data: Array<Float32Array>) {
+        console.log("setTracksPositions: %d", data.length);
+        const numPoints = data.length;
+        const geometry = this.tracks.geometry;
+        const positions = geometry.getAttribute("position");
+        for (let i = 0; i < numPoints; i++) {
+            const point = data[i];
+            console.log("setTrackPosition: %d, %f, %f, %f", i, point[0], point[1], point[2]);
+            positions.setXYZ(i, point[0], point[1], point[2]);
+        }
+        positions.needsUpdate = true;
+        geometry.setDrawRange(0, numPoints);
+        this.tracks.geometry.computeBoundingSphere();
     }
 
     dispose() {

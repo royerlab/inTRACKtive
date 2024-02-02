@@ -39,7 +39,7 @@ _, time_index_data = np.unique(tracks_by_time["t"], return_index=True)
 time_index_array = root_group.create_dataset(
    "vertices_grouped_by_time_indices",
    shape=time_index_data.shape,
-   dtype=time_index_data.dtype,
+   dtype=np.uint32,
    chunks=None,
 )
 time_index_array[:] = time_index_data
@@ -52,7 +52,7 @@ tracks_by_id = tracks.sort_values(["TrackID", "t"])
 # just store the first value somewhere else
 # Keep parent_track_id for convenience even though it will repeat
 # so should be stored more efficiently
-id_data = tracks_by_time[["x", "y", "z", "t", "parent_track_id"]].to_numpy().astype(np.float32)
+id_data = tracks_by_id[["x", "y", "z", "t", "parent_track_id"]].to_numpy().astype(np.float32)
 id_array = root_group.create_dataset(
     "vertices_grouped_by_id",
     shape=id_data.shape,
@@ -62,11 +62,12 @@ id_array = root_group.create_dataset(
 id_array[:] = id_data
 
 # Store the index offsets for each ID
-_, id_index_data = np.unique(tracks_by_id["t"], return_index=True)
+_, id_index_data = np.unique(tracks_by_id["TrackID"], return_index=True)
 id_index_array = root_group.create_dataset(
    "vertices_grouped_by_id_indices",
    shape=id_index_data.shape,
-   dtype=id_index_data.dtype,
+   dtype=np.uint32,
    chunks=None,
 )
 id_index_array[:] = id_index_data
+# %%
