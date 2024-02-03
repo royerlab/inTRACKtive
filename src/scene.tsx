@@ -4,6 +4,7 @@ import { PointCanvas } from "./PointCanvas";
 
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, openArray } from "zarr";
+import useSelectionBox from "./hooks/useSelectionBox";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
@@ -24,45 +25,25 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useState(0);
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
-    const [selecting, setSelecting] = useState(false);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
+    useSelectionBox(canvas.current);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
         canvas.current = new PointCanvas(renderWidth, renderHeight);
+        // const [selecting, selectedPoints] = useSelectionBox(canvas.current);
 
         // append renderer canvas
         const divCurrent = divRef.current;
         const renderer = canvas.current!.renderer;
         divCurrent?.appendChild(renderer.domElement);
-
-        const keyDown = (event: KeyboardEvent) => {
-            console.log("keyDown: %s", event.key);
-            if (event.repeat) {
-                return;
-            } // ignore repeats (key held down)
-            if (event.key === "Shift") {
-                setSelecting(true);
-            }
-        };
-        const keyUp = (event: KeyboardEvent) => {
-            console.log("keyUp: %s", event.key);
-            if (event.key === "Shift") {
-                setSelecting(false);
-            }
-        };
-
-        // key listeners are added to the document because we don't want the
-        // canvas to have to be selected prior to listening for them
-        document.addEventListener("keydown", keyDown);
-        document.addEventListener("keyup", keyUp);
 
         // start animating - this keeps the scene rendering when controls change, etc.
         canvas.current.animate();
@@ -70,12 +51,8 @@ export default function Scene(props: SceneProps) {
         return () => {
             renderer.domElement.remove();
             canvas.current?.dispose();
-            document.removeEventListener("keydown", keyDown);
-            document.removeEventListener("keyup", keyUp);
         };
     }, []); // dependency array must be empty to run only on mount!
-
-    canvas.current?.setSelecting(selecting);
 
     // update the array when the dataUrl changes
     useEffect(() => {

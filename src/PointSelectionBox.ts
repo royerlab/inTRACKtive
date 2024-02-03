@@ -192,4 +192,5 @@ function isPoints(obj: Object3D): obj is Points {
     return Boolean(obj && "isPoints" in obj && obj.isPoints);
 }
 
+export type { PointsCollection };
 export { PointSelectionBox };
