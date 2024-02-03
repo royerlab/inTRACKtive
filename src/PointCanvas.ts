@@ -5,6 +5,7 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    Line,
     LineBasicMaterial,
     LineSegments,
     PerspectiveCamera,
@@ -25,15 +26,12 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { PointSelectionBox } from "./PointSelectionBox";
 
-// @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, openArray } from "zarr";
-
-
 export class PointCanvas {
     renderer: WebGLRenderer;
     camera: PerspectiveCamera;
     points: Points;
-    tracks: LineSegments;
+    viewedIds: Array<number>;
+    tracks: Line;
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
@@ -42,6 +40,7 @@ export class PointCanvas {
     onSelectedChanged: Function;
 
     constructor(width: number, height: number, onSelectedChanged: Function) {
+        this.viewedIds = [];
         this.onSelectedChanged = onSelectedChanged;
         const scene = new Scene();
         this.renderer = new WebGLRenderer();
@@ -76,7 +75,7 @@ export class PointCanvas {
             linecap: 'round', //ignored by WebGLRenderer
             linejoin:  'round' //ignored by WebGLRenderer
         } );
-        this.tracks = new LineSegments(trackGeometry, trackMaterial);
+        this.tracks = new Line(trackGeometry, trackMaterial);
 
         scene.add(new AxesHelper(128));
         scene.add(this.points);
@@ -155,7 +154,14 @@ export class PointCanvas {
                 colors.needsUpdate = true;
             }
 
-            this.onSelectedChanged(Object.values(selection)[0]);
+            let selectedIds = [];
+            if (selection) {
+                selectedIds = Object.values(selection)[0]
+                    .map((index: number) => this.viewedIds[index]);
+                console.debug("viewed IDs:", this.viewedIds);
+                console.debug("selected IDs:", selectedIds);
+            }
+            this.onSelectedChanged(selectedIds);
         }
     };
 
@@ -213,9 +219,12 @@ export class PointCanvas {
         const numPoints = data.length;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
+        this.viewedIds = [];
         for (let i = 0; i < numPoints; i++) {
             const point = data[i];
-            positions.setXYZ(i, point[0], point[1], point[2]);
+            this.viewedIds.push(point[0]);
+            // TODO: why did i put trackID first?
+            positions.setXYZ(i, point[1], point[2], point[3]);
         }
         positions.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
@@ -229,7 +238,7 @@ export class PointCanvas {
         const positions = geometry.getAttribute("position");
         for (let i = 0; i < numPoints; i++) {
             const point = data[i];
-            console.log("setTrackPosition: %d, %f, %f, %f", i, point[0], point[1], point[2]);
+            // console.log("setTrackPosition: %d, %f, %f, %f", i, point[0], point[1], point[2]);
             positions.setXYZ(i, point[0], point[1], point[2]);
         }
         positions.needsUpdate = true;

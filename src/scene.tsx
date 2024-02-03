@@ -157,8 +157,10 @@ export default function Scene(props: SceneProps) {
 
     useEffect(() => {
         console.log("selected changed: %s", selected);
-        if (selected) {
-            const s = selected[0];
+        if (selected && selected.length > 0) {
+            // TODO: the track indices might be the ID - 1, but this is a
+            // guess based on a few data.
+            const s = selected[0] - 1;
             fetchPointsForTrack(trackArray, trackIndexArray, s).then((data) => {
                 console.debug("got %s points for track %d", data.length, s);
                 canvas.current?.setTracksPositions(data);
@@ -248,12 +250,12 @@ async function fetchPointsAtTime(timeArray: ZarrArray, timeIndexArray: ZarrArray
         endIndex = await timeIndexArray.get([timeIndex + 1]);
     }
     console.debug("fetching vertices from time row %d to %d", startIndex, endIndex);
-    const points: Array<Float32Array> = (await timeArray.get([slice(startIndex, endIndex), slice(1, 4)])).data;
+    const points: Array<Float32Array> = (await timeArray.get([slice(startIndex, endIndex), slice(0, 4)])).data;
     return points;
 }
 
 async function fetchPointsForTrack(trackArray: ZarrArray, trackIndexArray: ZarrArray, trackIndex: number): Promise<Array<Float32Array>> {
-    console.debug("fetchPointsForTrack: %d", trackIndex);
+    console.debug("fetchPointsForTrack: %s", trackIndex);
     const startIndex = await trackIndexArray.get([trackIndex]);
     let endIndex = trackArray.shape[0];
     if ((trackIndex + 1) < trackArray.shape[0]) {
