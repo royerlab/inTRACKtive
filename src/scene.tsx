@@ -31,14 +31,13 @@ export default function Scene(props: SceneProps) {
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
-    useSelectionBox(canvas.current);
+    const { setSelectedPoints } = useSelectionBox(canvas.current);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
         canvas.current = new PointCanvas(renderWidth, renderHeight);
-        // const [selecting, selectedPoints] = useSelectionBox(canvas.current);
 
         // append renderer canvas
         const divCurrent = divRef.current;
@@ -96,6 +95,7 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        setSelectedPoints({});
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current

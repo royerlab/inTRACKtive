@@ -91,24 +91,26 @@ export class PointCanvas {
     };
 
     highlightPoints(points: number[]) {
-        const colors = this.points.geometry.getAttribute("color");
-        const color = new Color(0xffffff);
+        const colorAttribute = this.points.geometry.getAttribute("color");
+        const color = new Color();
+        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
         for (const i of points) {
-            colors.setXYZ(i, color.r, color.g, color.b);
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
-        colors.needsUpdate = true;
+        colorAttribute.needsUpdate = true;
     }
 
     resetPointColors() {
+        if (!this.points.geometry.hasAttribute("color")) {
+            return;
+        }
         const color = new Color();
+        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
-            const r = Math.random();
-            const g = Math.random();
-            const b = Math.random();
-            color.setRGB(r, g, b, SRGBColorSpace);
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
+        colorAttribute.needsUpdate = true;
     }
 
     setSize(width: number, height: number) {
