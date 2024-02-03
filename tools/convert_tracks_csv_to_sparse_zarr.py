@@ -50,6 +50,14 @@ points_to_tracks = points_to_tracks.tocsr()
 print(f"Converted to CSR in {time.monotonic() - start} seconds")
 start = time.monotonic()
 
+# save the points array (same format as ZSHS001_nodes.zarr)
+zarr.save_array(
+    zarr.storage.DirectoryStore(root_dir + "ZSNS001_points.zarr"),
+    points_array,
+    chunks=(1, points_array.shape[1]),
+    dtype=np.float32,
+)
+
 # TODO: tracks_to_points may want to store xyz for the points, not just the indices
 # this would make the indices array 3x (4x?) larger, but would eliminate the need to
 # fetch coordinates again based on point IDs
@@ -60,6 +68,13 @@ tracks_to_points_zarr = zarr.hierarchy.group(
 tracks_to_points_zarr.attrs["sparse_format"] = "csr"
 tracks_to_points_zarr.create_dataset("indices", data=tracks_to_points.indices)
 tracks_to_points_zarr.create_dataset("indptr", data=tracks_to_points.indptr)
+tracks_to_points_xyz = np.zeros((len(tracks_to_points.indices), 3), dtype=np.float32)
+for i, ind in enumerate(tracks_to_points.indices):
+    t, n = divmod(ind, max_points_in_timepoint)
+    tracks_to_points_xyz[i] = points_array[t, 3 * n:3 * (n + 1)]
+print(tracks_to_points_xyz.shape)
+# TODO: figure out chunking?
+tracks_to_points_zarr.create_dataset("data", data=tracks_to_points_xyz)
 
 points_to_tracks_zarr = zarr.hierarchy.group(
     zarr.storage.DirectoryStore(root_dir + "ZSNS001_points_to_tracks.zarr"),
@@ -68,14 +83,6 @@ points_to_tracks_zarr = zarr.hierarchy.group(
 points_to_tracks_zarr.attrs["sparse_format"] = "csr"
 points_to_tracks_zarr.create_dataset("indices", data=points_to_tracks.indices)
 points_to_tracks_zarr.create_dataset("indptr", data=points_to_tracks.indptr)
-
-# save the points array (same format as ZSHS001_nodes.zarr)
-zarr.save_array(
-    zarr.storage.DirectoryStore(root_dir + "ZSNS001_points.zarr"),
-    points_array,
-    chunks=(1, points_array.shape[1]),
-    dtype=np.float32,
-)
 
 print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
