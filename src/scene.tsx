@@ -71,8 +71,7 @@ export default function Scene(props: SceneProps) {
                         if (array) {
                             fetchPointsById(array, points).then((data) => {
                                 console.log("got %d points for track %d", data.length / 3, t);
-                                // canvas.current?.addTrack(data);
-                                canvas.current?.setPointsPositions(data);
+                                canvas.current?.addTrack(t, data);
                             });
                         }
                     });
