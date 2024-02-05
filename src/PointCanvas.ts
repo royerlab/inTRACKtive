@@ -61,7 +61,7 @@ export class PointCanvas {
         const material = new PointsMaterial({
             size: 16.0,
             map: new TextureLoader().load("/spark1.png"),
-            vertexColors: true,
+            color: new Color(0x1e90ff), // DeepSkyBlue
             blending: AdditiveBlending,
             depthTest: false,
             transparent: true,
@@ -137,15 +137,6 @@ export class PointCanvas {
             const selection = this.selectionBox.select();
             console.debug("selected points:", selection);
 
-            if (this.points && this.points.id in selection) {
-                const colors = this.points.geometry.getAttribute("color");
-                const color = new Color(0xffffff);
-                for (const i of selection[this.points.id]) {
-                    colors.setXYZ(i, color.r, color.g, color.b);
-                }
-                colors.needsUpdate = true;
-            }
-
             let selectedIds = [];
             if (selection) {
                 // TODO: 0 means the points object, but after one selection
@@ -180,21 +171,6 @@ export class PointCanvas {
             // prevent drawing uninitialized points at the origin
             geometry.setDrawRange(0, 0);
         }
-        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
-            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
-        }
-
-        // Initialize all the colors immediately.
-        const color = new Color();
-        const colorAttribute = geometry.getAttribute("color");
-        for (let i = 0; i < numPoints; i++) {
-            const r = Math.random();
-            const g = Math.random();
-            const b = Math.random();
-            color.setRGB(r, g, b, SRGBColorSpace);
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
     }
 
     initTracksGeometry(numTracks: number, maxPoints: number) {
@@ -279,7 +255,7 @@ function makeTrack(maxPoints: number) {
     // prevent drawing uninitialized points at the origin
     geometry.setDrawRange(0, 0);
     const material = new LineBasicMaterial( {
-        color: 0xffffff,
+        color: 0xff8c00, // DarkOrange
         linewidth: 2,
         linecap: 'round', //ignored by WebGLRenderer
         linejoin:  'round' //ignored by WebGLRenderer
