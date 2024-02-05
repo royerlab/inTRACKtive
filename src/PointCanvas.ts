@@ -12,7 +12,6 @@ import {
     Points,
     PointsMaterial,
     Scene,
-    SRGBColorSpace,
     TextureLoader,
     Vector2,
     Vector3,
