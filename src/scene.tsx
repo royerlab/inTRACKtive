@@ -18,7 +18,7 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    const [selected, setSelected] = useState<Array<number>>();
+    const [selected, setSelected] = useState<Array<number>>([]);
     const [timeArray, setTimeArray] = useState<ZarrArray>();
     const [timeIndexArray, setTimeIndexArray] = useState<ZarrArray>();
     const [trackArray, setTrackArray] = useState<ZarrArray>();
@@ -128,7 +128,7 @@ export default function Scene(props: SceneProps) {
         if (!timeIndexArray) return;
         // TODO: how to get the max number of points?
         canvas.current?.initPointsGeometry(30000);
-        canvas.current?.initTracksGeometry(timeIndexArray.shape[0]);
+        canvas.current?.initTracksGeometry(selected.length, timeIndexArray.shape[0]);
     }, [timeArray]);
 
     // update the points when the array or timepoint changes
@@ -158,13 +158,16 @@ export default function Scene(props: SceneProps) {
     useEffect(() => {
         console.log("selected changed: %s", selected);
         if (selected && selected.length > 0) {
-            // TODO: the track indices might be the ID - 1, but this is a
-            // guess based on a few data.
-            const s = selected[0] - 1;
-            fetchPointsForTrack(trackArray, trackIndexArray, s).then((data) => {
-                console.debug("got %s points for track %d", data.length, s);
-                canvas.current?.setTracksPositions(data);
-            });
+            canvas.current?.initTracksGeometry(selected.length, timeIndexArray.shape[0]);
+            for (let i = 0; i < selected.length; ++i) {
+                // TODO: the track indices might be the ID - 1, but this is a
+                // guess based on a few data.
+                const s = selected[i] - 1;
+                fetchPointsForTrack(trackArray, trackIndexArray, s).then((data) => {
+                    console.debug("got %s points for track %d", data.length, s);
+                    canvas.current?.setTracksPositions(i, data);
+                });
+            }
         }
     }, [selected]);
 

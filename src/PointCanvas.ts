@@ -5,9 +5,9 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    Group,
     Line,
     LineBasicMaterial,
-    LineSegments,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -31,7 +31,7 @@ export class PointCanvas {
     camera: PerspectiveCamera;
     points: Points;
     viewedIds: Array<number>;
-    tracks: Line;
+    tracks: Group;
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
@@ -67,15 +67,7 @@ export class PointCanvas {
             transparent: true,
         });
         this.points = new Points(geometry, material);
-
-        const trackGeometry = new BufferGeometry();
-        const trackMaterial = new LineBasicMaterial( {
-            color: 0xffffff,
-            linewidth: 1,
-            linecap: 'round', //ignored by WebGLRenderer
-            linejoin:  'round' //ignored by WebGLRenderer
-        } );
-        this.tracks = new Line(trackGeometry, trackMaterial);
+        this.tracks = new Group();
 
         scene.add(new AxesHelper(128));
         scene.add(this.points);
@@ -156,6 +148,9 @@ export class PointCanvas {
 
             let selectedIds = [];
             if (selection) {
+                // TODO: 0 means the points object, but after one selection
+                // we could also select parts of the tracks, so we need a to
+                // filter the selection.
                 selectedIds = Object.values(selection)[0]
                     .map((index: number) => this.viewedIds[index]);
                 console.debug("viewed IDs:", this.viewedIds);
@@ -202,16 +197,32 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    initTracksGeometry(numPoints: number) {
-        const geometry = this.tracks.geometry;
-        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== numPoints) {
-            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
-            // prevent drawing uninitialized points at the origin
-            geometry.setDrawRange(0, 0);
+    initTracksGeometry(numTracks: number, maxPoints: number) {
+        console.log("initTracksGeometry: %d, %d", numTracks, maxPoints);
+        // TODO: clean up with dispose.
+        this.tracks.children = []
+        for (let i = 0; i < numTracks; ++i) {
+            const track = makeTrack(maxPoints);
+            this.tracks.add(track);
         }
-        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
-            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
-        }
+        // // TODO: be more efficient.
+        // const children = this.tracks.children;
+        // if (children.length < numTracks) {
+        //     const track = makeTrack(maxPoints);
+        //     this.tracks.add(track);
+        // } else if (children.length > numTracks) {
+        //     const toRemove = children.slice(numTracks, children.length);
+        //     this.tracks.remove(...toRemove);
+        //     // TODO: clean up
+        //     //for (const r in toRemove) {
+        //     //    r.geometry.dispose();
+        //     //}
+        // }
+        // for (const t in children) {
+        //     if (t) {
+        //         t.geometry.setDrawRange(0, 0);
+        //     }
+        // }
     }
 
     setPointsPositions(data: Array<Float32Array>) {
@@ -231,19 +242,20 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    setTracksPositions(data: Array<Float32Array>) {
-        console.log("setTracksPositions: %d", data.length);
+    setTracksPositions(index: number, data: Array<Float32Array>) {
+        console.log("setTracksPositions: %d, %d", index, data.length);
         const numPoints = data.length;
-        const geometry = this.tracks.geometry;
+        // TODO: store tracks explicitly as an array or similar to
+        // fix typing.
+        const geometry = this.tracks.children[index].geometry;
         const positions = geometry.getAttribute("position");
         for (let i = 0; i < numPoints; i++) {
             const point = data[i];
-            // console.log("setTrackPosition: %d, %f, %f, %f", i, point[0], point[1], point[2]);
             positions.setXYZ(i, point[0], point[1], point[2]);
         }
         positions.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
-        this.tracks.geometry.computeBoundingSphere();
+        this.tracks.children[index].geometry.computeBoundingSphere();
     }
 
     dispose() {
@@ -259,4 +271,18 @@ export class PointCanvas {
         }
         this.selectionHelper.dispose();
     }
+}
+
+function makeTrack(maxPoints: number) {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * maxPoints), 3));
+    // prevent drawing uninitialized points at the origin
+    geometry.setDrawRange(0, 0);
+    const material = new LineBasicMaterial( {
+        color: 0xffffff,
+        linewidth: 2,
+        linecap: 'round', //ignored by WebGLRenderer
+        linejoin:  'round' //ignored by WebGLRenderer
+    } );
+    return new Line(geometry, material);
 }
