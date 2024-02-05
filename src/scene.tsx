@@ -259,10 +259,14 @@ async function fetchPointsAtTime(timeArray: ZarrArray, timeIndexArray: ZarrArray
 
 async function fetchPointsForTrack(trackArray: ZarrArray, trackIndexArray: ZarrArray, trackIndex: number): Promise<Array<Float32Array>> {
     console.debug("fetchPointsForTrack: %s", trackIndex);
-    const startIndex = await trackIndexArray.get([trackIndex]);
     let endIndex = trackArray.shape[0];
+    let startIndex;
     if ((trackIndex + 1) < trackArray.shape[0]) {
-        endIndex = await trackIndexArray.get([trackIndex + 1]);
+        const startEnd = (await trackIndexArray.get([slice(trackIndex, trackIndex + 2)])).data;
+        startIndex = startEnd[0];
+        endIndex = startEnd[1];
+    } else {
+        startIndex = await trackIndexArray.get([trackIndex]);
     }
     console.debug("fetching vertices from track row %d to %d", startIndex, endIndex);
     const points: Array<Float32Array> = (await trackArray.get([slice(startIndex, endIndex), slice(0, 3)])).data;
