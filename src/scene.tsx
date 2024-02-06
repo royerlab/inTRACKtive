@@ -7,9 +7,7 @@ import { ZarrArray, slice, openArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 import { PointsCollection } from "./PointSelectionBox";
 
-const DEFAULT_ZARR_URL = new URL(
-    "http://127.0.0.1:8000/data.zarr/",
-);
+const DEFAULT_ZARR_URL = new URL("http://127.0.0.1:8000/data.zarr/");
 
 interface SceneProps {
     renderWidth: number;
@@ -58,14 +56,13 @@ export default function Scene(props: SceneProps) {
         };
     }, []); // dependency array must be empty to run only on mount!
 
-
     // update the time index array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const timeIndexArray = loadArray(dataUrl.toString(), "vertices_grouped_by_time_indices")
+        const timeIndexArray = loadArray(dataUrl.toString(), "vertices_grouped_by_time_indices");
         timeIndexArray.then((array: ZarrArray) => {
             setTimeIndexArray(array);
-            setNumTimes(array.shape[0])
+            setNumTimes(array.shape[0]);
         });
     }, [dataUrl]);
 
@@ -126,7 +123,7 @@ export default function Scene(props: SceneProps) {
                 }
                 viewedIds.current = [];
                 for (let i = 0; i < data.length; ++i) {
-                    viewedIds.current.push(data[i][0])
+                    viewedIds.current.push(data[i][0]);
                 }
                 canvas.current?.setPointsPositions(data);
             });
@@ -242,11 +239,15 @@ async function loadArray(store: string, path: string) {
     return array;
 }
 
-async function fetchPointsAtTime(timeArray: ZarrArray, timeIndexArray: ZarrArray, timeIndex: number): Promise<Array<Float32Array>> {
+async function fetchPointsAtTime(
+    timeArray: ZarrArray,
+    timeIndexArray: ZarrArray,
+    timeIndex: number,
+): Promise<Array<Float32Array>> {
     console.debug("fetchPointsAtTime: %d", timeIndex);
     const startIndex = await timeIndexArray.get([timeIndex]);
     let endIndex = timeArray.shape[0];
-    if ((timeIndex + 1) < timeArray.shape[0]) {
+    if (timeIndex + 1 < timeArray.shape[0]) {
         endIndex = await timeIndexArray.get([timeIndex + 1]);
     }
     console.debug("fetching vertices from time row %d to %d", startIndex, endIndex);
@@ -254,11 +255,15 @@ async function fetchPointsAtTime(timeArray: ZarrArray, timeIndexArray: ZarrArray
     return points;
 }
 
-async function fetchPointsForTrack(trackArray: ZarrArray, trackIndexArray: ZarrArray, trackIndex: number): Promise<Array<Float32Array>> {
+async function fetchPointsForTrack(
+    trackArray: ZarrArray,
+    trackIndexArray: ZarrArray,
+    trackIndex: number,
+): Promise<Array<Float32Array>> {
     console.debug("fetchPointsForTrack: %s", trackIndex);
     let endIndex = trackArray.shape[0];
     let startIndex;
-    if ((trackIndex + 1) < trackArray.shape[0]) {
+    if (trackIndex + 1 < trackArray.shape[0]) {
         const startEnd = (await trackIndexArray.get([slice(trackIndex, trackIndex + 2)])).data;
         startIndex = startEnd[0];
         endIndex = startEnd[1];

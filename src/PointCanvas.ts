@@ -144,7 +144,7 @@ export class PointCanvas {
     initTracksGeometry(numTracks: number, maxPoints: number) {
         console.log("initTracksGeometry: %d, %d", numTracks, maxPoints);
         // TODO: clean up with dispose.
-        this.tracks.children = []
+        this.tracks.children = [];
         for (let i = 0; i < numTracks; ++i) {
             const track = makeTrack(maxPoints);
             this.tracks.add(track);
@@ -218,11 +218,11 @@ function makeTrack(maxPoints: number) {
     geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * maxPoints), 3));
     // prevent drawing uninitialized points at the origin
     geometry.setDrawRange(0, 0);
-    const material = new LineBasicMaterial( {
+    const material = new LineBasicMaterial({
         color: 0xff8c00, // DarkOrange
         linewidth: 2,
-        linecap: 'round', //ignored by WebGLRenderer
-        linejoin:  'round' //ignored by WebGLRenderer
-    } );
+        linecap: "round", //ignored by WebGLRenderer
+        linejoin: "round", //ignored by WebGLRenderer
+    });
     return new Line(geometry, material);
 }
