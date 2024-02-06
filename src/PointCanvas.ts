@@ -12,7 +12,6 @@ import {
     Points,
     PointsMaterial,
     Scene,
-    SRGBColorSpace,
     TextureLoader,
     Vector2,
     Vector3,
@@ -33,6 +32,8 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
+    cellColor: Color = new Color(0x1e90ff); // DeepSkyBlue
+    trackColor: Color = new Color(0xff8c00); // DarkOrange
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -54,7 +55,7 @@ export class PointCanvas {
         const material = new PointsMaterial({
             size: 16.0,
             map: new TextureLoader().load("/spark1.png"),
-            color: new Color(0x1e90ff), // DeepSkyBlue
+            vertexColors: true,
             blending: AdditiveBlending,
             depthTest: false,
             transparent: true,
@@ -97,11 +98,10 @@ export class PointCanvas {
     };
 
     highlightPoints(points: number[]) {
+        this.resetPointColors();
         const colorAttribute = this.points.geometry.getAttribute("color");
-        const color = new Color();
-        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
         for (const i of points) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            colorAttribute.setXYZ(i, this.trackColor.r, this.trackColor.g, this.trackColor.b);
         }
         colorAttribute.needsUpdate = true;
     }
@@ -110,11 +110,9 @@ export class PointCanvas {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
-        const color = new Color();
-        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            colorAttribute.setXYZ(i, this.cellColor.r, this.cellColor.g, this.cellColor.b);
         }
         colorAttribute.needsUpdate = true;
     }
@@ -146,27 +144,19 @@ export class PointCanvas {
         // TODO: clean up with dispose.
         this.tracks.children = [];
         for (let i = 0; i < numTracks; ++i) {
-            const track = makeTrack(maxPoints);
+            const geometry = new BufferGeometry();
+            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * maxPoints), 3));
+            // prevent drawing uninitialized points at the origin
+            geometry.setDrawRange(0, 0);
+            const material = new LineBasicMaterial({
+                color: this.trackColor,
+                linewidth: 2,
+                linecap: "round", //ignored by WebGLRenderer
+                linejoin: "round", //ignored by WebGLRenderer
+            });
+            const track = new Line(geometry, material);
             this.tracks.add(track);
         }
-        // // TODO: be more efficient.
-        // const children = this.tracks.children;
-        // if (children.length < numTracks) {
-        //     const track = makeTrack(maxPoints);
-        //     this.tracks.add(track);
-        // } else if (children.length > numTracks) {
-        //     const toRemove = children.slice(numTracks, children.length);
-        //     this.tracks.remove(...toRemove);
-        //     // TODO: clean up
-        //     //for (const r in toRemove) {
-        //     //    r.geometry.dispose();
-        //     //}
-        // }
-        // for (const t in children) {
-        //     if (t) {
-        //         t.geometry.setDrawRange(0, 0);
-        //     }
-        // }
     }
 
     setPointsPositions(data: Array<Float32Array>) {
@@ -211,18 +201,4 @@ export class PointCanvas {
             this.points.material.dispose();
         }
     }
-}
-
-function makeTrack(maxPoints: number) {
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * maxPoints), 3));
-    // prevent drawing uninitialized points at the origin
-    geometry.setDrawRange(0, 0);
-    const material = new LineBasicMaterial({
-        color: 0xff8c00, // DarkOrange
-        linewidth: 2,
-        linecap: "round", //ignored by WebGLRenderer
-        linejoin: "round", //ignored by WebGLRenderer
-    });
-    return new Line(geometry, material);
 }
