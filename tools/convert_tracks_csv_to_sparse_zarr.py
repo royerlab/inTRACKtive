@@ -74,7 +74,12 @@ for i, ind in enumerate(tracks_to_points.indices):
     tracks_to_points_xyz[i] = points_array[t, 3 * n:3 * (n + 1)]
 print(tracks_to_points_xyz.shape)
 # TODO: figure out chunking?
-tracks_to_points_zarr.create_dataset("data", data=tracks_to_points_xyz)
+tracks_to_points_zarr.create_dataset(
+    "data",
+    data=tracks_to_points_xyz,
+    chunks=(2048, 3),
+    dtype=np.float32,
+)
 
 points_to_tracks_zarr = zarr.hierarchy.group(
     zarr.storage.DirectoryStore(root_dir + "ZSNS001_points_to_tracks.zarr"),
