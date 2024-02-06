@@ -84,4 +84,26 @@ for (desc in descendants) {
     const descTrack = (await array.get([slice(null), desc])).data;
     // yield descendant track
 }
-`
+```
+
+In practice this did not work well because there are too many array associated with the tracks.
+This made writing those files slow and costly (i.e. the .zarray JSON file was often bigger than the data chunks).
+And it would make reading those arrays costly too (i.e. extra request for each .zarray).
+
+### Idea 2: tracks table sorted two ways as zarrs
+
+Instead of using groups to organize the cells by time and tracks by ID,
+we can sort the tracks table data (in the CSV) two ways.
+
+First, we sort it by time.
+Each row represents a cell at a particular time point.
+Each consecutive group of rows then represents all the cells IDs and coordinates at one time point.
+
+Second, we sort it by track ID, then by time.
+Each row again represents a cell at a particular time point.
+Each consecutive group of rows then represents a track(let) of cells coordinate across multiple consecutive time points.
+We can also append columns to store parent and child IDs, though we likely
+
+We then store 1D vectors to look up offset indices for particular time points and track IDs.
+
+The storage cost associated with this representation is just 2 times the storage cost of the tracks table in zarr.
