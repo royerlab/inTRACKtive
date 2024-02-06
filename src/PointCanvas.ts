@@ -5,8 +5,6 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
-    LineBasicMaterial,
-    Line,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -22,9 +20,11 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { Lut } from "three/addons/math/Lut.js";
+import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
 interface Tracks {
-    [track_id: number]: Line;
+    [track_id: number]: Line2;
 }
 
 export class PointCanvas {
@@ -159,10 +159,24 @@ export class PointCanvas {
             console.warn("Track with ID %d already exists", trackID);
             this.removeTrack(trackID);
         }
-        const geometry = new BufferGeometry();
-        geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-        const material = new LineBasicMaterial({ color: color, linewidth: 16.0 });
-        const track = new Line(geometry, material);
+        const pos = [];
+        const colors = [];
+        const lut = new Lut("rainbow", 256);
+
+        for (let i = 0; i < positions.length; i += 3) {
+            pos.push(positions[i], positions[i + 1], positions[i + 2]);
+            const color = lut.getColor(i / positions.length);
+            colors.push(color.r, color.g, color.b);
+        }
+
+        const geometry = new LineGeometry();
+        geometry.setPositions(positions);
+        geometry.setColors(colors);
+        const material = new LineMaterial({
+            linewidth: 0.003,
+            vertexColors: true,
+        });
+        const track = new Line2(geometry, material);
         this.scene.add(track);
         this.tracks[trackID] = track;
     }
