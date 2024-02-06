@@ -271,6 +271,14 @@ async function fetchPointsForTrack(
         startIndex = await trackIndexArray.get([trackIndex]);
     }
     console.debug("fetching vertices from track row %d to %d", startIndex, endIndex);
-    const points: Array<Float32Array> = (await trackArray.get([slice(startIndex, endIndex), slice(0, 3)])).data;
+    const rows = await trackArray.get([slice(startIndex, endIndex), slice(0, 5)]);
+    const points = rows.get([null, slice(0, 3)]).data;
+    const parentId = rows.get([0, 4]);
+    console.debug("found parentId %d", parentId);
+    if (parentId > 0) {
+        const parentPoints = await fetchPointsForTrack(trackArray, trackIndexArray, parentId - 1);
+        points.unshift(...parentPoints);
+    }
+    // TODO: push descendants in order
     return points;
 }
