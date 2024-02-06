@@ -154,7 +154,7 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array, color: number = 0x00ff00) {
+    addTrack(trackID: number, positions: Float32Array) {
         if (trackID in this.tracks) {
             console.warn("Track with ID %d already exists", trackID);
             this.removeTrack(trackID);
