@@ -4,6 +4,8 @@ import { PointCanvas } from "./PointCanvas";
 
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, openArray } from "zarr";
+import useSelectionBox from "./hooks/useSelectionBox";
+import { PointsCollection } from "./PointSelectionBox";
 
 const DEFAULT_ZARR_URL = new URL(
     "http://127.0.0.1:8000/data.zarr/",
@@ -18,7 +20,6 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    const [selected, setSelected] = useState<Array<number>>([]);
     const [timeArray, setTimeArray] = useState<ZarrArray>();
     const [timeIndexArray, setTimeIndexArray] = useState<ZarrArray>();
     const [trackArray, setTrackArray] = useState<ZarrArray>();
@@ -28,45 +29,25 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useState(0);
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
-    const [selecting, setSelecting] = useState(false);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
+    const viewedIds = useRef<Array<number>>([]);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        canvas.current = new PointCanvas(renderWidth, renderHeight, setSelected);
+        canvas.current = new PointCanvas(renderWidth, renderHeight);
 
         // append renderer canvas
         const divCurrent = divRef.current;
         const renderer = canvas.current!.renderer;
         divCurrent?.appendChild(renderer.domElement);
-
-        const keyDown = (event: KeyboardEvent) => {
-            console.log("keyDown: %s", event.key);
-            if (event.repeat) {
-                return;
-            } // ignore repeats (key held down)
-            if (event.key === "Shift") {
-                setSelecting(true);
-            }
-        };
-        const keyUp = (event: KeyboardEvent) => {
-            console.log("keyUp: %s", event.key);
-            if (event.key === "Shift") {
-                setSelecting(false);
-            }
-        };
-
-        // key listeners are added to the document because we don't want the
-        // canvas to have to be selected prior to listening for them
-        document.addEventListener("keydown", keyDown);
-        document.addEventListener("keyup", keyUp);
 
         // start animating - this keeps the scene rendering when controls change, etc.
         canvas.current.animate();
@@ -74,12 +55,9 @@ export default function Scene(props: SceneProps) {
         return () => {
             renderer.domElement.remove();
             canvas.current?.dispose();
-            document.removeEventListener("keydown", keyDown);
-            document.removeEventListener("keyup", keyUp);
         };
     }, []); // dependency array must be empty to run only on mount!
 
-    canvas.current?.setSelecting(selecting);
 
     // update the time index array when the dataUrl changes
     useEffect(() => {
@@ -128,11 +106,12 @@ export default function Scene(props: SceneProps) {
         if (!timeIndexArray) return;
         // TODO: how to get the max number of points?
         canvas.current?.initPointsGeometry(30000);
-        canvas.current?.initTracksGeometry(selected.length, timeIndexArray.shape[0]);
+        canvas.current?.initTracksGeometry(0, timeIndexArray.shape[0]);
     }, [timeArray]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        setSelectedPoints({});
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -145,6 +124,10 @@ export default function Scene(props: SceneProps) {
                     console.debug("IGNORE SET points at time %d", curTime);
                     return;
                 }
+                viewedIds.current = [];
+                for (let i = 0; i < data.length; ++i) {
+                    viewedIds.current.push(data[i][0])
+                }
                 canvas.current?.setPointsPositions(data);
             });
         } else {
@@ -156,6 +139,7 @@ export default function Scene(props: SceneProps) {
     }, [timeArray, curTime]);
 
     useEffect(() => {
+        const selected = getSelectedIds(selectedPoints, viewedIds.current);
         console.log("selected changed: %s", selected);
         if (selected && selected.length > 0) {
             canvas.current?.initTracksGeometry(selected.length, timeIndexArray.shape[0]);
@@ -169,7 +153,7 @@ export default function Scene(props: SceneProps) {
                 });
             }
         }
-    }, [selected]);
+    }, [selectedPoints]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -227,6 +211,19 @@ export default function Scene(props: SceneProps) {
             </div>
         </div>
     );
+}
+
+function getSelectedIds(collection: PointsCollection | undefined, viewedIds: Array<number>) {
+    let selectedIds = [];
+    if (collection) {
+        console.debug("viewed IDs:", viewedIds);
+        const selections = Object.values(collection);
+        if (selections.length > 0 && viewedIds.length > 0) {
+            selectedIds = selections[0].map((index: number) => viewedIds[index]);
+        }
+        console.debug("selected IDs:", selectedIds);
+    }
+    return selectedIds;
 }
 
 async function loadArray(store: string, path: string) {
