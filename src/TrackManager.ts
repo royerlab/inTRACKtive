@@ -1,11 +1,12 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, openArray } from "zarr";
+import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
 
 class SparseZarrArray {
     store: string;
     groupPath: string;
     // TODO: indptr is pretty small, could be loaded into memory
     indptr: ZarrArray;
+    indptrCache: Promise<Int32Array> | Int32Array | null = null;
     indices: ZarrArray;
     data: ZarrArray | null;
 
@@ -15,6 +16,23 @@ class SparseZarrArray {
         this.indptr = indptr;
         this.indices = indices;
         this.data = data;
+    }
+
+    async getIndPtr(s: Slice): Promise<Int32Array> {
+        // TODO: this may not be a good way to cache this data
+        if (this.indptrCache === null) {
+            this.indptrCache = this.indptr.get([null]).then((data: NestedArray) => {
+                this.indptrCache = data.data;
+            });
+        }
+
+        let result;
+        if (this.indptrCache instanceof Promise) {
+            result = (await this.indptr.get(s)).data;
+        } else if (this.indptrCache instanceof Int32Array) {
+            result = this.indptrCache.subarray(s.start, s.stop);
+        }
+        return result;
     }
 }
 
@@ -31,10 +49,8 @@ export async function openSparseZarrArray(store: string, groupPath: string, hasD
         mode: "r",
     });
 
-    let data;
-    if (!hasData) {
-        data = null;
-    } else {
+    let data = null;
+    if (hasData) {
         data = await openArray({
             store: store,
             path: groupPath + "/data",
@@ -83,25 +99,21 @@ export class TrackManager {
         return points.subarray(0, endIndex);
     }
 
-    async fetchTrackIDsForPoint(pointID: number): Promise<Uint32Array> {
-        const rowStartEnd = await this.pointsToTracks.indptr.get([slice(pointID, pointID + 2)]);
-        const trackIDs = await this.pointsToTracks.indices.get([slice(rowStartEnd.data[0], rowStartEnd.data[1])]);
+    async fetchTrackIDsForPoint(pointID: number): Promise<Int32Array> {
+        const rowStartEnd = await this.pointsToTracks.getIndPtr(slice(pointID, pointID + 2));
+        const trackIDs = await this.pointsToTracks.indices.get([slice(rowStartEnd[0], rowStartEnd[1])]);
         return trackIDs.data;
     }
 
-    async fetchPointIDsForTrack(trackID: number): Promise<Uint32Array> {
-        const rowStartEnd = await this.tracksToPoints.indptr.get([slice(trackID, trackID + 2)]);
-        const pointIDs = await this.tracksToPoints.indices.get([slice(rowStartEnd.data[0], rowStartEnd.data[1])]);
+    async fetchPointIDsForTrack(trackID: number): Promise<Int32Array> {
+        const rowStartEnd = await this.tracksToPoints.getIndPtr(slice(trackID, trackID + 2));
+        const pointIDs = await this.tracksToPoints.indices.get([slice(rowStartEnd[0], rowStartEnd[1])]);
         return pointIDs.data;
     }
 
     async fetchPointsForTrack(trackID: number): Promise<Float32Array> {
-        const rowStartEnd = await this.tracksToPoints.indptr.get([slice(trackID, trackID + 2)]);
-        console.log("fetchPointsForTrack: %d", trackID, rowStartEnd);
-        const points = await this.tracksToPoints.data.get([
-            slice(rowStartEnd.data[0], rowStartEnd.data[1]),
-            slice(null),
-        ]);
+        const rowStartEnd = await this.tracksToPoints.getIndPtr(slice(trackID, trackID + 2));
+        const points = await this.tracksToPoints.data.get([slice(rowStartEnd[0], rowStartEnd[1]), slice(null)]);
         // flatten the resulting n x 3 array in to a 1D [xyzxyzxyz...] array
         const flatPoints = new Float32Array(points.data.length * 3);
         for (let i = 0; i < points.data.length; i++) {
