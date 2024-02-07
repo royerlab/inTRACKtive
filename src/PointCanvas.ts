@@ -151,8 +151,8 @@ export class PointCanvas {
             const material = new LineBasicMaterial({
                 color: this.trackColor,
                 linewidth: 2,
-                linecap: "round", //ignored by WebGLRenderer
-                linejoin: "round", //ignored by WebGLRenderer
+                linecap: "round", // ignored by WebGLRenderer
+                linejoin: "round", // ignored by WebGLRenderer
             });
             const track = new Line(geometry, material);
             this.tracks.add(track);
