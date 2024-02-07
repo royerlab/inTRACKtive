@@ -157,7 +157,7 @@ export class PointCanvas {
     addTrack(trackID: number, positions: Float32Array) {
         if (trackID in this.tracks) {
             console.warn("Track with ID %d already exists", trackID);
-            this.removeTrack(trackID);
+            return;
         }
         const pos = [];
         const colors = [];

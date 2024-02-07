@@ -57,14 +57,15 @@ export default function Scene(props: SceneProps) {
 
     useEffect(() => {
         console.log("selected points: %s", selectedPoints);
-        if (!selectedPoints || !(23 in selectedPoints)) return;
+        const pointsID = canvas.current?.points.id || 0;
+        if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
-        // TODO: 23 not guaranteed
-        for (const p of selectedPoints[23]) {
-            // TODO: bad hardcoded path
+        // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
+        for (const p of selectedPoints[pointsID]) {
             const pointID = curTime * maxPointsPerTimepoint + p;
             trackManager?.fetchTrackIDsForPoint(pointID).then((tracks) => {
                 for (const t of tracks) {
+                    if (canvas.current && t in canvas.current.tracks) continue;
                     trackManager.fetchPointsForTrack(t).then((points) => {
                         canvas.current?.addTrack(t, points);
                     });
