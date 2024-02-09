@@ -17,6 +17,7 @@ vi.mock("../src/PointCanvas", () => {
     PointCanvas.prototype.animate = vi.fn();
     PointCanvas.prototype.dispose = vi.fn();
     PointCanvas.prototype.setSize = vi.fn();
+    PointCanvas.prototype.resetPointColors = vi.fn();
 
     return { PointCanvas };
 });
