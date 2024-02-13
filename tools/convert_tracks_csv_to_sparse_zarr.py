@@ -94,22 +94,30 @@ print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 # TODO: process the tracks-to-tracks data - right now this does not provide a way
 # to get ancestor/descendent tracks
 
-# Here is the output of this script on my machine, using the ZSNS001_tracks.csv file:
-# Read 21697591 points in 22.329734917002497 seconds
-# Munged 21697591 points in 118.71619812501012 seconds
-# Converted to CSR in 13.235349250011495 seconds
-# Saved to Zarr in 1.1937562500097556 seconds
+# Here is the output of this script on my machine, using the ZSNS001_tracks.csv file.
+# Surely this conversion could be sped up!
+# ❯ python convert_tracks_csv_to_sparse_zarr.py
+# Read 21697591 points in 23.41321291704662 seconds
+# Munged 21697591 points in 61.357248957967386 seconds
+# Converted to CSR in 8.24479133298155 seconds
+# (21697591, 3)
+# Saved to Zarr in 40.47038504201919 seconds
+
+# This is what the resulting Zarr store looks like:
 # ~/Data/tracking
-# ❯ du -sh *
-# 197M	ZSNS001_points.zarr
-# 62M	ZSNS001_points_to_tracks.zarr
-# 849M	ZSNS001_tracks.csv
-#  64M	ZSNS001_tracks_to_points.zarr
+# ❯ du -sh ZSNS001_tracks_bundle.zarr
+# 520M	ZSNS001_tracks_bundle.zarr
 
-# within each sparse array group we have something like this:
-# ❯ du -sh ZSNS001_tracks_to_points.zarr/*
-#  62M	ZSNS001_tracks_to_points.zarr/indices
-# 1.9M	ZSNS001_tracks_to_points.zarr/indptr
-# thus `indptr` can certainly be cahced locally to eliminate many extra requests
+# ZSNS001_tracks_bundle.zarr
+# ├── points (198M)
+# ├── points_to_tracks (62M)
+# │   ├── indices (61M)
+# │   └── indptr (1M)
+# └── tracks_to_points (259M)
+#     ├── data (207M)
+#     ├── indices (50M)
+#     └── indptr (1.9M)
 
-# I need to test if this would just be better as a big compressed zarr array with lots of zeros
+# note the relatively small size of the indptr arrays
+# tracks_to_points/data is a redundant copy of the points array to avoid having
+# to fetch point coordinates individually
