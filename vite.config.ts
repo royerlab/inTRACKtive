@@ -13,5 +13,9 @@ export default defineConfig({
             name: "chromium", // browser name is required
             headless: true,
         },
+        coverage: {
+            provider: "istanbul",
+            include: ["src/**"],
+        },
     },
 });

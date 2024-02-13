@@ -37,7 +37,7 @@
     "@typescript-eslint/parser": "^6.20.0",
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/browser": "^1.2.2",
-    "@vitest/coverage-v8": "^1.2.2",
+    "@vitest/coverage-istanbul": "^1.2.2",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
