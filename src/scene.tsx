@@ -7,13 +7,12 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
-// const DEFAULT_ZARR_URL = new URL(
-//     "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
-// );
-
-const DEFAULT_ZARR_URL = new URL("http://localhost:8000/ZSNS001_points.zarr");
+const DEFAULT_ZARR_URL = new URL(
+    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
+        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
+);
 interface SceneProps {
-    renderWidth: number;
+    renderWidth?: number;
     renderHeight?: number;
 }
 
@@ -77,10 +76,7 @@ export default function Scene(props: SceneProps) {
     // update the array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const pathParts = dataUrl.pathname.split("/");
-        const path = pathParts.pop() || "";
-        const store = dataUrl.origin + pathParts.join("/");
-        const trackManager = loadTrackManager(store, path);
+        const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: ZarrArray) => {
             setTrackManager(tm);

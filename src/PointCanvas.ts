@@ -182,6 +182,7 @@ export class PointCanvas {
     }
 
     removeTrack(trackID: number) {
+        // TODO: currently unused
         if (!(trackID in this.tracks)) {
             console.warn("No track with ID %d to remove", trackID);
             return;
