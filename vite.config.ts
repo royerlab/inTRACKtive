@@ -7,5 +7,11 @@ export default defineConfig({
     plugins: [react()],
     test: {
         environment: "jsdom",
+        browser: {
+            enabled: true,
+            provider: "playwright",
+            name: "chromium", // browser name is required
+            headless: true,
+        },
     },
 });
