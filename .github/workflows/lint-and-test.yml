@@ -14,5 +14,5 @@ jobs:
           node-version: 21
       - run: npm ci
       - run: npm run lint
-      - run: npx playwright install
+      - run: npx playwright install chromium
       - run: npm run coverage
