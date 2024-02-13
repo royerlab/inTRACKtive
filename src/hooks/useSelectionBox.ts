@@ -110,5 +110,5 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
         }
     }, [selectedPoints]);
 
-    return { selectedPoints, setSelectedPoints, selecting };
+    return { selectedPoints, setSelectedPoints, selecting, setSelecting };
 }

@@ -23,9 +23,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Lut } from "three/addons/math/Lut.js";
 import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
-interface Tracks {
-    [track_id: number]: Line2;
-}
+type Tracks = Map<number, Line2>;
 
 export class PointCanvas {
     scene: Scene;
@@ -35,7 +33,7 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
-    tracks: Tracks = {};
+    tracks: Tracks = new Map();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -155,7 +153,7 @@ export class PointCanvas {
     }
 
     addTrack(trackID: number, positions: Float32Array) {
-        if (trackID in this.tracks) {
+        if (this.tracks.has(trackID)) {
             console.warn("Track with ID %d already exists", trackID);
             return;
         }
@@ -178,16 +176,11 @@ export class PointCanvas {
         });
         const track = new Line2(geometry, material);
         this.scene.add(track);
-        this.tracks[trackID] = track;
+        this.tracks.set(trackID, track);
     }
 
     removeTrack(trackID: number) {
-        // TODO: currently unused
-        if (!(trackID in this.tracks)) {
-            console.warn("No track with ID %d to remove", trackID);
-            return;
-        }
-        const track = this.tracks[trackID];
+        const track = this.tracks.get(trackID);
         if (track) {
             this.scene.remove(track);
             track.geometry.dispose();
@@ -198,8 +191,17 @@ export class PointCanvas {
             } else {
                 track.material.dispose();
             }
-            delete this.tracks[trackID];
+            this.tracks.delete(trackID);
+        } else {
+            console.warn("No track with ID %d to remove", trackID);
         }
+    }
+
+    removeAllTracks() {
+        for (const trackID of this.tracks.keys()) {
+            this.removeTrack(trackID);
+        }
+        this.resetPointColors();
     }
 
     dispose() {

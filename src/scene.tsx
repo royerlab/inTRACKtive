@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
+import { Button, InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
@@ -64,7 +64,7 @@ export default function Scene(props: SceneProps) {
             const pointID = curTime * maxPointsPerTimepoint + p;
             trackManager?.fetchTrackIDsForPoint(pointID).then((tracks) => {
                 for (const t of tracks) {
-                    if (canvas.current && t in canvas.current.tracks) continue;
+                    if (canvas.current && canvas.current.tracks.has(t)) continue;
                     trackManager.fetchPointsForTrack(t).then((points) => {
                         canvas.current?.addTrack(t, points);
                     });
@@ -189,6 +189,14 @@ export default function Scene(props: SceneProps) {
                             setPlaying((e.target as HTMLInputElement).checked);
                         }}
                     />
+                    <Button
+                        disabled={trackManager === undefined}
+                        sdsType="primary"
+                        sdsStyle="rounded"
+                        onClick={() => canvas.current?.removeAllTracks()}
+                    >
+                        Clear Tracks
+                    </Button>
                 </div>
             </div>
         </div>
