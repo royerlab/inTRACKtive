@@ -20,6 +20,10 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { Lut } from "three/addons/math/Lut.js";
+import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
+
+type Tracks = Map<number, Line2>;
 
 export class PointCanvas {
     scene: Scene;
@@ -29,6 +33,7 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
+    tracks: Tracks = new Map();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -46,8 +51,8 @@ export class PointCanvas {
         this.camera.position.set(target.x, target.y, target.z - 1500);
         this.camera.lookAt(target.x, target.y, target.z);
 
-        const geometry = new BufferGeometry();
-        const material = new PointsMaterial({
+        const pointsGeometry = new BufferGeometry();
+        const pointsMaterial = new PointsMaterial({
             size: 16.0,
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
@@ -55,7 +60,7 @@ export class PointCanvas {
             depthTest: false,
             transparent: true,
         });
-        this.points = new Points(geometry, material);
+        this.points = new Points(pointsGeometry, pointsMaterial);
 
         this.scene.add(new AxesHelper(128));
         this.scene.add(this.points);
@@ -145,6 +150,58 @@ export class PointCanvas {
         positions.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
         this.points.geometry.computeBoundingSphere();
+    }
+
+    addTrack(trackID: number, positions: Float32Array) {
+        if (this.tracks.has(trackID)) {
+            console.warn("Track with ID %d already exists", trackID);
+            return;
+        }
+        const pos = [];
+        const colors = [];
+        const lut = new Lut("rainbow", 256);
+
+        for (let i = 0; i < positions.length; i += 3) {
+            pos.push(positions[i], positions[i + 1], positions[i + 2]);
+            const color = lut.getColor(i / positions.length);
+            colors.push(color.r, color.g, color.b);
+        }
+
+        const geometry = new LineGeometry();
+        geometry.setPositions(positions);
+        geometry.setColors(colors);
+        const material = new LineMaterial({
+            linewidth: 0.003,
+            vertexColors: true,
+        });
+        const track = new Line2(geometry, material);
+        this.scene.add(track);
+        this.tracks.set(trackID, track);
+    }
+
+    removeTrack(trackID: number) {
+        const track = this.tracks.get(trackID);
+        if (track) {
+            this.scene.remove(track);
+            track.geometry.dispose();
+            if (Array.isArray(track.material)) {
+                for (const material of track.material) {
+                    material.dispose();
+                }
+            } else {
+                track.material.dispose();
+            }
+            this.tracks.delete(trackID);
+        } else {
+            console.warn("No track with ID %d to remove", trackID);
+        }
+    }
+
+    removeAllTracks() {
+        for (const trackID of this.tracks.keys()) {
+            this.removeTrack(trackID);
+        }
+        this.resetPointColors();
     }
 
     dispose() {

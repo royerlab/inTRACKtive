@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { InputSlider, InputText, InputToggle } from "@czi-sds/components";
+import { Button, InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
+import { TrackManager, loadTrackManager } from "./TrackManager";
 
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, openArray } from "zarr";
+import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
 const DEFAULT_ZARR_URL = new URL(
-    "https://public.czbiohub.org/royerlab/zebrahub/imaging/single-objective/tracks_benchmark/ZSNS001_nodes.zarr",
+    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
+        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
 );
-
 interface SceneProps {
-    renderWidth: number;
+    renderWidth?: number;
     renderHeight?: number;
 }
 
@@ -19,7 +20,7 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    const [array, setArray] = useState<ZarrArray>();
+    const [trackManager, setTrackManager] = useState<TrackManager>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useState(0);
@@ -31,7 +32,7 @@ export default function Scene(props: SceneProps) {
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
-    const { setSelectedPoints } = useSelectionBox(canvas.current);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
@@ -53,17 +54,33 @@ export default function Scene(props: SceneProps) {
         };
     }, []); // dependency array must be empty to run only on mount!
 
+    useEffect(() => {
+        console.log("selected points: %s", selectedPoints);
+        const pointsID = canvas.current?.points.id || 0;
+        if (!selectedPoints || !(pointsID in selectedPoints)) return;
+        const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
+        // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
+        for (const p of selectedPoints[pointsID]) {
+            const pointID = curTime * maxPointsPerTimepoint + p;
+            trackManager?.fetchTrackIDsForPoint(pointID).then((tracks) => {
+                for (const t of tracks) {
+                    if (canvas.current && canvas.current.tracks.has(t)) continue;
+                    trackManager.fetchPointsForTrack(t).then((points) => {
+                        canvas.current?.addTrack(t, points);
+                    });
+                }
+            });
+        }
+    }, [selectedPoints]);
+
     // update the array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const pathParts = dataUrl.pathname.split("/");
-        const path = pathParts.pop() || "";
-        const store = dataUrl.origin + pathParts.join("/");
-        const array = loadArray(store, path);
+        const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
-        array.then((array: ZarrArray) => {
-            setArray(array);
-            setNumTimes(array.shape[0]);
+        trackManager.then((tm: ZarrArray) => {
+            setTrackManager(tm);
+            setNumTimes(tm.points.shape[0]);
             setCurTime(0);
         });
     }, [dataUrl]);
@@ -89,9 +106,9 @@ export default function Scene(props: SceneProps) {
 
     // update the geometry buffers when the array changes
     useEffect(() => {
-        if (!array) return;
-        canvas.current?.initPointsGeometry(array.shape[1] / 3);
-    }, [array]);
+        if (!trackManager) return;
+        canvas.current?.initPointsGeometry(trackManager.points.shape[1] / 3);
+    }, [trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
@@ -100,9 +117,11 @@ export default function Scene(props: SceneProps) {
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
-        if (array && !ignore) {
+        if (trackManager && !ignore) {
+            // trackManager.highlightTracks(curTime);
             console.debug("fetch points at time %d", curTime);
-            fetchPointsAtTime(array, curTime).then((data) => {
+            // fetchPointsAtTime(array, curTime).then((data) => {
+            trackManager?.getPointsAtTime(curTime).then((data) => {
                 console.debug("got %d points for time %d", data.length / 3, curTime);
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", curTime);
@@ -116,7 +135,7 @@ export default function Scene(props: SceneProps) {
         return () => {
             ignore = true;
         };
-    }, [array, curTime]);
+    }, [trackManager, curTime]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -140,12 +159,12 @@ export default function Scene(props: SceneProps) {
                     value={dataUrl.toString()}
                     onChange={(e) => setDataUrl(new URL(e.target.value))}
                     fullWidth={true}
-                    intent={array ? "default" : "error"}
+                    intent={trackManager ? "default" : "error"}
                 />
                 <InputSlider
                     id="time-frame-slider"
                     aria-labelledby="input-slider-time-frame"
-                    disabled={array === undefined}
+                    disabled={trackManager === undefined}
                     min={0}
                     max={numTimes - 1}
                     valueLabelDisplay="on"
@@ -157,7 +176,7 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Spin"
                         offLabel="Spin"
-                        disabled={array === undefined}
+                        disabled={trackManager === undefined}
                         onChange={(e) => {
                             setAutoRotate((e.target as HTMLInputElement).checked);
                         }}
@@ -165,47 +184,21 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Play"
                         offLabel="Play"
-                        disabled={array === undefined}
+                        disabled={trackManager === undefined}
                         onChange={(e) => {
                             setPlaying((e.target as HTMLInputElement).checked);
                         }}
                     />
+                    <Button
+                        disabled={trackManager === undefined}
+                        sdsType="primary"
+                        sdsStyle="rounded"
+                        onClick={() => canvas.current?.removeAllTracks()}
+                    >
+                        Clear Tracks
+                    </Button>
                 </div>
             </div>
         </div>
     );
-}
-
-async function loadArray(store: string, path: string) {
-    let array;
-    try {
-        array = await openArray({
-            store: store,
-            path: path,
-            mode: "r",
-        });
-    } catch (err) {
-        console.error("Error opening array: %s", err);
-        array = undefined;
-    }
-    console.log("loaded new array: %s", array);
-    return array;
-}
-
-async function fetchPointsAtTime(array: ZarrArray, timeIndex: number): Promise<Float32Array> {
-    console.debug("fetchPointsAtTime: %d", timeIndex);
-
-    const points: Float32Array = (await array.get([timeIndex, slice(null)])).data;
-
-    // assume points < -127 are invalid, and all are at the end of the array
-    // this is how the jagged array is stored in the zarr
-    // for Float32 it's actually -9999, but the int8 data is -127
-    let endIndex = points.findIndex((value) => value <= -127);
-    if (endIndex === -1) {
-        endIndex = points.length;
-    } else if (endIndex % 3 !== 0) {
-        console.error("invalid points - %d not divisible by 3", endIndex);
-        endIndex -= endIndex % 3;
-    }
-    return points.subarray(0, endIndex);
 }
