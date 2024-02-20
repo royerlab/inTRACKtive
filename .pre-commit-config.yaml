@@ -1,0 +1,17 @@
+repos:
+- repo: local
+  hooks:
+  - id: npm-lint
+    name: npm lint
+    entry: sh -c 'npm run lint'
+    language: system
+    types: [file]
+    files: src/.*\.(cjs|js|ts|tsx|json|css|md|yml)$
+    pass_filenames: false
+  - id: npm-format
+    name: npm run format
+    entry: sh -c 'npm run format'
+    language: system
+    types: [file]
+    files: src/.*\.(cjs|js|ts|tsx|json|css|md|yml)$
+    pass_filenames: false
