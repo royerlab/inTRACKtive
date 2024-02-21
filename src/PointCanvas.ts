@@ -5,6 +5,7 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    Int32BufferAttribute,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -20,7 +21,6 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { Lut } from "three/addons/math/Lut.js";
 import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
 type Tracks = Map<number, Line2>;
@@ -34,6 +34,8 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
+    // TODO: probably don't want this here...
+    maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -70,7 +72,7 @@ export class PointCanvas {
         const renderModel = new RenderPass(this.scene, this.camera);
         this.bloomPass = new UnrealBloomPass(
             new Vector2(width, height), // resolution
-            0.4, // strength
+            0.0, // strength
             0, // radius
             0, // threshold
         );
@@ -152,31 +154,66 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array) {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array) {
         if (this.tracks.has(trackID)) {
             console.warn("Track with ID %d already exists", trackID);
             return;
         }
         const pos = [];
-        const colors = [];
-        const lut = new Lut("rainbow", 256);
+        const time = [];
 
         for (let i = 0; i < positions.length; i += 3) {
             pos.push(positions[i], positions[i + 1], positions[i + 2]);
-            const color = lut.getColor(i / positions.length);
-            colors.push(color.r, color.g, color.b);
+        }
+        for (let i = 0; i < ids.length; i++) {
+            time.push(ids[i]);
         }
 
         const geometry = new LineGeometry();
-        geometry.setPositions(positions);
-        geometry.setColors(colors);
+        geometry.setPositions(pos);
+        geometry.setAttribute("time", new Int32BufferAttribute(time, 1));
         const material = new LineMaterial({
-            linewidth: 0.003,
+            linewidth: 0.002,
             vertexColors: true,
         });
         const track = new Line2(geometry, material);
-        this.scene.add(track);
         this.tracks.set(trackID, track);
+        this.updateTrackColors(trackID, 0, 1000, 0);
+        this.scene.add(track);
+    }
+
+    updateAllTrackColors(t: number) {
+        for (const track of this.tracks.keys()) {
+            this.updateTrackColors(track, t - 5, t + 5, t);
+        }
+    }
+
+    updateTrackColors(trackID: number, tMin: number, tMax: number, curTime: number) {
+        const track = this.tracks.get(trackID);
+        if (track) {
+            const time = track.geometry.getAttribute("time");
+            const colors = [];
+            const points = [];
+            for (let i = 0; i < time.count; i++) {
+                const t = Math.floor(time.array[i] / this.maxPointsPerTimepoint);
+                if (t === curTime) {
+                    points.push(time.array[i] % this.maxPointsPerTimepoint);
+                }
+                if (t < tMin || t > tMax) {
+                    colors.push(
+                        ((0.9 * (time.count - i)) / time.count)**3,
+                        ((0.9 * (time.count - i)) / time.count)**3,
+                        (0.9 * (time.count - i)) / time.count,
+                    );
+                } else {
+                    colors.push(0.8, 0.0, 0.8);
+                }
+            }
+            track.geometry.setColors(colors);
+            this.highlightPoints(points);
+        } else {
+            console.warn("No track with ID %d to update", trackID);
+        }
     }
 
     removeTrack(trackID: number) {

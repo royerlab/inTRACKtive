@@ -9,7 +9,7 @@ import useSelectionBox from "./hooks/useSelectionBox";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
+    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
 );
 interface SceneProps {
     renderWidth?: number;
@@ -57,7 +57,7 @@ export default function Scene(props: SceneProps) {
     useEffect(() => {
         console.debug("selected points: %s", selectedPoints);
         const pointsID = canvas.current?.points.id || 0;
-        if (!selectedPoints || !(pointsID in selectedPoints)) return;
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
 
         // TODO: use Promise.all to fetch all tracks in parallel
@@ -67,14 +67,22 @@ export default function Scene(props: SceneProps) {
                 const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
                 for (const l of lineage) {
                     if (canvas.current && canvas.current.tracks.has(l)) continue;
-                    const points = await trackManager?.fetchPointsForTrack(l);
-                    points && canvas.current?.addTrack(l, points);
+                    const [pos, ids] = (await trackManager?.fetchPointsForTrack(l)) || [
+                        Float32Array.from([]),
+                        Int32Array.from([]),
+                    ];
+                    pos && canvas.current?.addTrack(l, pos, ids);
+                    canvas.current?.updateTrackColors(l, curTime - 5, curTime + 5, curTime);
                 }
             }
         };
-
         // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
-        for (const p of selectedPoints[pointsID]) {
+        const selected = selectedPoints.get(pointsID) || [];
+        console.log("selected points: %s", selected);
+
+        canvas.current?.highlightPoints(selected);
+        console.log(selected);
+        for (const p of selected) {
             const pointID = curTime * maxPointsPerTimepoint + p;
             fetchAndAddTrack(pointID);
         }
@@ -115,28 +123,32 @@ export default function Scene(props: SceneProps) {
     useEffect(() => {
         if (!trackManager) return;
         canvas.current?.initPointsGeometry(trackManager.points.shape[1] / 3);
+        canvas.current && (canvas.current.maxPointsPerTimepoint = trackManager.maxPointsPerTimepoint);
     }, [trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // TODO: update the selected points instead of clearing them
-        setSelectedPoints({});
+        // setSelectedPoints(new Map());
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
-        if (trackManager && !ignore) {
-            // trackManager.highlightTracks(curTime);
-            console.debug("fetch points at time %d", curTime);
-            // fetchPointsAtTime(array, curTime).then((data) => {
-            trackManager?.fetchPointsAtTime(curTime).then((data) => {
-                console.debug("got %d points for time %d", data.length / 3, curTime);
+        if (canvas.current && trackManager && !ignore) {
+            const getAndHighlightPoints = async (canvas: PointCanvas, time: number) => {
+                console.debug("fetch points at time %d", time);
+                const data = await trackManager.fetchPointsAtTime(time);
+                console.debug("got %d points for time %d", data.length / 3, time);
+
                 if (ignore) {
-                    console.debug("IGNORE SET points at time %d", curTime);
+                    console.debug("IGNORE SET points at time %d", time);
                     return;
                 }
-                canvas.current?.setPointsPositions(data);
-            });
+
+                canvas.setPointsPositions(data);
+                canvas.resetPointColors();
+                canvas.updateAllTrackColors(curTime);
+            };
+            getAndHighlightPoints(canvas.current, curTime);
         } else {
             console.debug("IGNORE FETCH points at time %d", curTime);
         }
@@ -144,6 +156,19 @@ export default function Scene(props: SceneProps) {
             ignore = true;
         };
     }, [trackManager, curTime]);
+
+    useEffect(() => {
+        if (canvas.current && trackManager) {
+            const pointsGeometry = canvas.current.points.geometry;
+            let target = { x: 0, y: 0, z: 0 };
+            if (pointsGeometry.boundingSphere) {
+                target = pointsGeometry.boundingSphere.center;
+            }
+            console.log("target: %o", target);
+            canvas.current.camera.position.set(target.x, target.y, target.z - 1500);
+            canvas.current.camera.lookAt(target.x, target.y, target.z);
+        }
+    }, [trackManager]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
