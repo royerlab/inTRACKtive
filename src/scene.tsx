@@ -55,7 +55,7 @@ export default function Scene(props: SceneProps) {
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.log("selected points: %s", selectedPoints);
+        console.debug("selected points: %s", selectedPoints);
         const pointsID = canvas.current?.points.id || 0;
         if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
@@ -119,6 +119,7 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        // TODO: update the selected points instead of clearing them
         setSelectedPoints({});
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
