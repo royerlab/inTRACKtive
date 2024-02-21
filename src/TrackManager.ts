@@ -66,22 +66,23 @@ export class TrackManager {
     points: ZarrArray;
     pointsToTracks: SparseZarrArray;
     tracksToPoints: SparseZarrArray;
-    // tracksToTracks: SparseZarrArray;
+    tracksToTracks: SparseZarrArray;
 
     constructor(
         store: string,
         points: ZarrArray,
         pointsToTracks: SparseZarrArray,
         tracksToPoints: SparseZarrArray,
-        // tracksToTracks: SparseZarrArray,
+        tracksToTracks: SparseZarrArray,
     ) {
         this.store = store;
         this.points = points;
         this.pointsToTracks = pointsToTracks;
         this.tracksToPoints = tracksToPoints;
+        this.tracksToTracks = tracksToTracks;
     }
 
-    async getPointsAtTime(timeIndex: number): Promise<Float32Array> {
+    async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
         console.debug("fetchPointsAtTime: %d", timeIndex);
 
         const points: Float32Array = (await this.points.get([timeIndex, slice(null)])).data;
@@ -115,12 +116,15 @@ export class TrackManager {
         }
         return flatPoints;
     }
+
+    async fetchLineageForTrack(trackID: number): Promise<Int32Array> {
+        const rowStartEnd = await this.tracksToTracks.getIndPtr(slice(trackID, trackID + 2));
+        const lineage = await this.tracksToTracks.indices.get([slice(rowStartEnd[0], rowStartEnd[1])]);
+        return lineage.data;
+    }
 }
 
 export async function loadTrackManager(url: string) {
-    // const pathParts = dataUrl.pathname.split("/");
-    // const path = pathParts.pop() || "";
-    // const store = dataUrl.origin + pathParts.join("/");
     let trackManager;
     try {
         const points = await openArray({
@@ -130,7 +134,8 @@ export async function loadTrackManager(url: string) {
         });
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
-        trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints);
+        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", false);
+        trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks);
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);
         trackManager = null;

@@ -59,17 +59,24 @@ export default function Scene(props: SceneProps) {
         const pointsID = canvas.current?.points.id || 0;
         if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
+
+        // TODO: use Promise.all to fetch all tracks in parallel
+        const fetchAndAddTrack = async (pointID: number) => {
+            const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
+            for (const t of tracks) {
+                const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
+                for (const l of lineage) {
+                    if (canvas.current && canvas.current.tracks.has(l)) continue;
+                    const points = await trackManager?.fetchPointsForTrack(l);
+                    points && canvas.current?.addTrack(l, points);
+                }
+            }
+        };
+
         // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
         for (const p of selectedPoints[pointsID]) {
             const pointID = curTime * maxPointsPerTimepoint + p;
-            trackManager?.fetchTrackIDsForPoint(pointID).then((tracks) => {
-                for (const t of tracks) {
-                    if (canvas.current && canvas.current.tracks.has(t)) continue;
-                    trackManager.fetchPointsForTrack(t).then((points) => {
-                        canvas.current?.addTrack(t, points);
-                    });
-                }
-            });
+            fetchAndAddTrack(pointID);
         }
     }, [selectedPoints]);
 
@@ -121,7 +128,7 @@ export default function Scene(props: SceneProps) {
             // trackManager.highlightTracks(curTime);
             console.debug("fetch points at time %d", curTime);
             // fetchPointsAtTime(array, curTime).then((data) => {
-            trackManager?.getPointsAtTime(curTime).then((data) => {
+            trackManager?.fetchPointsAtTime(curTime).then((data) => {
                 console.debug("got %d points for time %d", data.length / 3, curTime);
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", curTime);
