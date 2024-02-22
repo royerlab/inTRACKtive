@@ -160,7 +160,7 @@ class PointSelectionBox {
             const positionAttribute = geometry.getAttribute("position");
             const _vec3 = new Vector3();
             const start = geometry.drawRange.start;
-            const end = Math.min(geometry.drawRange.start + geometry.drawRange.count, positionAttribute.count);
+            const end = geometry.drawRange.start + geometry.drawRange.count;
             for (let i = start; i < end; i++) {
                 _vec3.set(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
                 if (frustum.containsPoint(_vec3)) {
