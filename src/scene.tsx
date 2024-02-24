@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useAtom } from 'jotai';
+import { atomWithHash } from 'jotai-location';
 import { Button, InputSlider, InputText, InputToggle } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
@@ -16,16 +18,35 @@ interface SceneProps {
     renderHeight?: number;
 }
 
+// Does atob/btoa only handle ASCII? Is that a problem for us?
+// I don't think so because URLs can only contain ASCII?
+function jsonDecodeBase64(data: string): string {
+    return JSON.parse(atob(data));
+}
+
+function jsonEncodeBase64(data: any): string {
+    return btoa(JSON.stringify(data));
+}
+
+function atomWithEncodedHash(key: string, initialValue: any) {
+    return atomWithHash(key, initialValue, {serialize: jsonEncodeBase64, deserialize: jsonDecodeBase64});
+}
+
+const dataUrlAtom = atomWithHash('dataUrl', DEFAULT_ZARR_URL);
+const curTimeAtom = atomWithHash('curTime', 0);
+const autoRotateAtom = atomWithHash('autoRotate', false);
+const playingAtom = atomWithHash('playing', false);
+
 export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
     const [trackManager, setTrackManager] = useState<TrackManager>();
-    const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
+    const [dataUrl, setDataUrl] = useAtom(dataUrlAtom);
     const [numTimes, setNumTimes] = useState(0);
-    const [curTime, setCurTime] = useState(0);
-    const [autoRotate, setAutoRotate] = useState(false);
-    const [playing, setPlaying] = useState(false);
+    const [curTime, setCurTime] = useAtom(curTimeAtom);
+    const [autoRotate, setAutoRotate] = useAtom(autoRotateAtom);
+    const [playing, setPlaying] = useAtom(playingAtom);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
@@ -176,6 +197,7 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Spin"
                         offLabel="Spin"
+                        checked={autoRotate}
                         disabled={trackManager === undefined}
                         onChange={(e) => {
                             setAutoRotate((e.target as HTMLInputElement).checked);
@@ -184,6 +206,7 @@ export default function Scene(props: SceneProps) {
                     <InputToggle
                         onLabel="Play"
                         offLabel="Play"
+                        checked={playing}
                         disabled={trackManager === undefined}
                         onChange={(e) => {
                             setPlaying((e.target as HTMLInputElement).checked);

@@ -22,6 +22,8 @@
     "@mui/lab": "^5.0.0-alpha.160",
     "@mui/material": "^5.15.4",
     "czifui": "^14.5.0",
+    "jotai": "^2.6.5",
+    "jotai-location": "^0.5.3",
     "playwright": "^1.41.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
