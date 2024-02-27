@@ -173,8 +173,9 @@ export class PointCanvas {
         geometry.setPositions(pos);
         geometry.setAttribute("time", new Int32BufferAttribute(time, 1));
         const material = new LineMaterial({
-            linewidth: 0.002,
             vertexColors: true,
+            worldUnits: true,
+            linewidth: 2,
         });
         const track = new Line2(geometry, material);
         this.tracks.set(trackID, track);
