@@ -25,7 +25,7 @@ export default function Scene(props: SceneProps) {
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useStateInUrlHash('curTime', 0);
-    const [autoRotate, setAutoRotate] = useStateInUrlHash('autoRotate', 0);
+    const [autoRotate, setAutoRotate] = useStateInUrlHash('autoRotate', false);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
 
