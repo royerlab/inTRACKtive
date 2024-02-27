@@ -201,8 +201,8 @@ export class PointCanvas {
                 }
                 if (t < tMin || t > tMax) {
                     colors.push(
-                        ((0.9 * (time.count - i)) / time.count)**3,
-                        ((0.9 * (time.count - i)) / time.count)**3,
+                        ((0.9 * (time.count - i)) / time.count) ** 3,
+                        ((0.9 * (time.count - i)) / time.count) ** 3,
                         (0.9 * (time.count - i)) / time.count,
                     );
                 } else {
