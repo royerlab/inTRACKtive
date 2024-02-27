@@ -6,6 +6,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
+import useStateInUrlHash from "./hooks/useUrlHash";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
@@ -23,7 +24,8 @@ export default function Scene(props: SceneProps) {
     const [trackManager, setTrackManager] = useState<TrackManager>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
-    const [curTime, setCurTime] = useState(0);
+    // TODO: learn what value to return in custom hook to avoid destructuring with renames.
+    const {value: curTime, setValue: setCurTime } = useStateInUrlHash('curTime', 0);
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
