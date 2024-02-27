@@ -6,10 +6,10 @@
 // - simplifies options/behavior
 // - allows whole fragment to be encoded/decoded
 
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-export default function useStateInUrlHash<Value>(key: string, initialValue: Value) {
-    const [value, setValue] = useState(initialValue);
+export default function useStateInUrlHash<Value>(key: string, initialValue: Value) : [Value, Dispatch<SetStateAction<Value>>] {
+    const [value, setValue] = useState<Value>(initialValue);
 
     // We want to set the React state value of this based on its value in the hash
     // whenever the hash changes.
@@ -38,5 +38,5 @@ export default function useStateInUrlHash<Value>(key: string, initialValue: Valu
         window.location.hash = searchParams.toString();
     }, [value]);
 
-    return { value, setValue };
+    return [value, setValue];
 }
