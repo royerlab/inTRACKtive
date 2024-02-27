@@ -2,13 +2,16 @@
 // https://github.com/jotaijs/jotai-location/blob/ec13c46d3458ff857e526a0abfbb9022300fb41b/src/atomWithHash.ts
 //
 // Changes:
-// - becomes a custom React hook instead of 
+// - becomes a custom React hook instead of
 // - simplifies options/behavior
 // - allows whole fragment to be encoded/decoded
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-export default function useStateInUrlHash<Value>(key: string, initialValue: Value) : [Value, Dispatch<SetStateAction<Value>>] {
+export default function useStateInUrlHash<Value>(
+    key: string,
+    initialValue: Value,
+): [Value, Dispatch<SetStateAction<Value>>] {
     const [value, setValue] = useState<Value>(initialValue);
 
     // We want to set the React state value of this based on its value in the hash
@@ -22,9 +25,9 @@ export default function useStateInUrlHash<Value>(key: string, initialValue: Valu
     };
     // Only want to register event listener to hash changes once on mount.
     useEffect(() => {
-        window.addEventListener('hashchange', setStateFromHash);
+        window.addEventListener("hashchange", setStateFromHash);
         return () => {
-            window.removeEventListener('hashchange', setStateFromHash);
+            window.removeEventListener("hashchange", setStateFromHash);
         };
     }, []);
 
