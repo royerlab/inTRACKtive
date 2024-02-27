@@ -25,8 +25,8 @@ export default function Scene(props: SceneProps) {
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
     const [numTimes, setNumTimes] = useState(0);
     // TODO: learn what value to return in custom hook to avoid destructuring with renames.
-    const {value: curTime, setValue: setCurTime } = useStateInUrlHash('curTime', 0);
-    const [autoRotate, setAutoRotate] = useState(false);
+    const { value: curTime, setValue: setCurTime } = useStateInUrlHash('curTime', 0);
+    const { value: autoRotate, setValue: setAutoRotate } = useStateInUrlHash('autoRotate', 0);
     const [playing, setPlaying] = useState(false);
     const [loading, setLoading] = useState(false);
 
