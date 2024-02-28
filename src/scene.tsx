@@ -6,7 +6,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
-import { reuseStateInUrlHash, useStateInUrlHash } from "./hooks/useUrlHash";
+import { getStateFromUrlHash, reuseStateInUrlHash, useStateInUrlHash } from "./hooks/useUrlHash";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
@@ -33,8 +33,8 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useStateInUrlHash("curTime", 0);
     const [autoRotate, setAutoRotate] = useStateInUrlHash("autoRotate", false);
     const [playing, setPlaying] = useStateInUrlHash("playing", false);
-    const selectionBox = useSelectionBox(canvas.current);
-    // setSelectedPoints is only called in pointerup, so initial state is not quite right
+    const initialValue = getStateFromUrlHash("selectedPoints", {});
+    const selectionBox = useSelectionBox(canvas.current, initialValue);
     const [selectedPoints, setSelectedPoints] = reuseStateInUrlHash("selectedPoints", selectionBox.selectedPoints, selectionBox.setSelectedPoints);
 
     // Derived state that does not need to be persisted.
@@ -63,7 +63,7 @@ export default function Scene(props: SceneProps) {
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.log("selected points: %s", selectedPoints);
+        console.log("selected points: %s", JSON.stringify(selectedPoints));
         const pointsID = canvas.current?.points.id || 0;
         if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
@@ -120,6 +120,7 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        // TODO: may want to keep selection (e.g. initialization).
         setSelectedPoints({});
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
         const loadingTimer = setTimeout(() => setLoading(true), 10);

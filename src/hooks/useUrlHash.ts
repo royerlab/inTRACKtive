@@ -8,6 +8,17 @@
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
+export function getStateFromUrlHash<Value>(key: string, defaultValue: Value): Value {
+    const searchParams = new URLSearchParams(window.location.hash.slice(1));
+    const serializedValue = searchParams.get(key);
+    let value = JSON.parse(serializedValue!);
+    console.log("getStateFromUrlHash: %s, %s", key, JSON.stringify(value));
+    if (!value) {
+        value = defaultValue;
+    }
+    return value;
+}
+
 export function reuseStateInUrlHash<Value>(
     key: string,
     value: Value,
@@ -45,8 +56,9 @@ export function reuseStateInUrlHash<Value>(
 
 export function useStateInUrlHash<Value> (
     key: string,
-    initialValue: Value,
+    defaultValue: Value,
 ): [Value, Dispatch<SetStateAction<Value>>] {
+    const initialValue = getStateFromUrlHash<Value>(key, defaultValue);
     const [value, setValue] = useState<Value>(initialValue);
     return reuseStateInUrlHash<Value>(key, value, setValue);
 }
