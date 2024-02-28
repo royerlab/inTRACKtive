@@ -6,7 +6,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
-import useStateInUrlHash from "./hooks/useUrlHash";
+import { reuseStateInUrlHash, useStateInUrlHash } from "./hooks/useUrlHash";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
@@ -21,20 +21,26 @@ export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
 
-    const [trackManager, setTrackManager] = useState<TrackManager>();
-    const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
-    const [numTimes, setNumTimes] = useState(0);
-    const [curTime, setCurTime] = useStateInUrlHash("curTime", 0);
-    const [autoRotate, setAutoRotate] = useStateInUrlHash("autoRotate", false);
-    const [playing, setPlaying] = useState(false);
-    const [loading, setLoading] = useState(false);
-
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
-    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
+
+    // Primary state that determines configuration of application.
+    // This is persisted in the URL for easy sharing.
+    const [dataUrl, setDataUrl] = useStateInUrlHash("dataUrl", DEFAULT_ZARR_URL);
+    const [curTime, setCurTime] = useStateInUrlHash("curTime", 0);
+    const [autoRotate, setAutoRotate] = useStateInUrlHash("autoRotate", false);
+    const [playing, setPlaying] = useStateInUrlHash("playing", false);
+    const selectionBox = useSelectionBox(canvas.current);
+    // setSelectedPoints is only called in pointerup, so initial state is not quite right
+    const [selectedPoints, setSelectedPoints] = reuseStateInUrlHash("selectedPoints", selectionBox.selectedPoints, selectionBox.setSelectedPoints);
+
+    // Derived state that does not need to be persisted.
+    const [trackManager, setTrackManager] = useState<TrackManager>();
+    const [numTimes, setNumTimes] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
@@ -203,7 +209,7 @@ export default function Scene(props: SceneProps) {
                             disabled={trackManager === undefined}
                             sdsType="primary"
                             sdsStyle="rounded"
-                            onClick={() => canvas.current?.removeAllTracks()}
+                            onClick={() => {setSelectedPoints({}); canvas.current?.removeAllTracks()}}
                         >
                             Clear Tracks
                         </Button>

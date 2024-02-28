@@ -4,16 +4,15 @@
 // Changes:
 // - becomes a custom React hook instead of
 // - simplifies options/behavior
-// - allows whole fragment to be encoded/decoded
+// - TODO: allows whole fragment to be encoded/decoded
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-export default function useStateInUrlHash<Value>(
+export function reuseStateInUrlHash<Value>(
     key: string,
-    initialValue: Value,
+    value: Value,
+    setValue: Dispatch<SetStateAction<Value>>,
 ): [Value, Dispatch<SetStateAction<Value>>] {
-    const [value, setValue] = useState<Value>(initialValue);
-
     // We want to set the React state value of this based on its value in the hash
     // whenever the hash changes.
     const setStateFromHash = () => {
@@ -42,4 +41,12 @@ export default function useStateInUrlHash<Value>(
     }, [value]);
 
     return [value, setValue];
+}
+
+export function useStateInUrlHash<Value> (
+    key: string,
+    initialValue: Value,
+): [Value, Dispatch<SetStateAction<Value>>] {
+    const [value, setValue] = useState<Value>(initialValue);
+    return reuseStateInUrlHash<Value>(key, value, setValue);
 }
