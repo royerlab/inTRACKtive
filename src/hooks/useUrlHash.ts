@@ -48,7 +48,11 @@ export function reuseStateInUrlHash<Value>(
         const searchParams = new URLSearchParams(window.location.hash.slice(1));
         const serializedValue = JSON.stringify(value);
         searchParams.set(key, serializedValue);
-        window.location.hash = searchParams.toString();
+        // I cannot believe we'd want every state change in history because that
+        // would quickly pollute the user's browser history, so replace it directly
+        // instead of just updating the hash (which will append).
+        // window.location.hash = searchParams.toString();
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${searchParams}`);
     }, [value]);
 
     return [value, setValue];
