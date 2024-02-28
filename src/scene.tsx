@@ -192,6 +192,7 @@ export default function Scene(props: SceneProps) {
                         <InputToggle
                             onLabel="Spin"
                             offLabel="Spin"
+                            checked={autoRotate}
                             disabled={trackManager === undefined}
                             onChange={(e) => {
                                 setAutoRotate((e.target as HTMLInputElement).checked);
@@ -200,6 +201,7 @@ export default function Scene(props: SceneProps) {
                         <InputToggle
                             onLabel="Play"
                             offLabel="Play"
+                            checked={playing}
                             disabled={trackManager === undefined}
                             onChange={(e) => {
                                 setPlaying((e.target as HTMLInputElement).checked);
