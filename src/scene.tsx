@@ -35,7 +35,11 @@ export default function Scene(props: SceneProps) {
     const [playing, setPlaying] = useStateInUrlHash("playing", false);
     const initialValue = getStateFromUrlHash("selectedPoints", {});
     const selectionBox = useSelectionBox(canvas.current, initialValue);
-    const [selectedPoints, setSelectedPoints] = reuseStateInUrlHash("selectedPoints", selectionBox.selectedPoints, selectionBox.setSelectedPoints);
+    const [selectedPoints, setSelectedPoints] = reuseStateInUrlHash(
+        "selectedPoints",
+        selectionBox.selectedPoints,
+        selectionBox.setSelectedPoints,
+    );
 
     // Derived state that does not need to be persisted.
     const [trackManager, setTrackManager] = useState<TrackManager>();
@@ -55,7 +59,7 @@ export default function Scene(props: SceneProps) {
     // then this could likely be done synchronously.
     // That way we could add selections to the canvas explicitly and synchronously rather
     // than relying on pointerup (pointerup could call that instead?).
-    
+
     // I'm not sure how to capture non-react state in the URL with the current approach,
     // which relies on React effects to update the URL (and set the state from the URL).
     // For example, take the three.js camera/controls.
@@ -73,7 +77,7 @@ export default function Scene(props: SceneProps) {
             setStateInUrlHash("cameraPosition", controls.object.position);
             setStateInUrlHash("cameraTarget", controls.target);
         };
-        canvas.current.controls.addEventListener('change', onControlsChange);
+        canvas.current.controls.addEventListener("change", onControlsChange);
 
         // append renderer canvas
         const divCurrent = divRef.current;
@@ -86,7 +90,7 @@ export default function Scene(props: SceneProps) {
         return () => {
             renderer.domElement.remove();
             canvas.current?.dispose();
-            canvas.current?.controls.removeEventListener('change', onControlsChange);
+            canvas.current?.controls.removeEventListener("change", onControlsChange);
         };
     }, []); // dependency array must be empty to run only on mount!
 
@@ -236,7 +240,10 @@ export default function Scene(props: SceneProps) {
                             disabled={trackManager === undefined}
                             sdsType="primary"
                             sdsStyle="rounded"
-                            onClick={() => {setSelectedPoints({}); canvas.current?.removeAllTracks()}}
+                            onClick={() => {
+                                setSelectedPoints({});
+                                canvas.current?.removeAllTracks();
+                            }}
                         >
                             Clear Tracks
                         </Button>

@@ -35,7 +35,7 @@ export function setStateInUrlHash<Value>(key: string, value: Value) {
     // would quickly pollute the user's browser history, so replace it directly
     // instead of just updating the hash (which will append).
     // window.location.hash = searchParams.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${searchParams}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${searchParams}`);
     // TODO: check if we should also manually fire the hashchange event.
     // window.dispatchEvent(new HashChangeEvent('hashchange'));
 }
@@ -72,10 +72,7 @@ export function reuseStateInUrlHash<Value>(
     return [value, setValue];
 }
 
-export function useStateInUrlHash<Value> (
-    key: string,
-    defaultValue: Value,
-): [Value, Dispatch<SetStateAction<Value>>] {
+export function useStateInUrlHash<Value>(key: string, defaultValue: Value): [Value, Dispatch<SetStateAction<Value>>] {
     // TODO: this gets called on every re-render for every piece of tracked
     // state...
     // Either parse the initial/default value once (e.g. on mount) and/or
