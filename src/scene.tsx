@@ -6,7 +6,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
-import { getStateFromUrlHash, reuseStateInUrlHash, useStateInUrlHash } from "./hooks/useUrlHash";
+import { getStateFromUrlHash, reuseStateInUrlHash, setStateInUrlHash, useStateInUrlHash } from "./hooks/useUrlHash";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
@@ -42,11 +42,38 @@ export default function Scene(props: SceneProps) {
     const [numTimes, setNumTimes] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    // The current state changes and async fetches don't make a good model
+    // for initialization from existing viewer configs (e.g. that come from the URL).
+    // That's because most of the viewer config is react state, some of which is
+    // dependent on the timing and order of async effects. For example, selectedPoints
+    // is React state that is dependent on the three.js points that are being displayed.
+    // On initialization, we might have a non-empty selection because won't have fetched
+    // or displayed the points in three.js yet.
+    // We could store some extra last<X> values to keep track of changes, but that feels
+    // like we're doing our own React state management.
+    // If a fetch were triggered by adding a selection object to the PointsCanvas instead,
+    // then this could likely be done synchronously.
+    // That way we could add selections to the canvas explicitly and synchronously rather
+    // than relying on pointerup (pointerup could call that instead?).
+    
+    // I'm not sure how to capture non-react state in the URL with the current approach,
+    // which relies on React effects to update the URL (and set the state from the URL).
+    // For example, take the three.js camera/controls.
+    // It's fairly easy to listen to value changes to something like this (e.g. controls),
+    // and we can update the URL hash when those occur.
+
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
         canvas.current = new PointCanvas(renderWidth, renderHeight);
+
+        const onControlsChange = (event) => {
+            const controls = event.target;
+            setStateInUrlHash("cameraPosition", controls.object.position);
+            setStateInUrlHash("cameraTarget", controls.target);
+        };
+        canvas.current.controls.addEventListener('change', onControlsChange);
 
         // append renderer canvas
         const divCurrent = divRef.current;
@@ -59,6 +86,7 @@ export default function Scene(props: SceneProps) {
         return () => {
             renderer.domElement.remove();
             canvas.current?.dispose();
+            canvas.current?.controls.removeEventListener('change', onControlsChange);
         };
     }, []); // dependency array must be empty to run only on mount!
 
@@ -89,7 +117,7 @@ export default function Scene(props: SceneProps) {
         trackManager.then((tm: ZarrArray) => {
             setTrackManager(tm);
             setNumTimes(tm.points.shape[0]);
-            setCurTime(0);
+            setCurTime(curTime);
         });
     }, [dataUrl]);
 
@@ -120,8 +148,6 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // TODO: may want to keep selection (e.g. initialization).
-        setSelectedPoints({});
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
         const loadingTimer = setTimeout(() => setLoading(true), 10);
         let ignore = false;
@@ -129,9 +155,7 @@ export default function Scene(props: SceneProps) {
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (trackManager && !ignore) {
-            // trackManager.highlightTracks(curTime);
             console.debug("fetch points at time %d", curTime);
-            // fetchPointsAtTime(array, curTime).then((data) => {
             trackManager?.getPointsAtTime(curTime).then((data) => {
                 console.debug("got %d points for time %d", data.length / 3, curTime);
                 if (ignore) {

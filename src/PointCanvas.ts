@@ -23,6 +23,8 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Lut } from "three/addons/math/Lut.js";
 import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
+import { getStateFromUrlHash } from "./hooks/useUrlHash";
+
 type Tracks = Map<number, Line2>;
 
 export class PointCanvas {
@@ -47,8 +49,11 @@ export class PointCanvas {
         );
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
-        const target = new Vector3(500, 500, 250);
-        this.camera.position.set(target.x, target.y, target.z - 1500);
+        // TODO: temporary hack to get initial state from URL hash.
+        const target = getStateFromUrlHash("cameraTarget", new Vector3(500, 500, 250));
+        const position = getStateFromUrlHash("cameraPosition", new Vector3(500, 500, 250 - 1500));
+        console.log("camera initialized at %s targeting %s", position, target);
+        this.camera.position.set(position.x, position.y, position.z);
         this.camera.lookAt(target.x, target.y, target.z);
 
         const pointsGeometry = new BufferGeometry();

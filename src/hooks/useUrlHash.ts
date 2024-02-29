@@ -19,6 +19,27 @@ export function getStateFromUrlHash<Value>(key: string, defaultValue: Value): Va
     return value;
 }
 
+export function setStateInUrlHash<Value>(key: string, value: Value) {
+    console.log("setStateInUrlHash: %s, %s", key, JSON.stringify(value));
+    const searchParams = new URLSearchParams(window.location.hash.slice(1));
+    const serializedValue = JSON.stringify(value);
+    // Avoid an update if the value has not changed to avoid wasteful
+    // processing and infinite recursion for non-react state.
+    const currentValue = searchParams.get(key);
+    if (currentValue === serializedValue) {
+        return;
+    }
+    console.log("%s !== %s", currentValue, serializedValue);
+    searchParams.set(key, serializedValue);
+    // I cannot believe we'd want every state change in history because that
+    // would quickly pollute the user's browser history, so replace it directly
+    // instead of just updating the hash (which will append).
+    // window.location.hash = searchParams.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${searchParams}`);
+    // TODO: check if we should also manually fire the hashchange event.
+    // window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
+
 export function reuseStateInUrlHash<Value>(
     key: string,
     value: Value,
@@ -45,14 +66,7 @@ export function reuseStateInUrlHash<Value>(
     // it changes.
     // TODO: allow base64 encoding for shorter URLs.
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.hash.slice(1));
-        const serializedValue = JSON.stringify(value);
-        searchParams.set(key, serializedValue);
-        // I cannot believe we'd want every state change in history because that
-        // would quickly pollute the user's browser history, so replace it directly
-        // instead of just updating the hash (which will append).
-        // window.location.hash = searchParams.toString();
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${searchParams}`);
+        setStateInUrlHash(key, value);
     }, [value]);
 
     return [value, setValue];
@@ -62,6 +76,10 @@ export function useStateInUrlHash<Value> (
     key: string,
     defaultValue: Value,
 ): [Value, Dispatch<SetStateAction<Value>>] {
+    // TODO: this gets called on every re-render for every piece of tracked
+    // state...
+    // Either parse the initial/default value once (e.g. on mount) and/or
+    // use a separate store/cache so we can update all state together.
     const initialValue = getStateFromUrlHash<Value>(key, defaultValue);
     const [value, setValue] = useState<Value>(initialValue);
     return reuseStateInUrlHash<Value>(key, value, setValue);
