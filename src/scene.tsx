@@ -9,7 +9,7 @@ import useSelectionBox from "./hooks/useSelectionBox";
 
 const DEFAULT_ZARR_URL = new URL(
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
+        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
 );
 interface SceneProps {
     renderWidth?: number;
@@ -121,9 +121,8 @@ export default function Scene(props: SceneProps) {
 
     // update the geometry buffers when the array changes
     useEffect(() => {
-        if (!trackManager) return;
-        canvas.current?.initPointsGeometry(trackManager.points.shape[1] / 3);
-        canvas.current && (canvas.current.maxPointsPerTimepoint = trackManager.maxPointsPerTimepoint);
+        if (!trackManager || !canvas.current) return;
+        canvas.current.initPointsGeometry(trackManager.maxPointsPerTimepoint);
     }, [trackManager]);
 
     // update the points when the array or timepoint changes

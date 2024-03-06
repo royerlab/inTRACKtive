@@ -34,7 +34,7 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
-    // TODO: probably don't want this here...
+    // TODO: perhaps don't want to store this here...
     maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
@@ -128,15 +128,19 @@ export class PointCanvas {
         this.composer.setSize(width, height);
     }
 
-    initPointsGeometry(numPoints: number) {
+    initPointsGeometry(maxPointsPerTimepoint: number) {
+        this.maxPointsPerTimepoint = maxPointsPerTimepoint;
         const geometry = this.points.geometry;
-        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== numPoints) {
-            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute(
+                "position",
+                new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3),
+            );
             // prevent drawing uninitialized points at the origin
             geometry.setDrawRange(0, 0);
         }
-        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
-            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3));
         }
         // Initialize all the colors immediately.
         this.resetPointColors();
