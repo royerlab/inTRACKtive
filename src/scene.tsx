@@ -156,19 +156,6 @@ export default function Scene(props: SceneProps) {
         };
     }, [trackManager, curTime]);
 
-    useEffect(() => {
-        if (canvas.current && trackManager) {
-            const pointsGeometry = canvas.current.points.geometry;
-            let target = { x: 0, y: 0, z: 0 };
-            if (pointsGeometry.boundingSphere) {
-                target = pointsGeometry.boundingSphere.center;
-            }
-            console.log("target: %o", target);
-            canvas.current.camera.position.set(target.x, target.y, target.z - 1500);
-            canvas.current.camera.lookAt(target.x, target.y, target.z);
-        }
-    }, [trackManager]);
-
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
     canvas.current?.setSize(renderWidth, renderHeight);
