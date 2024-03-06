@@ -55,37 +55,37 @@ export default function Scene(props: SceneProps) {
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.debug("selected points: %s", selectedPoints);
-        const pointsID = canvas.current?.points.id || 0;
+        const pointsID = canvas.current?.points.id || -1;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-        const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
+        // keep track of which tracks we are adding to avoid duplicate fetching
+        const adding = new Set<number>();
 
         // TODO: use Promise.all to fetch all tracks in parallel
+        // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
             const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
                 const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
                 for (const l of lineage) {
-                    if (canvas.current && canvas.current.tracks.has(l)) continue;
+                    if (adding.has(l) || (canvas.current && canvas.current.tracks.has(l))) continue;
+                    adding.add(l);
                     const [pos, ids] = (await trackManager?.fetchPointsForTrack(l)) || [
                         Float32Array.from([]),
                         Int32Array.from([]),
                     ];
-                    pos && canvas.current?.addTrack(l, pos, ids);
-                    canvas.current?.updateTrackColors(l, curTime - 5, curTime + 5, curTime);
+                    pos && canvas.current?.addTrack(l, pos, ids, curTime);
                 }
             }
         };
-        // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
-        const selected = selectedPoints.get(pointsID) || [];
-        console.log("selected points: %s", selected);
 
+        const selected = selectedPoints.get(pointsID) || [];
         canvas.current?.highlightPoints(selected);
-        console.log(selected);
-        for (const p of selected) {
-            const pointID = curTime * maxPointsPerTimepoint + p;
-            fetchAndAddTrack(pointID);
-        }
+
+        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
+        Promise.all(selected.map((p) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+
+        // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
     // update the array when the dataUrl changes
@@ -144,7 +144,7 @@ export default function Scene(props: SceneProps) {
 
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
-                canvas.updateAllTrackColors(curTime);
+                canvas.updateAllTrackHighlights(curTime);
             };
             getAndHighlightPoints(canvas.current, curTime);
         } else {

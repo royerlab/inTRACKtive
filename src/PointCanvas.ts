@@ -5,7 +5,6 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
-    Int32BufferAttribute,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -21,9 +20,9 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
+import { Line2, LineGeometry, LineMaterial, Lut } from "three/examples/jsm/Addons.js";
 
-type Tracks = Map<number, Line2>;
+type Tracks = Map<number, Track>;
 
 export class PointCanvas {
     scene: Scene;
@@ -158,81 +157,42 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array, ids: Int32Array) {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array, curTime?: number, length?: number) {
         if (this.tracks.has(trackID)) {
             console.warn("Track with ID %d already exists", trackID);
             return;
         }
-        const pos = [];
-        const time = [];
-
-        for (let i = 0; i < positions.length; i += 3) {
-            pos.push(positions[i], positions[i + 1], positions[i + 2]);
-        }
-        for (let i = 0; i < ids.length; i++) {
-            time.push(ids[i]);
-        }
-
-        const geometry = new LineGeometry();
-        geometry.setPositions(pos);
-        geometry.setAttribute("time", new Int32BufferAttribute(time, 1));
-        const material = new LineMaterial({
-            vertexColors: true,
-            worldUnits: true,
-            linewidth: 2,
-        });
-        const track = new Line2(geometry, material);
+        const track = new Track(trackID, positions, ids);
+        track.initTrackLine(this.maxPointsPerTimepoint);
+        track.initHighlightLine(curTime, length);
         this.tracks.set(trackID, track);
-        this.updateTrackColors(trackID, 0, 1000, 0);
-        this.scene.add(track);
+        this.scene.add(track.trackLine!);
+        this.scene.add(track.highlightLine!);
     }
 
-    updateAllTrackColors(t: number) {
-        for (const track of this.tracks.keys()) {
-            this.updateTrackColors(track, t - 5, t + 5, t);
-        }
-    }
-
-    updateTrackColors(trackID: number, tMin: number, tMax: number, curTime: number) {
-        const track = this.tracks.get(trackID);
-        if (track) {
-            const time = track.geometry.getAttribute("time");
-            const colors = [];
-            const points = [];
-            for (let i = 0; i < time.count; i++) {
-                const t = Math.floor(time.array[i] / this.maxPointsPerTimepoint);
-                if (t === curTime) {
-                    points.push(time.array[i] % this.maxPointsPerTimepoint);
-                }
-                if (t < tMin || t > tMax) {
-                    colors.push(
-                        ((0.9 * (time.count - i)) / time.count) ** 3,
-                        ((0.9 * (time.count - i)) / time.count) ** 3,
-                        (0.9 * (time.count - i)) / time.count,
-                    );
-                } else {
-                    colors.push(0.8, 0.0, 0.8);
-                }
-            }
-            track.geometry.setColors(colors);
-            this.highlightPoints(points);
-        } else {
-            console.warn("No track with ID %d to update", trackID);
+    updateAllTrackHighlights(curTime: number, length: number = 11) {
+        for (const track of this.tracks.values()) {
+            const ids = track.updateHighlightLine(curTime, length);
+            ids && this.highlightPoints(ids.map((id) => id % this.maxPointsPerTimepoint));
         }
     }
 
     removeTrack(trackID: number) {
         const track = this.tracks.get(trackID);
-        if (track) {
-            this.scene.remove(track);
-            track.geometry.dispose();
-            if (Array.isArray(track.material)) {
-                for (const material of track.material) {
-                    material.dispose();
+        for (const line of [track?.highlightLine, track?.trackLine]) {
+            if (line) {
+                this.scene.remove(line);
+                line.geometry.dispose();
+                if (Array.isArray(line.material)) {
+                    for (const material of line.material) {
+                        material.dispose();
+                    }
+                } else {
+                    line.material.dispose();
                 }
-            } else {
-                track.material.dispose();
             }
+        }
+        if (track) {
             this.tracks.delete(trackID);
         } else {
             console.warn("No track with ID %d to remove", trackID);
@@ -256,5 +216,96 @@ export class PointCanvas {
         } else {
             this.points.material.dispose();
         }
+    }
+}
+
+class Track {
+    id: number;
+    positions: Float32Array;
+    pointIDs: Int32Array;
+    time: number[] = [];
+
+    highlightPoint: Points | null = null;
+    highlightLine: Line2 | null = null;
+    highlightLUT = new Lut("blackbody", 128);
+    trackLine: Line2 | null = null;
+
+    constructor(id: number, positions: Float32Array, pointIDs: Int32Array) {
+        this.id = id;
+        this.positions = positions;
+        this.pointIDs = pointIDs;
+    }
+
+    #makeLine(linewidth: number, opacity?: number): Line2 {
+        const geometry = new LineGeometry();
+        const material = new LineMaterial({
+            vertexColors: true,
+            worldUnits: true,
+            linewidth: linewidth,
+            transparent: opacity !== undefined,
+            opacity: opacity ?? 1.0,
+        });
+        const line = new Line2(geometry, material);
+        return line;
+    }
+
+    initHighlightLine(curTime?: number, length?: number) {
+        this.highlightLine = this.#makeLine(1.0);
+        curTime !== undefined && this.updateHighlightLine(curTime, length);
+    }
+
+    initTrackLine(maxPointsPerTimepoint: number) {
+        this.trackLine = this.#makeLine(0.3, 0.5);
+
+        this.time = [];
+        const pos = Array.from(this.positions);
+        const colors = [];
+        const n = pos.length / 3;
+        for (const [i, id] of this.pointIDs.entries()) {
+            const t = Math.floor(id / maxPointsPerTimepoint);
+            this.time.push(t);
+            colors.push(((0.9 * (n - i)) / n) ** 3, ((0.9 * (n - i)) / n) ** 3, (0.9 * (n - i)) / n);
+        }
+        this.trackLine.geometry.setPositions(pos);
+        this.trackLine.geometry.setColors(colors);
+        this.trackLine.geometry.computeBoundingSphere();
+    }
+
+    updateHighlightLine(curTime: number, length: number = 11) {
+        if (!this.highlightLine || !this.trackLine) {
+            return;
+        }
+        const halfLength = Math.floor(length / 2);
+        let minTime = this.time.findIndex((t) => t === curTime - halfLength);
+        let maxTime = this.time.findIndex((t) => t === curTime + halfLength);
+
+        if (minTime === -1 && maxTime === -1) {
+            // don't draw this highlight
+            this.highlightLine.layers.disable(0);
+            return;
+        }
+
+        minTime = minTime === -1 ? 0 : minTime;
+        maxTime = maxTime === -1 ? this.time.length - 1 : maxTime;
+
+        const positions = [];
+        const colors = [];
+        const highlightPoints = [];
+        for (let i = minTime; i <= maxTime; i++) {
+            positions.push(this.positions[3 * i], this.positions[3 * i + 1], this.positions[3 * i + 2]);
+            colors.push(...this.highlightLUT.getColor((this.time[i] - curTime + halfLength) / length).toArray());
+            this.time[i] === curTime && highlightPoints.push(this.pointIDs[i]);
+        }
+        this.highlightLine.layers.enable(0);
+
+        // TODO: it's wasteful to create a new geometry every time
+        // but otherwise the line length doesn't seem to update
+        const geometry = new LineGeometry();
+        geometry.setPositions(positions);
+        geometry.setColors(colors);
+        this.highlightLine.geometry.dispose();
+        this.highlightLine.geometry = geometry;
+
+        return highlightPoints;
     }
 }
