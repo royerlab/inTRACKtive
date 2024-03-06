@@ -22,8 +22,8 @@ export class ViewerState {
         playing: boolean = false,
         selectedPoints: PointsCollection = {},
         // Default position from interacting with ZSNS001
-        cameraPosition: Vector3 = new Vector3(500, 500, 250),
-        cameraTarget: Vector3 = new Vector3(500, 500, -1250),
+        cameraPosition: Vector3 = new Vector3(500, 500, -1250),
+        cameraTarget: Vector3 = new Vector3(500, 500, 250),
     ) {
         this.dataUrl = dataUrl;
         this.curTime = curTime;
