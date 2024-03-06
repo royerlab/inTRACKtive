@@ -23,8 +23,6 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Lut } from "three/addons/math/Lut.js";
 import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
-import { getStateFromUrlHash } from "./hooks/useUrlHash";
-
 type Tracks = Map<number, Line2>;
 
 export class PointCanvas {
