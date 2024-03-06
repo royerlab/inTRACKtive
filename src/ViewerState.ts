@@ -58,7 +58,7 @@ export function viewerStateFromUrlHash(): ViewerState {
     if (searchParams.has("dataUrl")) {
         state.dataUrl = new URL(searchParams.get("dataUrl")!);
     }
-    if (searchParams.has("dataUrl")) {
+    if (searchParams.has("curTime")) {
         state.curTime = parseInt(searchParams.get("curTime")!);
     }
     if (searchParams.has("autoRotate")) {
