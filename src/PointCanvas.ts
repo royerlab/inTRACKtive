@@ -37,7 +37,7 @@ export class PointCanvas {
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
 
-    constructor(width: number, height: number) {
+    constructor(width: number, height: number, position: Vector3, target: Vector3) {
         this.scene = new Scene();
         this.renderer = new WebGLRenderer();
 
@@ -49,10 +49,7 @@ export class PointCanvas {
         );
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
-        // TODO: temporary hack to get initial state from URL hash.
-        const target = getStateFromUrlHash("cameraTarget", new Vector3(500, 500, 250));
-        const position = getStateFromUrlHash("cameraPosition", new Vector3(500, 500, 250 - 1500));
-        console.log("camera initialized at %s targeting %s", position, target);
+        console.log("camera initialized at %s targeting %s", JSON.stringify(position), JSON.stringify(target));
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.lookAt(target.x, target.y, target.z);
 
