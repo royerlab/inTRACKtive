@@ -5,6 +5,7 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    Object3D,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -34,8 +35,8 @@ export class PointCanvas {
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
     // TODO: perhaps don't want to store this here...
-    // it's used to initializethe points geometry, and kept to initialize the tracks
-    // but it could be pulled from the points geometry when adding tracks
+    // it's used to initialize the points geometry, and kept to initialize the
+    // tracks but could be pulled from the points geometry when adding tracks
     private maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
@@ -161,6 +162,7 @@ export class PointCanvas {
 
     addTrack(trackID: number, positions: Float32Array, ids: Int32Array, curTime?: number, length?: number) {
         if (this.tracks.has(trackID)) {
+            // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return;
         }
@@ -168,8 +170,7 @@ export class PointCanvas {
         track.initTrackLine(this.maxPointsPerTimepoint);
         track.initHighlightLine(curTime, length);
         this.tracks.set(trackID, track);
-        this.scene.add(track.trackLine!);
-        this.scene.add(track.highlightLine!);
+        this.scene.add(track);
     }
 
     updateAllTrackHighlights(curTime: number, length: number = 11) {
@@ -181,20 +182,9 @@ export class PointCanvas {
 
     removeTrack(trackID: number) {
         const track = this.tracks.get(trackID);
-        for (const line of [track?.highlightLine, track?.trackLine]) {
-            if (line) {
-                this.scene.remove(line);
-                line.geometry.dispose();
-                if (Array.isArray(line.material)) {
-                    for (const material of line.material) {
-                        material.dispose();
-                    }
-                } else {
-                    line.material.dispose();
-                }
-            }
-        }
         if (track) {
+            this.scene.remove(track);
+            track.dispose();
             this.tracks.delete(trackID);
         } else {
             console.warn("No track with ID %d to remove", trackID);
@@ -223,20 +213,21 @@ export class PointCanvas {
 
 // TODO: this (or the map it's stored in) could contain more lineage
 // information for richer visualization
-class Track {
-    id: number;
+class Track extends Object3D {
+    trackID: number;
+
     positions: Float32Array;
     pointIDs: Int32Array;
     time: number[] = [];
 
     trackLine: Line2 | null = null;
 
-    highlightPoint: Points | null = null;
     highlightLine: Line2 | null = null;
     highlightLUT = new Lut("blackbody", 128);
 
-    constructor(id: number, positions: Float32Array, pointIDs: Int32Array) {
-        this.id = id;
+    constructor(trackID: number, positions: Float32Array, pointIDs: Int32Array) {
+        super();
+        this.trackID = trackID;
         this.positions = positions;
         this.pointIDs = pointIDs;
     }
@@ -251,6 +242,7 @@ class Track {
             opacity: opacity ?? 1.0,
         });
         const line = new Line2(geometry, material);
+        this.add(line);
         return line;
     }
 
@@ -279,7 +271,7 @@ class Track {
 
     updateHighlightLine(curTime: number, length: number = 11) {
         if (!this.highlightLine || !this.trackLine) {
-            console.warn("Highlight line or track line not initialized", this.id);
+            console.warn("Highlight line or track line not initialized", this.trackID);
             return;
         }
         const halfLength = Math.floor(length / 2);
@@ -287,9 +279,10 @@ class Track {
         const maxTime = curTime + halfLength;
         if (minTime > this.time[this.time.length - 1] || maxTime < this.time[0]) {
             // don't draw this highlight
-            this.highlightLine.layers.disable(0);
+            this.highlightLine.visible = false;
             return;
         }
+        this.highlightLine.visible = true;
 
         let minIdx = this.time.findIndex((t) => t === curTime - halfLength);
         let maxIdx = this.time.findIndex((t) => t === curTime + halfLength);
@@ -305,7 +298,6 @@ class Track {
             colors.push(...this.highlightLUT.getColor((this.time[i] - curTime + halfLength) / length).toArray());
             this.time[i] === curTime && highlightPoints.push(this.pointIDs[i]);
         }
-        this.highlightLine.layers.enable(0);
 
         // TODO: it's wasteful to create a new geometry every time
         // but otherwise the line length doesn't seem to update
@@ -316,5 +308,20 @@ class Track {
         this.highlightLine.geometry = geometry;
 
         return highlightPoints;
+    }
+
+    dispose() {
+        for (const line of [this.highlightLine, this.trackLine]) {
+            if (line) {
+                line.geometry.dispose();
+                if (Array.isArray(line.material)) {
+                    for (const material of line.material) {
+                        material.dispose();
+                    }
+                } else {
+                    line.material.dispose();
+                }
+            }
+        }
     }
 }
