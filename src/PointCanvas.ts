@@ -273,25 +273,28 @@ class Track {
 
     updateHighlightLine(curTime: number, length: number = 11) {
         if (!this.highlightLine || !this.trackLine) {
+            console.warn("Highlight line or track line not initialized", this.id);
             return;
         }
         const halfLength = Math.floor(length / 2);
-        let minTime = this.time.findIndex((t) => t === curTime - halfLength);
-        let maxTime = this.time.findIndex((t) => t === curTime + halfLength);
-
-        if (minTime === -1 && maxTime === -1) {
+        const minTime = curTime - halfLength;
+        const maxTime = curTime + halfLength;
+        if (minTime > this.time[this.time.length - 1] || maxTime < this.time[0]) {
             // don't draw this highlight
             this.highlightLine.layers.disable(0);
             return;
         }
 
-        minTime = minTime === -1 ? 0 : minTime;
-        maxTime = maxTime === -1 ? this.time.length - 1 : maxTime;
+        let minIdx = this.time.findIndex((t) => t === curTime - halfLength);
+        let maxIdx = this.time.findIndex((t) => t === curTime + halfLength);
+
+        minIdx = minIdx === -1 ? 0 : minIdx;
+        maxIdx = maxIdx === -1 ? this.time.length - 1 : maxIdx;
 
         const positions = [];
         const colors = [];
         const highlightPoints = [];
-        for (let i = minTime; i <= maxTime; i++) {
+        for (let i = minIdx; i <= maxIdx; i++) {
             positions.push(this.positions[3 * i], this.positions[3 * i + 1], this.positions[3 * i + 2]);
             colors.push(...this.highlightLUT.getColor((this.time[i] - curTime + halfLength) / length).toArray());
             this.time[i] === curTime && highlightPoints.push(this.pointIDs[i]);
