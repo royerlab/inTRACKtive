@@ -20,10 +20,10 @@ module.exports = {
     },
     settings: {
         "import/resolver": {
-            typescript: {}
+            typescript: {},
         },
         "react": {
-            "version": "detect"
+            version: "detect",
         },
     },
 };
