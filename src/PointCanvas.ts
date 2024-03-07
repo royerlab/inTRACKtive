@@ -34,7 +34,9 @@ export class PointCanvas {
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
     // TODO: perhaps don't want to store this here...
-    maxPointsPerTimepoint = 0;
+    // it's used to initializethe points geometry, and kept to initialize the tracks
+    // but it could be pulled from the points geometry when adding tracks
+    private maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -71,7 +73,7 @@ export class PointCanvas {
         const renderModel = new RenderPass(this.scene, this.camera);
         this.bloomPass = new UnrealBloomPass(
             new Vector2(width, height), // resolution
-            0.0, // strength
+            0.4, // strength
             0, // radius
             0, // threshold
         );
@@ -219,16 +221,19 @@ export class PointCanvas {
     }
 }
 
+// TODO: this (or the map it's stored in) could contain more lineage
+// information for richer visualization
 class Track {
     id: number;
     positions: Float32Array;
     pointIDs: Int32Array;
     time: number[] = [];
 
+    trackLine: Line2 | null = null;
+
     highlightPoint: Points | null = null;
     highlightLine: Line2 | null = null;
     highlightLUT = new Lut("blackbody", 128);
-    trackLine: Line2 | null = null;
 
     constructor(id: number, positions: Float32Array, pointIDs: Int32Array) {
         this.id = id;
@@ -236,7 +241,7 @@ class Track {
         this.pointIDs = pointIDs;
     }
 
-    #makeLine(linewidth: number, opacity?: number): Line2 {
+    private makeLine(linewidth: number, opacity?: number): Line2 {
         const geometry = new LineGeometry();
         const material = new LineMaterial({
             vertexColors: true,
@@ -250,12 +255,12 @@ class Track {
     }
 
     initHighlightLine(curTime?: number, length?: number) {
-        this.highlightLine = this.#makeLine(1.0);
+        this.highlightLine = this.makeLine(1.0);
         curTime !== undefined && this.updateHighlightLine(curTime, length);
     }
 
     initTrackLine(maxPointsPerTimepoint: number) {
-        this.trackLine = this.#makeLine(0.3, 0.5);
+        this.trackLine = this.makeLine(0.3, 0.5);
 
         this.time = [];
         const pos = Array.from(this.positions);
@@ -264,6 +269,7 @@ class Track {
         for (const [i, id] of this.pointIDs.entries()) {
             const t = Math.floor(id / maxPointsPerTimepoint);
             this.time.push(t);
+            // TODO: use a LUT for this
             colors.push(((0.9 * (n - i)) / n) ** 3, ((0.9 * (n - i)) / n) ** 3, (0.9 * (n - i)) / n);
         }
         this.trackLine.geometry.setPositions(pos);
