@@ -14,13 +14,9 @@ interface SceneProps {
     renderHeight?: number;
 }
 
-// Ideally we do this here so that we can use default values for react state.
-// TODO: alternatively, we could incrementally consume key/values from the hash
-// but that does not scale nicely as the viewer state grows.
-const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
+// Ideally we do this here so that we can use initial values as default values for React state.
+const initialViewerState = ViewerState.fromUrlHash();
 console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
-// Reset hash once initial state is consumed.
-window.location.hash = "";
 
 export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
@@ -44,6 +40,7 @@ export default function Scene(props: SceneProps) {
     const [loading, setLoading] = useState(false);
     const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
 
+    // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         const state = new ViewerState(
             dataUrl,
@@ -55,6 +52,15 @@ export default function Scene(props: SceneProps) {
         );
         const url = window.location.toString() + "#" + state.toUrlHash();
         navigator.clipboard.writeText(url);
+    };
+    const setStateFromHash = () => {
+        const state = ViewerState.fromUrlHash();
+        setDataUrl(state.dataUrl);
+        setCurTime(state.curTime);
+        setAutoRotate(state.autoRotate);
+        setPlaying(state.playing);
+        canvas.current?.camera.position.set(state.cameraPosition.x, state.cameraPosition.y, state.cameraPosition.z);
+        canvas.current?.controls.target.set(state.cameraTarget.x, state.cameraTarget.y, state.cameraTarget.z);
     };
 
     // this useEffect is intended to make this part run only on mount
@@ -68,6 +74,9 @@ export default function Scene(props: SceneProps) {
             initialViewerState.cameraTarget,
         );
 
+        // handle any changes to the hash after the initial document has loaded
+        window.addEventListener("hashchange", setStateFromHash);
+
         // append renderer canvas
         const divCurrent = divRef.current;
         const renderer = canvas.current!.renderer;
@@ -77,13 +86,14 @@ export default function Scene(props: SceneProps) {
         canvas.current.animate();
 
         return () => {
+            window.removeEventListener("hashchange", setStateFromHash);
             renderer.domElement.remove();
             canvas.current?.dispose();
         };
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.log("selected points: %s", JSON.stringify(selectedPoints));
+        console.log("selected points: %s", selectedPoints);
         const pointsID = canvas.current?.points.id || 0;
         if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
@@ -233,9 +243,9 @@ export default function Scene(props: SceneProps) {
                         >
                             Clear Tracks
                         </Button>
-                        <ButtonIcon sdsIcon="share" sdsType="primary" onClick={copyShareableUrlToClipboard}>
-                            Share
-                        </ButtonIcon>
+                        <Button sdsType="primary" sdsStyle="rounded" onClick={copyShareableUrlToClipboard}>
+                            Copy Link
+                        </Button>
                     </div>
                 </div>
             </div>

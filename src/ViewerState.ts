@@ -43,7 +43,9 @@ export class ViewerState {
         return searchParams.toString();
     }
 
-    static fromUrlHash(urlHash: string) {
+    // This consumes the window's location hash and has the side effect of clearing it.
+    static fromUrlHash() {
+        const urlHash = window.location.hash;
         console.log("getting state from hash: %s", urlHash);
         const state = new ViewerState();
         const searchParams = new URLSearchParams(urlHash.slice(1));
@@ -65,6 +67,10 @@ export class ViewerState {
         if (searchParams.get("cameraTarget")) {
             state.cameraTarget = JSON.parse(searchParams.get("cameraTarget")!);
         }
+        // Reset hash once initial state is consumed to keep URL clean.
+        // Use this instead of window.location.hash to avoid triggering a
+        // hashchange event (which would reset the state again).
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
         return state;
     }
 }

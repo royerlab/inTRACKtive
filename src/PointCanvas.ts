@@ -47,7 +47,7 @@ export class PointCanvas {
         );
         // Default position from interacting with ZSNS001
         // TODO: this should be set/reset when the data changes
-        console.log("camera initialized at %s targeting %s", JSON.stringify(position), JSON.stringify(target));
+        console.log("camera initialized at %s targeting %s", position, target);
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.lookAt(target.x, target.y, target.z);
 
