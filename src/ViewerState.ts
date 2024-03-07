@@ -48,33 +48,32 @@ export class ViewerState {
         searchParams.append("cameraTarget", JSON.stringify(this.cameraTarget));
         return searchParams.toString();
     }
-}
 
-export function viewerStateFromUrlHash(): ViewerState {
-    const state = new ViewerState();
-    const urlHash = window.location.hash;
-    console.log("getting state from hash: %s", document.location.hash);
-    const searchParams = new URLSearchParams(urlHash.slice(1));
-    if (searchParams.has("dataUrl")) {
-        state.dataUrl = new URL(searchParams.get("dataUrl")!);
+    static fromUrlHash(urlHash: string) {
+        console.log("getting state from hash: %s", urlHash);
+        const state = new ViewerState();
+        const searchParams = new URLSearchParams(urlHash.slice(1));
+        if (searchParams.has("dataUrl")) {
+            state.dataUrl = new URL(searchParams.get("dataUrl")!);
+        }
+        if (searchParams.has("curTime")) {
+            state.curTime = parseInt(searchParams.get("curTime")!);
+        }
+        if (searchParams.has("autoRotate")) {
+            state.autoRotate = searchParams.get("autoRotate") === "true";
+        }
+        if (searchParams.get("playing")) {
+            state.playing = searchParams.get("playing") === "true";
+        }
+        if (searchParams.get("selectedPoints")) {
+            state.selectedPoints = JSON.parse(searchParams.get("selectedPoints")!);
+        }
+        if (searchParams.get("cameraPosition")) {
+            state.cameraPosition = JSON.parse(searchParams.get("cameraPosition")!);
+        }
+        if (searchParams.get("cameraTarget")) {
+            state.cameraTarget = JSON.parse(searchParams.get("cameraTarget")!);
+        }
+        return state;
     }
-    if (searchParams.has("curTime")) {
-        state.curTime = parseInt(searchParams.get("curTime")!);
-    }
-    if (searchParams.has("autoRotate")) {
-        state.autoRotate = searchParams.get("autoRotate") === "true";
-    }
-    if (searchParams.get("playing")) {
-        state.playing = searchParams.get("playing") === "true";
-    }
-    if (searchParams.get("selectedPoints")) {
-        state.selectedPoints = JSON.parse(searchParams.get("selectedPoints")!);
-    }
-    if (searchParams.get("cameraPosition")) {
-        state.cameraPosition = JSON.parse(searchParams.get("cameraPosition")!);
-    }
-    if (searchParams.get("cameraTarget")) {
-        state.cameraTarget = JSON.parse(searchParams.get("cameraTarget")!);
-    }
-    return state;
 }

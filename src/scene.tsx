@@ -7,7 +7,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
-import { DEFAULT_ZARR_URL, ViewerState, viewerStateFromUrlHash } from "./ViewerState";
+import { DEFAULT_ZARR_URL, ViewerState} from "./ViewerState";
 
 interface SceneProps {
     renderWidth?: number;
@@ -17,7 +17,7 @@ interface SceneProps {
 // Ideally we do this here so that we can use default values for react state.
 // TODO: alternatively, we could incrementally consume key/values from the hash
 // but that does not scale nicely as the viewer state grows.
-const initialViewerState = viewerStateFromUrlHash();
+const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 // Reset hash once initial state is consumed.
 window.location.hash = "";
