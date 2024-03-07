@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, InputSlider, InputText, InputToggle } from "@czi-sds/components";
+import { Button, InputSlider, InputText, InputToggle, LoadingIndicator } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
@@ -27,6 +27,7 @@ export default function Scene(props: SceneProps) {
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
+    const [loading, setLoading] = useState(false);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
@@ -128,6 +129,8 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
+        const loadingTimer = setTimeout(() => setLoading(true), 10);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -143,15 +146,20 @@ export default function Scene(props: SceneProps) {
                     return;
                 }
 
+                clearTimeout(loadingTimer);
+                setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
                 canvas.updateAllTrackHighlights(curTime, trackHighlightLength);
             };
             getAndHighlightPoints(canvas.current, curTime);
         } else {
+            clearTimeout(loadingTimer);
+            setLoading(false);
             console.debug("IGNORE FETCH points at time %d", curTime);
         }
         return () => {
+            clearTimeout(loadingTimer);
             ignore = true;
         };
     }, [trackManager, curTime, trackHighlightLength]);
@@ -169,66 +177,69 @@ export default function Scene(props: SceneProps) {
     marks.push({ value: numTimes - 1, label: numTimes - 1 });
 
     return (
-        <div ref={divRef}>
-            <div className="inputcontainer">
-                <InputText
-                    id="url-input"
-                    label="Zarr URL"
-                    placeholder={DEFAULT_ZARR_URL.toString()}
-                    value={dataUrl.toString()}
-                    onChange={(e) => setDataUrl(new URL(e.target.value))}
-                    fullWidth={true}
-                    intent={trackManager ? "default" : "error"}
-                />
-                <InputSlider
-                    id="time-frame-slider"
-                    aria-labelledby="input-slider-time-frame"
-                    disabled={trackManager === undefined}
-                    min={0}
-                    max={numTimes - 1}
-                    valueLabelDisplay="on"
-                    onChange={(_, value) => setCurTime(value as number)}
-                    marks={marks}
-                    value={curTime}
-                />
-                <InputSlider
-                    id="track-highlight-length-slider"
-                    aria-labelledby="input-slider-track-highlight-length"
-                    disabled={trackManager === undefined}
-                    min={0}
-                    max={Math.min(256, numTimes - 1)}
-                    valueLabelDisplay="on"
-                    onChange={(_, value) => setTrackHighlightLength(value as number)}
-                    marks={marks}
-                    value={trackHighlightLength}
-                />
-                <div className="buttoncontainer">
-                    <InputToggle
-                        onLabel="Spin"
-                        offLabel="Spin"
-                        disabled={trackManager === undefined}
-                        onChange={(e) => {
-                            setAutoRotate((e.target as HTMLInputElement).checked);
-                        }}
+        <div>
+            <div ref={divRef}>
+                <div className="inputcontainer">
+                    <InputText
+                        id="url-input"
+                        label="Zarr URL"
+                        placeholder={DEFAULT_ZARR_URL.toString()}
+                        value={dataUrl.toString()}
+                        onChange={(e) => setDataUrl(new URL(e.target.value))}
+                        fullWidth={true}
+                        intent={trackManager ? "default" : "error"}
                     />
-                    <InputToggle
-                        onLabel="Play"
-                        offLabel="Play"
+                    <InputSlider
+                        id="time-frame-slider"
+                        aria-labelledby="input-slider-time-frame"
                         disabled={trackManager === undefined}
-                        onChange={(e) => {
-                            setPlaying((e.target as HTMLInputElement).checked);
-                        }}
+                        min={0}
+                        max={numTimes - 1}
+                        valueLabelDisplay="on"
+                        onChange={(_, value) => setCurTime(value as number)}
+                        marks={marks}
+                        value={curTime}
                     />
-                    <Button
+                    <InputSlider
+                        id="track-highlight-length-slider"
+                        aria-labelledby="input-slider-track-highlight-length"
                         disabled={trackManager === undefined}
-                        sdsType="primary"
-                        sdsStyle="rounded"
-                        onClick={() => canvas.current?.removeAllTracks()}
-                    >
-                        Clear Tracks
-                    </Button>
+                        min={0}
+                        max={Math.min(256, numTimes - 1)}
+                        valueLabelDisplay="on"
+                        onChange={(_, value) => setTrackHighlightLength(value as number)}
+                        marks={marks}
+                        value={trackHighlightLength}
+                    />
+                    <div className="buttoncontainer">
+                        <InputToggle
+                            onLabel="Spin"
+                            offLabel="Spin"
+                            disabled={trackManager === undefined}
+                            onChange={(e) => {
+                                setAutoRotate((e.target as HTMLInputElement).checked);
+                            }}
+                        />
+                        <InputToggle
+                            onLabel="Play"
+                            offLabel="Play"
+                            disabled={trackManager === undefined}
+                            onChange={(e) => {
+                                setPlaying((e.target as HTMLInputElement).checked);
+                            }}
+                        />
+                        <Button
+                            disabled={trackManager === undefined}
+                            sdsType="primary"
+                            sdsStyle="rounded"
+                            onClick={() => canvas.current?.removeAllTracks()}
+                        >
+                            Clear Tracks
+                        </Button>
+                    </div>
                 </div>
             </div>
+            {loading && <LoadingIndicator sdsStyle="minimal" />}
         </div>
     );
 }
