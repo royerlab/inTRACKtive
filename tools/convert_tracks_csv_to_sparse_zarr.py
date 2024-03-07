@@ -32,7 +32,8 @@ tracks = len(set(p[0] for p in points))
 # store the points in an array
 points_array = np.ones((timepoints, 3 * max_points_in_timepoint), dtype=np.float32) * -9999.9
 points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
-tracks_to_tracks = lil_matrix((tracks, tracks), dtype=np.int32)
+tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
+tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 for point in points:
     track_id, t, z, y, x, parent_track_id, n = point
     point_id = t * max_points_in_timepoint + n
@@ -41,20 +42,36 @@ for point in points:
 
     points_to_tracks[point_id, track_id - 1] = 1
 
-    tracks_to_tracks[track_id - 1, track_id - 1] = 1
     if parent_track_id > 0:
-        tracks_to_tracks[parent_track_id - 1, track_id - 1] = 1
+        tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
+        tracks_to_children[parent_track_id - 1, track_id - 1] = 1
 
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
+
+tracks_to_parents = tracks_to_parents.tocsr()
+tracks_to_children = tracks_to_children.tocsr()
+
+tracks_to_parents.setdiag(1)
+tracks_to_children.setdiag(1)
+
+start = time.monotonic()
+iter = 0
+while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
+    tracks_to_parents = nxt
+    iter += 1
+
+print(f"Chased track lineage in {time.monotonic() - start} seconds ({iter} iterations)")
 start = time.monotonic()
 
-# get connected components of tracks_to_tracks
-# this will give us the lineage of each track
-tracks_to_tracks = tracks_to_tracks.tocsr()
-tracks_to_tracks = tracks_to_tracks + tracks_to_tracks.T
+iter = 0
+while tracks_to_children.nnz != (nxt := tracks_to_children ** 2).nnz:
+    tracks_to_children = nxt
+    iter += 1
 
-print(f"Chased track lineage in {time.monotonic() - start} seconds")
+print(f"Chased track lineage in {time.monotonic() - start} seconds ({iter} iterations)")
 start = time.monotonic()
+
+tracks_to_tracks = tracks_to_parents + tracks_to_children
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()
