@@ -48,11 +48,10 @@ for point in points:
 
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
 
-tracks_to_parents = tracks_to_parents.tocsr()
-tracks_to_children = tracks_to_children.tocsr()
-
 tracks_to_parents.setdiag(1)
 tracks_to_children.setdiag(1)
+tracks_to_parents = tracks_to_parents.tocsr()
+tracks_to_children = tracks_to_children.tocsr()
 
 start = time.monotonic()
 iter = 0
@@ -60,7 +59,7 @@ while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
     tracks_to_parents = nxt
     iter += 1
 
-print(f"Chased track lineage in {time.monotonic() - start} seconds ({iter} iterations)")
+print(f"Chased track lineage forward in {time.monotonic() - start} seconds ({iter} iterations)")
 start = time.monotonic()
 
 iter = 0
@@ -68,7 +67,7 @@ while tracks_to_children.nnz != (nxt := tracks_to_children ** 2).nnz:
     tracks_to_children = nxt
     iter += 1
 
-print(f"Chased track lineage in {time.monotonic() - start} seconds ({iter} iterations)")
+print(f"Chased track lineage backward in {time.monotonic() - start} seconds ({iter} iterations)")
 start = time.monotonic()
 
 tracks_to_tracks = tracks_to_parents + tracks_to_children
@@ -130,11 +129,12 @@ print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 # Here is the output of this script on my machine, using the ZSNS001_tracks.csv file.
 # Surely this conversion could be sped up!
 # ❯ python tools/convert_tracks_csv_to_sparse_zarr.py
-# Read 21697591 points in 24.87865095899906 seconds
-# Munged 21697591 points in 151.7521702500526 seconds
-# Chased track lineage in 0.7642807500087656 seconds
-# Converted to CSR in 14.081155208987184 seconds
-# Saved to Zarr in 43.23708183300914 seconds
+# Read 21697591 points in 25.869198750006035 seconds
+# Munged 21697591 points in 142.77665075007826 seconds
+# Chased track lineage forward in 0.9570639999583364 seconds (7 iterations)
+# Chased track lineage backward in 1.2615197079721838 seconds (7 iterations)
+# Converted to CSR in 10.87520341691561 seconds
+# Saved to Zarr in 45.39336562505923 seconds
 
 # This is what the resulting Zarr store looks like:
 # ~/Data/tracking
@@ -150,10 +150,10 @@ print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 # │   ├── data (207M)
 # │   ├── indices (50M)
 # │   └── indptr (1.9M)
-# └── tracks_to_tracks (4.1M)
-#     ├── data (132k)
-#     ├── indices (2.8M)
-#     └── indptr (1.2M)
+# └── tracks_to_tracks (37M)
+#     ├── data (22M) <- currently unused
+#     ├── indices (13M)
+#     └── indptr (1.8M)
 
 # note the relatively small size of the indptr arrays
 # tracks_to_points/data is a redundant copy of the points array to avoid having
