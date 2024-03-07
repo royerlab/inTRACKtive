@@ -37,12 +37,12 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useState(initialViewerState.curTime);
     const [autoRotate, setAutoRotate] = useState(initialViewerState.autoRotate);
     const [playing, setPlaying] = useState(initialViewerState.playing);
-    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current, initialViewerState.selectedPoints);
 
-    // Derived state that does not need to be persisted.
+    // Other state that is not or does not need to be persisted.
     const [trackManager, setTrackManager] = useState<TrackManager>();
     const [numTimes, setNumTimes] = useState(0);
     const [loading, setLoading] = useState(false);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
 
     const copyShareableUrlToClipboard = () => {
         const state = new ViewerState(
@@ -50,7 +50,6 @@ export default function Scene(props: SceneProps) {
             curTime,
             autoRotate,
             playing,
-            selectedPoints,
             canvas.current!.camera.position,
             canvas.current!.controls.target,
         );
@@ -141,6 +140,7 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        setSelectedPoints({});
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
         const loadingTimer = setTimeout(() => setLoading(true), 10);
         let ignore = false;
@@ -229,10 +229,7 @@ export default function Scene(props: SceneProps) {
                             disabled={trackManager === undefined}
                             sdsType="primary"
                             sdsStyle="rounded"
-                            onClick={() => {
-                                setSelectedPoints({});
-                                canvas.current?.removeAllTracks();
-                            }}
+                            onClick={() => canvas.current?.removeAllTracks()}
                         >
                             Clear Tracks
                         </Button>
