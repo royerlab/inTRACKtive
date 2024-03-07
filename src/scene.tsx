@@ -26,6 +26,7 @@ export default function Scene(props: SceneProps) {
     const [curTime, setCurTime] = useState(0);
     const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
+    const [trackHighlightLength, setTrackHighlightLength] = useState(11);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
@@ -74,7 +75,7 @@ export default function Scene(props: SceneProps) {
                         Float32Array.from([]),
                         Int32Array.from([]),
                     ];
-                    pos && canvas.current?.addTrack(l, pos, ids, curTime);
+                    pos && canvas.current?.addTrack(l, pos, ids, curTime, trackHighlightLength);
                 }
             }
         };
@@ -144,7 +145,7 @@ export default function Scene(props: SceneProps) {
 
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
-                canvas.updateAllTrackHighlights(curTime);
+                canvas.updateAllTrackHighlights(curTime, trackHighlightLength);
             };
             getAndHighlightPoints(canvas.current, curTime);
         } else {
@@ -153,7 +154,7 @@ export default function Scene(props: SceneProps) {
         return () => {
             ignore = true;
         };
-    }, [trackManager, curTime]);
+    }, [trackManager, curTime, trackHighlightLength]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -189,6 +190,17 @@ export default function Scene(props: SceneProps) {
                     onChange={(_, value) => setCurTime(value as number)}
                     marks={marks}
                     value={curTime}
+                />
+                <InputSlider
+                    id="track-highlight-length-slider"
+                    aria-labelledby="input-slider-track-highlight-length"
+                    disabled={trackManager === undefined}
+                    min={0}
+                    max={Math.min(256, numTimes - 1)}
+                    valueLabelDisplay="on"
+                    onChange={(_, value) => setTrackHighlightLength(value as number)}
+                    marks={marks}
+                    value={trackHighlightLength}
                 />
                 <div className="buttoncontainer">
                     <InputToggle
