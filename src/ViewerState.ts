@@ -34,9 +34,8 @@ export class ViewerState {
         return searchParams.toString();
     }
 
-    static fromUrlHash(urlHash: string) : ViewerState {
+    static fromUrlHash(urlHash: string): ViewerState {
         console.debug("getting state from hash: %s", urlHash);
-        const state = new ViewerState();
         // Remove the # from the hash to get the fragment.
         const searchParams = new URLSearchParams(urlHash.slice(1));
         if (searchParams.has(HASH_KEY)) {
