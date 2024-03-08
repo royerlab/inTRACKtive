@@ -122,10 +122,12 @@ export default function Scene(props: SceneProps) {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
-        trackManager.then((tm: ZarrArray) => {
+        trackManager.then((tm: TrackManager) => {
             setTrackManager(tm);
             setNumTimes(tm.points.shape[0]);
-            setCurTime(curTime);
+            // Defend against the case when a curTime valid for previous data
+            // is no longer valid.
+            setCurTime(Math.min(curTime, tm.points.shape[0] - 1));
         });
     }, [dataUrl]);
 
