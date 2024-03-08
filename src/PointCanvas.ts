@@ -91,7 +91,6 @@ export class PointCanvas {
 
     setCameraProperties(position: Vector3, target: Vector3) {
         this.camera.position.set(position.x, position.y, position.z);
-        this.camera.lookAt(target.x, target.y, target.z);
         this.controls.target.set(target.x, target.y, target.z);
     }
 

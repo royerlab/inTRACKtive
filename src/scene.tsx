@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, ButtonIcon, InputSlider, InputText, InputToggle, LoadingIndicator } from "@czi-sds/components";
+import { Button, InputSlider, InputText, InputToggle, LoadingIndicator } from "@czi-sds/components";
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
@@ -7,7 +7,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
-import { DEFAULT_ZARR_URL, ViewerState} from "./ViewerState";
+import { DEFAULT_ZARR_URL, ViewerState } from "./ViewerState";
 
 interface SceneProps {
     renderWidth?: number;

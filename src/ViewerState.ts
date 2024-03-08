@@ -19,7 +19,7 @@ export class ViewerState {
         curTime: number = 0,
         autoRotate: boolean = false,
         playing: boolean = false,
-        // Default position from interacting with ZSNS001
+        // Default position and target from interacting with ZSNS001.
         cameraPosition: Vector3 = new Vector3(500, 500, -1250),
         cameraTarget: Vector3 = new Vector3(500, 500, 250),
     ) {
@@ -68,8 +68,8 @@ export class ViewerState {
             state.cameraTarget = JSON.parse(searchParams.get("cameraTarget")!);
         }
         // Reset hash once initial state is consumed to keep URL clean.
-        // Use this instead of window.location.hash to avoid triggering a
-        // hashchange event (which would reset the state again).
+        // Use this instead of setting window.location.hash to avoid triggering
+        // a hashchange event (which would reset the state again).
         window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
         return state;
     }
