@@ -246,7 +246,12 @@ export default function Scene(props: SceneProps) {
                         >
                             Clear Tracks
                         </Button>
-                        <Button sdsType="primary" sdsStyle="rounded" onClick={copyShareableUrlToClipboard}>
+                        <Button
+                            disabled={canvas.current === undefined}
+                            sdsType="primary"
+                            sdsStyle="rounded"
+                            onClick={copyShareableUrlToClipboard}
+                        >
                             Copy Link
                         </Button>
                     </div>
