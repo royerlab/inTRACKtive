@@ -166,16 +166,17 @@ export class PointCanvas {
             console.warn("Track with ID %d already exists", trackID);
             return;
         }
-        const track = new Track(trackID, positions, ids);
-        track.initTrackLine(this.maxPointsPerTimepoint);
-        track.initHighlightLine(curTime, length);
+        const track = new Track(trackID, positions, ids, this.maxPointsPerTimepoint, curTime, length);
         this.tracks.set(trackID, track);
         this.scene.add(track);
     }
 
     updateAllTrackHighlights(curTime: number, length: number = 11) {
+        const halfLength = Math.floor(length / 2);
+        const minTime = curTime - halfLength;
+        const maxTime = curTime + halfLength;
         for (const track of this.tracks.values()) {
-            const ids = track.updateHighlightLine(curTime, length);
+            const ids = track.updateHighlightLine(curTime, minTime, maxTime);
             ids && this.highlightPoints(ids.map((id) => id % this.maxPointsPerTimepoint));
         }
     }
@@ -225,11 +226,20 @@ class Track extends Object3D {
     highlightLine: Line2 | null = null;
     highlightLUT = new Lut("blackbody", 128);
 
-    constructor(trackID: number, positions: Float32Array, pointIDs: Int32Array) {
+    constructor(
+        trackID: number,
+        positions: Float32Array,
+        pointIDs: Int32Array,
+        maxPointsPerTimepoint: number,
+        curTime?: number,
+        length?: number,
+    ) {
         super();
         this.trackID = trackID;
         this.positions = positions;
         this.pointIDs = pointIDs;
+        this.initTrackLine(maxPointsPerTimepoint);
+        this.initHighlightLine(curTime, length);
     }
 
     private makeLine(linewidth: number, opacity?: number): Line2 {
@@ -246,12 +256,17 @@ class Track extends Object3D {
         return line;
     }
 
-    initHighlightLine(curTime?: number, length?: number) {
+    private initHighlightLine(curTime?: number, length?: number) {
         this.highlightLine = this.makeLine(1.0);
-        curTime !== undefined && this.updateHighlightLine(curTime, length);
+        if (curTime !== undefined && length !== undefined) {
+            const halfLength = Math.floor(length / 2);
+            const minTime = curTime - halfLength;
+            const maxTime = curTime + halfLength;
+            this.updateHighlightLine(curTime, minTime, maxTime);
+        }
     }
 
-    initTrackLine(maxPointsPerTimepoint: number) {
+    private initTrackLine(maxPointsPerTimepoint: number) {
         this.trackLine = this.makeLine(0.3, 0.5);
 
         this.time = [];
@@ -269,14 +284,11 @@ class Track extends Object3D {
         this.trackLine.geometry.computeBoundingSphere();
     }
 
-    updateHighlightLine(curTime: number, length: number = 11) {
+    updateHighlightLine(curTime: number, minTime: number, maxTime: number) {
         if (!this.highlightLine || !this.trackLine) {
             console.warn("Highlight line or track line not initialized", this.trackID);
             return;
         }
-        const halfLength = Math.floor(length / 2);
-        const minTime = curTime - halfLength;
-        const maxTime = curTime + halfLength;
         if (minTime > this.time[this.time.length - 1] || maxTime < this.time[0]) {
             // don't draw this highlight
             this.highlightLine.visible = false;
@@ -284,8 +296,8 @@ class Track extends Object3D {
         }
         this.highlightLine.visible = true;
 
-        let minIdx = this.time.findIndex((t) => t === curTime - halfLength);
-        let maxIdx = this.time.findIndex((t) => t === curTime + halfLength);
+        let minIdx = this.time.findIndex((t) => t === minTime);
+        let maxIdx = this.time.findIndex((t) => t === maxTime);
 
         minIdx = minIdx === -1 ? 0 : minIdx;
         maxIdx = maxIdx === -1 ? this.time.length - 1 : maxIdx;
@@ -295,7 +307,8 @@ class Track extends Object3D {
         const highlightPoints = [];
         for (let i = minIdx; i <= maxIdx; i++) {
             positions.push(this.positions[3 * i], this.positions[3 * i + 1], this.positions[3 * i + 2]);
-            colors.push(...this.highlightLUT.getColor((this.time[i] - curTime + halfLength) / length).toArray());
+            const lengthFrac = (this.time[i] - minTime) / (maxTime - minTime);
+            colors.push(...this.highlightLUT.getColor(lengthFrac).toArray());
             this.time[i] === curTime && highlightPoints.push(this.pointIDs[i]);
         }
 
