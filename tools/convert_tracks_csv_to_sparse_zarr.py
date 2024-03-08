@@ -18,7 +18,7 @@ with open(root_dir + "ZSNS001_tracks.csv", "r") as f:
     for row in reader:
         t = int(row[1])
         points.append(
-            (int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), points_in_timepoint[t])
+            (int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), points_in_timepoint[t])
         )
         points_in_timepoint[t] += 1
 
@@ -32,20 +32,50 @@ tracks = len(set(p[0] for p in points))
 # store the points in an array
 points_array = np.ones((timepoints, 3 * max_points_in_timepoint), dtype=np.float32) * -9999.9
 points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
+tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
+tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 for point in points:
-    track_id, t, z, y, x, n = point
+    track_id, t, z, y, x, parent_track_id, n = point
     point_id = t * max_points_in_timepoint + n
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
     points_to_tracks[point_id, track_id - 1] = 1
 
+    if parent_track_id > 0:
+        tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
+        tracks_to_children[parent_track_id - 1, track_id - 1] = 1
+
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
+
+tracks_to_parents.setdiag(1)
+tracks_to_children.setdiag(1)
+tracks_to_parents = tracks_to_parents.tocsr()
+tracks_to_children = tracks_to_children.tocsr()
+
 start = time.monotonic()
+iter = 0
+while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
+    tracks_to_parents = nxt
+    iter += 1
+
+print(f"Chased track lineage forward in {time.monotonic() - start} seconds ({iter} iterations)")
+start = time.monotonic()
+
+iter = 0
+while tracks_to_children.nnz != (nxt := tracks_to_children ** 2).nnz:
+    tracks_to_children = nxt
+    iter += 1
+
+print(f"Chased track lineage backward in {time.monotonic() - start} seconds ({iter} iterations)")
+start = time.monotonic()
+
+tracks_to_tracks = tracks_to_parents + tracks_to_children
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()
 points_to_tracks = points_to_tracks.tocsr()
+tracks_to_tracks = tracks_to_tracks.tocsr()
 
 print(f"Converted to CSR in {time.monotonic() - start} seconds")
 start = time.monotonic()
@@ -63,7 +93,7 @@ top_level_group.create_dataset(
     dtype=np.float32,
 )
 
-top_level_group.create_groups("points_to_tracks", "tracks_to_points")
+top_level_group.create_groups("points_to_tracks", "tracks_to_points", "tracks_to_tracks")
 # TODO: tracks_to_points may want to store xyz for the points, not just the indices
 # this would make the indices array 3x (4x?) larger, but would eliminate the need to
 # fetch coordinates again based on point IDs
@@ -75,8 +105,7 @@ tracks_to_points_xyz = np.zeros((len(tracks_to_points.indices), 3), dtype=np.flo
 for i, ind in enumerate(tracks_to_points.indices):
     t, n = divmod(ind, max_points_in_timepoint)
     tracks_to_points_xyz[i] = points_array[t, 3 * n:3 * (n + 1)]
-print(tracks_to_points_xyz.shape)
-# TODO: figure out chunking?
+# TODO: figure out better chunking?
 tracks_to_points_zarr.create_dataset(
     "data",
     data=tracks_to_points_xyz,
@@ -89,19 +118,23 @@ points_to_tracks_zarr.attrs["sparse_format"] = "csr"
 points_to_tracks_zarr.create_dataset("indices", data=points_to_tracks.indices)
 points_to_tracks_zarr.create_dataset("indptr", data=points_to_tracks.indptr)
 
-print(f"Saved to Zarr in {time.monotonic() - start} seconds")
+tracks_to_tracks_zarr = top_level_group["tracks_to_tracks"]
+tracks_to_tracks_zarr.attrs["sparse_format"] = "csr"
+tracks_to_tracks_zarr.create_dataset("indices", data=tracks_to_tracks.indices)
+tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
+tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
-# TODO: process the tracks-to-tracks data - right now this does not provide a way
-# to get ancestor/descendent tracks
+print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 # Here is the output of this script on my machine, using the ZSNS001_tracks.csv file.
 # Surely this conversion could be sped up!
-# ❯ python convert_tracks_csv_to_sparse_zarr.py
-# Read 21697591 points in 23.41321291704662 seconds
-# Munged 21697591 points in 61.357248957967386 seconds
-# Converted to CSR in 8.24479133298155 seconds
-# (21697591, 3)
-# Saved to Zarr in 40.47038504201919 seconds
+# ❯ python tools/convert_tracks_csv_to_sparse_zarr.py
+# Read 21697591 points in 25.869198750006035 seconds
+# Munged 21697591 points in 142.77665075007826 seconds
+# Chased track lineage forward in 0.9570639999583364 seconds (7 iterations)
+# Chased track lineage backward in 1.2615197079721838 seconds (7 iterations)
+# Converted to CSR in 10.87520341691561 seconds
+# Saved to Zarr in 45.39336562505923 seconds
 
 # This is what the resulting Zarr store looks like:
 # ~/Data/tracking
@@ -113,10 +146,14 @@ print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 # ├── points_to_tracks (62M)
 # │   ├── indices (61M)
 # │   └── indptr (1M)
-# └── tracks_to_points (259M)
-#     ├── data (207M)
-#     ├── indices (50M)
-#     └── indptr (1.9M)
+# ├── tracks_to_points (259M)
+# │   ├── data (207M)
+# │   ├── indices (50M)
+# │   └── indptr (1.9M)
+# └── tracks_to_tracks (37M)
+#     ├── data (22M) <- currently unused
+#     ├── indices (13M)
+#     └── indptr (1.8M)
 
 # note the relatively small size of the indptr arrays
 # tracks_to_points/data is a redundant copy of the points array to avoid having

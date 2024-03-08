@@ -88,21 +88,28 @@ export default function Scene(props: SceneProps) {
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.log("selected points: %s", selectedPoints);
+        console.debug("selected points: %s", selectedPoints);
         const pointsID = canvas.current?.points.id || 0;
         if (!selectedPoints || !(pointsID in selectedPoints)) return;
         const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
+
+        // TODO: use Promise.all to fetch all tracks in parallel
+        const fetchAndAddTrack = async (pointID: number) => {
+            const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
+            for (const t of tracks) {
+                const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
+                for (const l of lineage) {
+                    if (canvas.current && canvas.current.tracks.has(l)) continue;
+                    const points = await trackManager?.fetchPointsForTrack(l);
+                    points && canvas.current?.addTrack(l, points);
+                }
+            }
+        };
+
         // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
         for (const p of selectedPoints[pointsID]) {
             const pointID = curTime * maxPointsPerTimepoint + p;
-            trackManager?.fetchTrackIDsForPoint(pointID).then((tracks) => {
-                for (const t of tracks) {
-                    if (canvas.current && canvas.current.tracks.has(t)) continue;
-                    trackManager.fetchPointsForTrack(t).then((points) => {
-                        canvas.current?.addTrack(t, points);
-                    });
-                }
-            });
+            fetchAndAddTrack(pointID);
         }
     }, [selectedPoints]);
 
@@ -145,6 +152,7 @@ export default function Scene(props: SceneProps) {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        // TODO: update the selected points instead of clearing them
         setSelectedPoints({});
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
         const loadingTimer = setTimeout(() => setLoading(true), 10);
@@ -154,7 +162,7 @@ export default function Scene(props: SceneProps) {
         // before rendering it
         if (trackManager && !ignore) {
             console.debug("fetch points at time %d", curTime);
-            trackManager?.getPointsAtTime(curTime).then((data) => {
+            trackManager?.fetchPointsAtTime(curTime).then((data) => {
                 console.debug("got %d points for time %d", data.length / 3, curTime);
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", curTime);
