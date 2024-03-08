@@ -5,6 +5,8 @@ export const DEFAULT_ZARR_URL = new URL(
         "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
 );
 
+const HASH_KEY = "viewerState";
+
 // Encapsulates all the persistent state in the viewer (e.g. that can be serialized and shared).
 export class ViewerState {
     dataUrl: URL;
@@ -34,38 +36,21 @@ export class ViewerState {
     toUrlHash(): string {
         // Use SearchParams to sanitize serialized string values for URL.
         const searchParams = new URLSearchParams();
-        searchParams.append("dataUrl", this.dataUrl.toString());
-        searchParams.append("curTime", this.curTime.toString());
-        searchParams.append("autoRotate", this.autoRotate.toString());
-        searchParams.append("playing", this.playing.toString());
-        searchParams.append("cameraPosition", JSON.stringify(this.cameraPosition));
-        searchParams.append("cameraTarget", JSON.stringify(this.cameraTarget));
+        searchParams.append(HASH_KEY, JSON.stringify(this));
         return searchParams.toString();
     }
 
-    static fromUrlHash(urlHash: string) {
-        console.log("getting state from hash: %s", urlHash);
+    static fromUrlHash(urlHash: string) : ViewerState {
+        console.debug("getting state from hash: %s", urlHash);
         const state = new ViewerState();
         // Remove the # from the hash to get the fragment.
         const searchParams = new URLSearchParams(urlHash.slice(1));
-        if (searchParams.has("dataUrl")) {
-            state.dataUrl = new URL(searchParams.get("dataUrl")!);
+        if (searchParams.has(HASH_KEY)) {
+            return JSON.parse(searchParams.get(HASH_KEY)!);
         }
-        if (searchParams.has("curTime")) {
-            state.curTime = parseInt(searchParams.get("curTime")!);
+        if (urlHash.length > 0) {
+            console.error("failed to find state key in hash: %s", urlHash);
         }
-        if (searchParams.has("autoRotate")) {
-            state.autoRotate = searchParams.get("autoRotate") === "true";
-        }
-        if (searchParams.get("playing")) {
-            state.playing = searchParams.get("playing") === "true";
-        }
-        if (searchParams.get("cameraPosition")) {
-            state.cameraPosition = JSON.parse(searchParams.get("cameraPosition")!);
-        }
-        if (searchParams.get("cameraTarget")) {
-            state.cameraTarget = JSON.parse(searchParams.get("cameraTarget")!);
-        }
-        return state;
+        return new ViewerState();
     }
 }
