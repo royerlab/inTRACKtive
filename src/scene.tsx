@@ -4,7 +4,6 @@ import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
 import { DEFAULT_ZARR_URL, ViewerState } from "./ViewerState";
