@@ -171,7 +171,7 @@ export class PointCanvas {
         this.scene.add(track);
     }
 
-    updateAllTrackHighlights(curTime: number, length: number = 11) {
+    updateAllTrackHighlights(curTime: number, length: number) {
         const halfLength = Math.floor(length / 2);
         const minTime = curTime - halfLength;
         const maxTime = curTime + halfLength;
@@ -271,7 +271,7 @@ class Track extends Object3D {
 
         this.time = [];
         const pos = Array.from(this.positions);
-        const colors = [];
+        const colors: number[] = [];
         const n = pos.length / 3;
         for (const [i, id] of this.pointIDs.entries()) {
             const t = Math.floor(id / maxPointsPerTimepoint);
@@ -302,9 +302,9 @@ class Track extends Object3D {
         minIdx = minIdx === -1 ? 0 : minIdx;
         maxIdx = maxIdx === -1 ? this.time.length - 1 : maxIdx;
 
-        const positions = [];
-        const colors = [];
-        const highlightPoints = [];
+        const positions: number[] = [];
+        const colors: number[] = [];
+        const highlightPoints: number[] = [];
         for (let i = minIdx; i <= maxIdx; i++) {
             positions.push(this.positions[3 * i], this.positions[3 * i + 1], this.positions[3 * i + 2]);
             const lengthFrac = (this.time[i] - minTime) / (maxTime - minTime);
