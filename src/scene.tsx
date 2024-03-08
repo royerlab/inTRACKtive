@@ -14,9 +14,16 @@ interface SceneProps {
     renderHeight?: number;
 }
 
+function clearUrlHash() {
+    // Use this instead of setting window.location.hash to avoid triggering
+    // a hashchange event (which would reset the state again).
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+}
+
 // Ideally we do this here so that we can use initial values as default values for React state.
-const initialViewerState = ViewerState.fromUrlHash();
+const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+clearUrlHash();
 
 export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
@@ -54,7 +61,8 @@ export default function Scene(props: SceneProps) {
         navigator.clipboard.writeText(url);
     };
     const setStateFromHash = () => {
-        const state = ViewerState.fromUrlHash();
+        const state = ViewerState.fromUrlHash(window.location.hash);
+        clearUrlHash();
         setDataUrl(state.dataUrl);
         setCurTime(state.curTime);
         setAutoRotate(state.autoRotate);
