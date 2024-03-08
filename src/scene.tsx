@@ -38,8 +38,8 @@ export default function Scene(props: SceneProps) {
     // Primary state that determines configuration of application.
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
     const [curTime, setCurTime] = useState(initialViewerState.curTime);
-    const [autoRotate, setAutoRotate] = useState(initialViewerState.autoRotate);
-    const [playing, setPlaying] = useState(initialViewerState.playing);
+    const [autoRotate, setAutoRotate] = useState(false);
+    const [playing, setPlaying] = useState(false);
 
     // Other state that is not or does not need to be persisted.
     const [trackManager, setTrackManager] = useState<TrackManager>();
@@ -52,8 +52,6 @@ export default function Scene(props: SceneProps) {
         const state = new ViewerState(
             dataUrl,
             curTime,
-            autoRotate,
-            playing,
             canvas.current!.camera.position,
             canvas.current!.controls.target,
         );
@@ -65,8 +63,6 @@ export default function Scene(props: SceneProps) {
         clearUrlHash();
         setDataUrl(state.dataUrl);
         setCurTime(state.curTime);
-        setAutoRotate(state.autoRotate);
-        setPlaying(state.playing);
         canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
     };
 

@@ -11,24 +11,18 @@ const HASH_KEY = "viewerState";
 export class ViewerState {
     dataUrl: URL;
     curTime: number;
-    autoRotate: boolean;
-    playing: boolean;
     cameraPosition: Vector3;
     cameraTarget: Vector3;
 
     constructor(
         dataUrl: URL = DEFAULT_ZARR_URL,
         curTime: number = 0,
-        autoRotate: boolean = false,
-        playing: boolean = false,
         // Default position and target from interacting with ZSNS001.
         cameraPosition: Vector3 = new Vector3(500, 500, -1250),
         cameraTarget: Vector3 = new Vector3(500, 500, 250),
     ) {
         this.dataUrl = dataUrl;
         this.curTime = curTime;
-        this.autoRotate = autoRotate;
-        this.playing = playing;
         this.cameraPosition = cameraPosition;
         this.cameraTarget = cameraTarget;
     }
