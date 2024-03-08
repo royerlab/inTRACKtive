@@ -59,20 +59,15 @@ export default function Scene(props: SceneProps) {
         setCurTime(state.curTime);
         setAutoRotate(state.autoRotate);
         setPlaying(state.playing);
-        canvas.current?.camera.position.set(state.cameraPosition.x, state.cameraPosition.y, state.cameraPosition.z);
-        canvas.current?.controls.target.set(state.cameraTarget.x, state.cameraTarget.y, state.cameraTarget.z);
+        canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
     };
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        canvas.current = new PointCanvas(
-            renderWidth,
-            renderHeight,
-            initialViewerState.cameraPosition,
-            initialViewerState.cameraTarget,
-        );
+        canvas.current = new PointCanvas(renderWidth, renderHeight);
+        canvas.current!.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 
         // handle any changes to the hash after the initial document has loaded
         window.addEventListener("hashchange", setStateFromHash);
