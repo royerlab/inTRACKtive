@@ -102,7 +102,7 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
 
     useEffect(() => {
         if (selectedPoints && canvas && canvas.points.id in selectedPoints) {
-            console.log("highlighting points:", selectedPoints[canvas.points.id]);
+            console.debug("highlighting points:", selectedPoints[canvas.points.id]);
             canvas.highlightPoints(selectedPoints[canvas.points.id]);
         } else if (canvas) {
             console.log("resetting point colors");
