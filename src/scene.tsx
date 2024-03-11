@@ -22,6 +22,7 @@ export default function Scene(props: SceneProps) {
 
     const [trackManager, setTrackManager] = useState<TrackManager>();
     const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
+    const [tempDataUrl, setTempDataUrl] = useState(DEFAULT_ZARR_URL.toString());
     const [numTimes, setNumTimes] = useState(0);
     const [curTime, setCurTime] = useState(0);
     const [autoRotate, setAutoRotate] = useState(false);
@@ -171,10 +172,15 @@ export default function Scene(props: SceneProps) {
                 <div className="inputcontainer">
                     <InputText
                         id="url-input"
-                        label="Zarr URL"
-                        placeholder={DEFAULT_ZARR_URL.toString()}
-                        value={dataUrl.toString()}
-                        onChange={(e) => setDataUrl(new URL(e.target.value))}
+                        label="Zarr group track data URL"
+                        hideLabel={true}
+                        placeholder="Zarr group track data URL"
+                        value={tempDataUrl}
+                        onChange={(e) => setTempDataUrl(e.target.value)}
+                        onKeyUp={(e) => {
+                            if (e.key === "Enter") setDataUrl(new URL(tempDataUrl));
+                        }}
+                        onBlur={() => setDataUrl(new URL(tempDataUrl))}
                         fullWidth={true}
                         intent={trackManager ? "default" : "error"}
                     />
