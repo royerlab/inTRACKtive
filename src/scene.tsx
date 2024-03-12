@@ -175,6 +175,12 @@ export default function Scene(props: SceneProps) {
             setLoading(false);
             console.debug("IGNORE FETCH points at time %d", curTime);
         }
+
+        // stop playback if there is no data
+        if (!trackManager) {
+            setPlaying(false);
+        }
+
         return () => {
             clearTimeout(loadingTimer);
             ignore = true;
