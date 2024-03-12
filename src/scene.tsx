@@ -3,43 +3,70 @@ import { Button, InputSlider, InputText, InputToggle, LoadingIndicator } from "@
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
-// @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray } from "zarr";
 import useSelectionBox from "./hooks/useSelectionBox";
 
-const DEFAULT_ZARR_URL = new URL(
-    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
-);
+import { ViewerState, clearUrlHash } from "./ViewerState";
+
 interface SceneProps {
     renderWidth?: number;
     renderHeight?: number;
 }
 
+// Ideally we do this here so that we can use initial values as default values for React state.
+const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
+console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+clearUrlHash();
+
 export default function Scene(props: SceneProps) {
     const renderWidth = props.renderWidth || 800;
     const renderHeight = props.renderHeight || 600;
-
-    const [trackManager, setTrackManager] = useState<TrackManager>();
-    const [dataUrl, setDataUrl] = useState(DEFAULT_ZARR_URL);
-    const [numTimes, setNumTimes] = useState(0);
-    const [curTime, setCurTime] = useState(0);
-    const [autoRotate, setAutoRotate] = useState(false);
-    const [playing, setPlaying] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
     const divRef: React.RefObject<HTMLDivElement> = useRef(null);
     const canvas = useRef<PointCanvas>();
+
+    // Primary state that determines configuration of application.
+    const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
+    const [curTime, setCurTime] = useState(initialViewerState.curTime);
+    const [autoRotate, setAutoRotate] = useState(false);
+    const [playing, setPlaying] = useState(false);
+
+    // Other state that is not or does not need to be persisted.
+    const [trackManager, setTrackManager] = useState<TrackManager>();
+    const [numTimes, setNumTimes] = useState(0);
+    const [loading, setLoading] = useState(false);
     const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
+
+    // Manage shareable state than can persist across sessions.
+    const copyShareableUrlToClipboard = () => {
+        const state = new ViewerState(
+            dataUrl,
+            curTime,
+            canvas.current!.camera.position,
+            canvas.current!.controls.target,
+        );
+        const url = window.location.toString() + "#" + state.toUrlHash();
+        navigator.clipboard.writeText(url);
+    };
+    const setStateFromHash = () => {
+        const state = ViewerState.fromUrlHash(window.location.hash);
+        clearUrlHash();
+        setDataUrl(state.dataUrl);
+        setCurTime(state.curTime);
+        canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
+    };
 
     // this useEffect is intended to make this part run only on mount
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
         canvas.current = new PointCanvas(renderWidth, renderHeight);
+        canvas.current!.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
+
+        // handle any changes to the hash after the initial document has loaded
+        window.addEventListener("hashchange", setStateFromHash);
 
         // append renderer canvas
         const divCurrent = divRef.current;
@@ -50,6 +77,7 @@ export default function Scene(props: SceneProps) {
         canvas.current.animate();
 
         return () => {
+            window.removeEventListener("hashchange", setStateFromHash);
             renderer.domElement.remove();
             canvas.current?.dispose();
         };
@@ -86,10 +114,13 @@ export default function Scene(props: SceneProps) {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
-        trackManager.then((tm: ZarrArray) => {
+        trackManager.then((tm: TrackManager | null) => {
+            if (!tm) return;
             setTrackManager(tm);
             setNumTimes(tm.points.shape[0]);
-            setCurTime(0);
+            // Defend against the case when a curTime valid for previous data
+            // is no longer valid.
+            setCurTime(Math.min(curTime, tm.points.shape[0] - 1));
         });
     }, [dataUrl]);
 
@@ -129,9 +160,7 @@ export default function Scene(props: SceneProps) {
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (trackManager && !ignore) {
-            // trackManager.highlightTracks(curTime);
             console.debug("fetch points at time %d", curTime);
-            // fetchPointsAtTime(array, curTime).then((data) => {
             trackManager?.fetchPointsAtTime(curTime).then((data) => {
                 console.debug("got %d points for time %d", data.length / 3, curTime);
                 if (ignore) {
@@ -172,7 +201,7 @@ export default function Scene(props: SceneProps) {
                     <InputText
                         id="url-input"
                         label="Zarr URL"
-                        placeholder={DEFAULT_ZARR_URL.toString()}
+                        placeholder={initialViewerState.dataUrl.toString()}
                         value={dataUrl.toString()}
                         onChange={(e) => setDataUrl(new URL(e.target.value))}
                         fullWidth={true}
@@ -193,6 +222,7 @@ export default function Scene(props: SceneProps) {
                         <InputToggle
                             onLabel="Spin"
                             offLabel="Spin"
+                            checked={autoRotate}
                             disabled={trackManager === undefined}
                             onChange={(e) => {
                                 setAutoRotate((e.target as HTMLInputElement).checked);
@@ -201,6 +231,7 @@ export default function Scene(props: SceneProps) {
                         <InputToggle
                             onLabel="Play"
                             offLabel="Play"
+                            checked={playing}
                             disabled={trackManager === undefined}
                             onChange={(e) => {
                                 setPlaying((e.target as HTMLInputElement).checked);
@@ -213,6 +244,14 @@ export default function Scene(props: SceneProps) {
                             onClick={() => canvas.current?.removeAllTracks()}
                         >
                             Clear Tracks
+                        </Button>
+                        <Button
+                            disabled={canvas.current === undefined}
+                            sdsType="primary"
+                            sdsStyle="rounded"
+                            onClick={copyShareableUrlToClipboard}
+                        >
+                            Copy Link
                         </Button>
                     </div>
                 </div>

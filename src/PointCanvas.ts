@@ -45,11 +45,6 @@ export class PointCanvas {
             0.1, // Near
             10000, // Far
         );
-        // Default position from interacting with ZSNS001
-        // TODO: this should be set/reset when the data changes
-        const target = new Vector3(500, 500, 250);
-        this.camera.position.set(target.x, target.y, target.z - 1500);
-        this.camera.lookAt(target.x, target.y, target.z);
 
         const pointsGeometry = new BufferGeometry();
         const pointsMaterial = new PointsMaterial({
@@ -82,7 +77,6 @@ export class PointCanvas {
 
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.target.set(target.x, target.y, target.z);
         this.controls.autoRotateSpeed = 1;
     }
 
@@ -94,6 +88,11 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    setCameraProperties(position: Vector3, target: Vector3) {
+        this.camera.position.set(position.x, position.y, position.z);
+        this.controls.target.set(target.x, target.y, target.z);
+    }
 
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
