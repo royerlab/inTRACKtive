@@ -37,7 +37,7 @@ class TrackGeometry extends LineSegmentsGeometry {
     }
 
     setColors(array: number[] | Float32Array) {
-        // converts [ r1, g1, b1,  r2, g2, b2, ... ] to pairs format
+        // converts [ r1, g1, b1, r2, g2, b2, ... ] to pairs format
 
         const length = array.length - 3;
         const colors = new Float32Array(2 * length);
