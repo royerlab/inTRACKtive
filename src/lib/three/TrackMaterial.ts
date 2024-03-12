@@ -1,3 +1,14 @@
+/**
+ * This defines the shaders and uniforms the geometry of the track, adding an
+ * options to highlight a portion of the line with a fatter line + LUT. You can
+ * also hide the rest of the track.
+ *
+ * Compared to Line2, this removes support for dashed lines and non-world units.
+ *
+ * see:
+ *  https://github.com/mrdoob/three.js/blob/5ed5417d63e4eeba5087437cc27ab1e3d0813aea/examples/jsm/lines/LineMaterial.js
+ */
+
 import {
     DataTexture,
     ShaderLib,

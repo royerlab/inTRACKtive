@@ -1,5 +1,11 @@
-import { InstancedInterleavedBuffer, InterleavedBufferAttribute, Line } from "three";
+import { InstancedInterleavedBuffer, InterleavedBufferAttribute } from "three";
 import { LineSegmentsGeometry } from "three/examples/jsm/Addons.js";
+
+/**
+ * This class maintains the geometry of the track, adding instanced attributes for time.
+ * see:
+ *  https://github.com/mrdoob/three.js/blob/dev/examples/jsm/lines/LineGeometry.js
+ */
 
 class TrackGeometry extends LineSegmentsGeometry {
     isTrackGeometry = true;
@@ -65,16 +71,6 @@ class TrackGeometry extends LineSegmentsGeometry {
         const time = new InstancedInterleavedBuffer(times, 2, 1);
         this.setAttribute("instanceTimeStart", new InterleavedBufferAttribute(time, 1, 0));
         this.setAttribute("instanceTimeEnd", new InterleavedBufferAttribute(time, 1, 1));
-
-        return this;
-    }
-
-    fromLine(line: Line) {
-        const geometry = line.geometry;
-
-        this.setPositions(geometry.attributes.position.array as Float32Array); // assumes non-indexed
-
-        // set colors, maybe
 
         return this;
     }
