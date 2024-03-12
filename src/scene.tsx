@@ -202,7 +202,7 @@ export default function Scene(props: SceneProps) {
                         id="url-input"
                         label="Zarr URL"
                         placeholder={initialViewerState.dataUrl.toString()}
-                        value={dataUrl.toString()}
+                        defaultValue={initialViewerState.dataUrl.toString()}
                         onChange={(e) => setDataUrl(new URL(e.target.value))}
                         fullWidth={true}
                         intent={trackManager ? "default" : "error"}
