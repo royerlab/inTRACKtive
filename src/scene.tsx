@@ -62,7 +62,6 @@ export default function Scene(props: SceneProps) {
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();
 
-        // TODO: use Promise.all to fetch all tracks in parallel
         // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
             const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
@@ -76,7 +75,10 @@ export default function Scene(props: SceneProps) {
                         Float32Array.from([]),
                         Int32Array.from([]),
                     ];
-                    pos && canvas.current?.addTrack(l, pos, ids, curTime, trackHighlightLength);
+                    const newTrack = canvas.current?.addTrack(l, pos, ids);
+                    const minTime = curTime - trackHighlightLength / 2;
+                    const maxTime = curTime + trackHighlightLength / 2;
+                    newTrack?.updateHighlightLine(minTime, maxTime);
                 }
             }
         };
@@ -86,7 +88,6 @@ export default function Scene(props: SceneProps) {
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
         Promise.all(selected.map((p) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
-
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
@@ -136,7 +137,7 @@ export default function Scene(props: SceneProps) {
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (canvas.current && trackManager && !ignore) {
-            const getAndHighlightPoints = async (canvas: PointCanvas, time: number) => {
+            const getPoints = async (canvas: PointCanvas, time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
                 console.debug("got %d points for time %d", data.length / 3, time);
@@ -150,9 +151,8 @@ export default function Scene(props: SceneProps) {
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
-                canvas.updateAllTrackHighlights(curTime, trackHighlightLength);
             };
-            getAndHighlightPoints(canvas.current, curTime);
+            getPoints(canvas.current, curTime);
         } else {
             clearTimeout(loadingTimer);
             setLoading(false);
@@ -162,7 +162,14 @@ export default function Scene(props: SceneProps) {
             clearTimeout(loadingTimer);
             ignore = true;
         };
-    }, [trackManager, curTime, trackHighlightLength]);
+    }, [trackManager, curTime]);
+
+    useEffect(() => {
+        // update the track highlights
+        const minTime = curTime - trackHighlightLength / 2;
+        const maxTime = curTime + trackHighlightLength / 2;
+        canvas.current?.updateAllTrackHighlights(minTime, maxTime);
+    }, [curTime, trackHighlightLength]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -205,7 +212,7 @@ export default function Scene(props: SceneProps) {
                         aria-labelledby="input-slider-track-highlight-length"
                         disabled={trackManager === undefined}
                         min={0}
-                        max={Math.min(256, numTimes - 1)}
+                        max={numTimes - 1}
                         valueLabelDisplay="on"
                         onChange={(_, value) => setTrackHighlightLength(value as number)}
                         marks={marks}
