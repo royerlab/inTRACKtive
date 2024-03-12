@@ -34,7 +34,7 @@ export default function Scene(props: SceneProps) {
     const [playing, setPlaying] = useState(false);
 
     // Other state that is not or does not need to be persisted.
-    const [trackManager, setTrackManager] = useState<TrackManager>();
+    const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
     const [numTimes, setNumTimes] = useState(0);
     const [loading, setLoading] = useState(false);
     const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
@@ -115,12 +115,11 @@ export default function Scene(props: SceneProps) {
         const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
-            if (!tm) return;
             setTrackManager(tm);
-            setNumTimes(tm.points.shape[0]);
+            setNumTimes(tm?.points.shape[0] || numTimes);
             // Defend against the case when a curTime valid for previous data
             // is no longer valid.
-            setCurTime(Math.min(curTime, tm.points.shape[0] - 1));
+            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || Infinity));
         });
     }, [dataUrl]);
 
@@ -210,7 +209,7 @@ export default function Scene(props: SceneProps) {
                     <InputSlider
                         id="time-frame-slider"
                         aria-labelledby="input-slider-time-frame"
-                        disabled={trackManager === undefined}
+                        disabled={!trackManager}
                         min={0}
                         max={numTimes - 1}
                         valueLabelDisplay="on"
@@ -223,7 +222,7 @@ export default function Scene(props: SceneProps) {
                             onLabel="Spin"
                             offLabel="Spin"
                             checked={autoRotate}
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             onChange={(e) => {
                                 setAutoRotate((e.target as HTMLInputElement).checked);
                             }}
@@ -232,13 +231,13 @@ export default function Scene(props: SceneProps) {
                             onLabel="Play"
                             offLabel="Play"
                             checked={playing}
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             onChange={(e) => {
                                 setPlaying((e.target as HTMLInputElement).checked);
                             }}
                         />
                         <Button
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             sdsType="primary"
                             sdsStyle="rounded"
                             onClick={() => canvas.current?.removeAllTracks()}
