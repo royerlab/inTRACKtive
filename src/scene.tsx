@@ -5,17 +5,11 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 
 import useSelectionBox from "./hooks/useSelectionBox";
 
-import { DEFAULT_ZARR_URL, ViewerState } from "./ViewerState";
+import { DEFAULT_ZARR_URL, ViewerState, clearUrlHash } from "./ViewerState";
 
 interface SceneProps {
     renderWidth?: number;
     renderHeight?: number;
-}
-
-function clearUrlHash() {
-    // Use this instead of setting window.location.hash to avoid triggering
-    // a hashchange event (which would reset the state again).
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 }
 
 // Ideally we do this here so that we can use initial values as default values for React state.

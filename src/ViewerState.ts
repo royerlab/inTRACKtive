@@ -7,6 +7,14 @@ export const DEFAULT_ZARR_URL = new URL(
 
 const HASH_KEY = "viewerState";
 
+// Clears the hash from the window's URL without triggering a hashchange
+// event or an update to history.
+export function clearUrlHash() {
+    // Use this instead of setting window.location.hash to avoid triggering
+    // a hashchange event (which would reset the state again).
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+}
+
 // Encapsulates all the persistent state in the viewer (e.g. that can be serialized and shared).
 export class ViewerState {
     dataUrl: URL;
