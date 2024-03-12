@@ -5,7 +5,7 @@ import { TrackManager, loadTrackManager } from "./TrackManager";
 
 import useSelectionBox from "./hooks/useSelectionBox";
 
-import { DEFAULT_ZARR_URL, ViewerState, clearUrlHash } from "./ViewerState";
+import { ViewerState, clearUrlHash } from "./ViewerState";
 
 interface SceneProps {
     renderWidth?: number;
@@ -201,7 +201,7 @@ export default function Scene(props: SceneProps) {
                     <InputText
                         id="url-input"
                         label="Zarr URL"
-                        placeholder={DEFAULT_ZARR_URL.toString()}
+                        placeholder={initialViewerState.dataUrl.toString()}
                         value={dataUrl.toString()}
                         onChange={(e) => setDataUrl(new URL(e.target.value))}
                         fullWidth={true}
