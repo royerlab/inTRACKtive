@@ -3,7 +3,6 @@ import { Button, InputSlider, InputText, InputToggle, LoadingIndicator } from "@
 import { PointCanvas } from "./PointCanvas";
 import { TrackManager, loadTrackManager } from "./TrackManager";
 
-// @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import useSelectionBox from "./hooks/useSelectionBox";
 
 import { DEFAULT_ZARR_URL, ViewerState } from "./ViewerState";
@@ -121,7 +120,8 @@ export default function Scene(props: SceneProps) {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl.toString());
         // TODO: add clean-up by returning another closure
-        trackManager.then((tm: TrackManager) => {
+        trackManager.then((tm: TrackManager | null) => {
+            if (!tm) return;
             setTrackManager(tm);
             setNumTimes(tm.points.shape[0]);
             // Defend against the case when a curTime valid for previous data
