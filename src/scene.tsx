@@ -208,7 +208,20 @@ export default function Scene(props: SceneProps) {
                         label="Zarr URL"
                         placeholder={initialViewerState.dataUrl.toString()}
                         defaultValue={initialViewerState.dataUrl.toString()}
-                        onChange={(e) => setDataUrl(new URL(e.target.value))}
+                        onChange={(e) => {
+                            const urlString = e.target.value;
+                            let url;
+                            try {
+                                url = new URL(urlString);
+                            } catch (error) {
+                                if (urlString.length > 0) {
+                                    console.error("Failed to parse URL %s:", e.target.value);
+                                }
+                                setTrackManager(null);
+                                return;
+                            }
+                            setDataUrl(url);
+                        }}
                         fullWidth={true}
                         intent={trackManager ? "default" : "error"}
                     />
