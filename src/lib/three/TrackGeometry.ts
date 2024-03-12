@@ -9,7 +9,7 @@ import { LineSegmentsGeometry } from "three/examples/jsm/Addons.js";
 
 class TrackGeometry extends LineSegmentsGeometry {
     isTrackGeometry = true;
-    tupe = "TrackGeometry";
+    type = "TrackGeometry";
 
     constructor() {
         super();
