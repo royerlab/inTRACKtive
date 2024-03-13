@@ -120,7 +120,7 @@ export default function Scene(props: SceneProps) {
     // update the array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const trackManager = loadTrackManager(dataUrl.toString());
+        const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
             setTrackManager(tm);
@@ -224,22 +224,9 @@ export default function Scene(props: SceneProps) {
                     <InputText
                         id="url-input"
                         label="Zarr URL"
-                        placeholder={initialViewerState.dataUrl.toString()}
-                        defaultValue={initialViewerState.dataUrl.toString()}
-                        onChange={(e) => {
-                            const urlString = e.target.value;
-                            let url;
-                            try {
-                                url = new URL(urlString);
-                            } catch (error) {
-                                if (urlString.length > 0) {
-                                    console.error("Failed to parse URL %s:", e.target.value);
-                                }
-                                setTrackManager(null);
-                                return;
-                            }
-                            setDataUrl(url);
-                        }}
+                        placeholder={initialViewerState.dataUrl}
+                        defaultValue={initialViewerState.dataUrl}
+                        onChange={(e) => setDataUrl(e.target.value)}
                         fullWidth={true}
                         intent={trackManager ? "default" : "error"}
                     />
