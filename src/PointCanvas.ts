@@ -21,7 +21,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
-import { Track } from "./Track.ts";
+import { Track } from "./lib/three/Track";
 
 type Tracks = Map<number, Track>;
 
@@ -165,9 +165,9 @@ export class PointCanvas {
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
-        const track = new Track(trackID, positions, ids, this.maxPointsPerTimepoint);
+        const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
         this.tracks.set(trackID, track);
-        this.scene.add(track.trackLine);
+        this.scene.add(track);
         return track;
     }
 
@@ -180,7 +180,7 @@ export class PointCanvas {
     removeTrack(trackID: number) {
         const track = this.tracks.get(trackID);
         if (track) {
-            this.scene.remove(track.trackLine);
+            this.scene.remove(track);
             track.dispose();
             this.tracks.delete(trackID);
         } else {

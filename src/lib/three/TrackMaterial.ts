@@ -11,13 +11,45 @@
 
 import {
     DataTexture,
+    RGBAFormat,
+    SRGBColorSpace,
     ShaderLib,
     ShaderMaterial,
     ShaderMaterialParameters,
     UniformsLib,
     UniformsUtils,
+    UnsignedByteType,
     Vector2,
 } from "three";
+import { Lut } from "three/examples/jsm/Addons.js";
+
+const highlightLUT = new Lut();
+// generated using https://waldyrious.net/viridis-palette-generator/
+highlightLUT.addColorMap("plasma", [
+    [0.0, 0x000004],
+    [0.1, 0x160b39],
+    [0.2, 0x420a68],
+    [0.3, 0x6a176e],
+    [0.4, 0x932667],
+    [0.5, 0xbc3754],
+    [0.6, 0xdd513a],
+    [0.7, 0xf37819],
+    [0.8, 0xfca50a],
+    [0.9, 0xf6d746],
+    [1.0, 0xfcffa4],
+]);
+highlightLUT.setColorMap("plasma");
+const lutArray = new Uint8Array(128 * 4);
+for (let i = 0; i < 128; i++) {
+    const color = highlightLUT.getColor(i / 128);
+    lutArray[i * 4] = color.r * 255;
+    lutArray[i * 4 + 1] = color.g * 255;
+    lutArray[i * 4 + 2] = color.b * 255;
+    lutArray[i * 4 + 3] = 255;
+}
+const highlightLUTTexture = new DataTexture(lutArray, 128, 1, RGBAFormat, UnsignedByteType);
+highlightLUTTexture.colorSpace = SRGBColorSpace;
+highlightLUTTexture.needsUpdate = true;
 
 const trackUniforms = {
     trackwidth: { value: 0.5 }, // this is just linewidth renamed
@@ -25,7 +57,7 @@ const trackUniforms = {
     showtrack: { value: true },
     // the following uniforms are added to control the highlight
     highlightwidth: { value: 1.5 },
-    highlightLUT: { value: null },
+    highlightLUT: { value: highlightLUTTexture },
     minTime: { value: 0 },
     maxTime: { value: -1 },
     // this was kept from the original LineMaterial code
