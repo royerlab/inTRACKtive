@@ -36,8 +36,9 @@ export default function Scene(props: SceneProps) {
     // Other state that is not or does not need to be persisted.
     const [trackManager, setTrackManager] = useState<TrackManager>();
     const [numTimes, setNumTimes] = useState(0);
+    const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [loading, setLoading] = useState(false);
-    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas.current);
+    const { selectedPoints } = useSelectionBox(canvas.current);
 
     // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -84,29 +85,36 @@ export default function Scene(props: SceneProps) {
     }, []); // dependency array must be empty to run only on mount!
 
     useEffect(() => {
-        console.debug("selected points: %s", selectedPoints);
-        const pointsID = canvas.current?.points.id || 0;
-        if (!selectedPoints || !(pointsID in selectedPoints)) return;
-        const maxPointsPerTimepoint = trackManager?.points?.shape[1] / 3 || 0;
+        const pointsID = canvas.current?.points.id || -1;
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
+        // keep track of which tracks we are adding to avoid duplicate fetching
+        const adding = new Set<number>();
 
-        // TODO: use Promise.all to fetch all tracks in parallel
+        // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
-            const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
+            if (!canvas.current || !trackManager) return;
+            const minTime = curTime - trackHighlightLength / 2;
+            const maxTime = curTime + trackHighlightLength / 2;
+            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
-                const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
+                const lineage = await trackManager.fetchLineageForTrack(t);
                 for (const l of lineage) {
-                    if (canvas.current && canvas.current.tracks.has(l)) continue;
-                    const points = await trackManager?.fetchPointsForTrack(l);
-                    points && canvas.current?.addTrack(l, points);
+                    if (adding.has(l) || canvas.current.tracks.has(l)) continue;
+                    adding.add(l);
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                    const newTrack = canvas.current.addTrack(l, pos, ids);
+                    newTrack?.updateHighlightLine(minTime, maxTime);
                 }
             }
         };
 
-        // TODO: this is re-fetching old data as well, need to get the diff of selectedPoints
-        for (const p of selectedPoints[pointsID]) {
-            const pointID = curTime * maxPointsPerTimepoint + p;
-            fetchAndAddTrack(pointID);
-        }
+        const selected = selectedPoints.get(pointsID) || [];
+        canvas.current?.highlightPoints(selected);
+
+        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
+        Promise.all(selected.map((p) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+        // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
     // update the array when the dataUrl changes
@@ -145,32 +153,35 @@ export default function Scene(props: SceneProps) {
 
     // update the geometry buffers when the array changes
     useEffect(() => {
-        if (!trackManager) return;
-        canvas.current?.initPointsGeometry(trackManager.points.shape[1] / 3);
+        if (!trackManager || !canvas.current) return;
+        canvas.current.initPointsGeometry(trackManager.maxPointsPerTimepoint);
     }, [trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // TODO: update the selected points instead of clearing them
-        setSelectedPoints({});
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
         const loadingTimer = setTimeout(() => setLoading(true), 10);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
-        if (trackManager && !ignore) {
-            console.debug("fetch points at time %d", curTime);
-            trackManager?.fetchPointsAtTime(curTime).then((data) => {
-                console.debug("got %d points for time %d", data.length / 3, curTime);
+        if (canvas.current && trackManager && !ignore) {
+            const getPoints = async (canvas: PointCanvas, time: number) => {
+                console.debug("fetch points at time %d", time);
+                const data = await trackManager.fetchPointsAtTime(time);
+                console.debug("got %d points for time %d", data.length / 3, time);
+
                 if (ignore) {
-                    console.debug("IGNORE SET points at time %d", curTime);
+                    console.debug("IGNORE SET points at time %d", time);
                     return;
                 }
+
                 clearTimeout(loadingTimer);
                 setLoading(false);
-                canvas.current?.setPointsPositions(data);
-            });
+                canvas.setPointsPositions(data);
+                canvas.resetPointColors();
+            };
+            getPoints(canvas.current, curTime);
         } else {
             clearTimeout(loadingTimer);
             setLoading(false);
@@ -181,6 +192,13 @@ export default function Scene(props: SceneProps) {
             ignore = true;
         };
     }, [trackManager, curTime]);
+
+    useEffect(() => {
+        // update the track highlights
+        const minTime = curTime - trackHighlightLength / 2;
+        const maxTime = curTime + trackHighlightLength / 2;
+        canvas.current?.updateAllTrackHighlights(minTime, maxTime);
+    }, [curTime, trackHighlightLength]);
 
     // update the renderer and composer when the render size changes
     // TODO: check performance and avoid if unchanged
@@ -217,6 +235,17 @@ export default function Scene(props: SceneProps) {
                         onChange={(_, value) => setCurTime(value as number)}
                         marks={marks}
                         value={curTime}
+                    />
+                    <InputSlider
+                        id="track-highlight-length-slider"
+                        aria-labelledby="input-slider-track-highlight-length"
+                        disabled={trackManager === undefined}
+                        min={0}
+                        max={numTimes - 1}
+                        valueLabelDisplay="on"
+                        onChange={(_, value) => setTrackHighlightLength(value as number)}
+                        marks={marks}
+                        value={trackHighlightLength}
                     />
                     <div className="buttoncontainer">
                         <InputToggle

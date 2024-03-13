@@ -100,15 +100,5 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
         }
     }, [selecting]);
 
-    useEffect(() => {
-        if (selectedPoints && canvas && canvas.points.id in selectedPoints) {
-            console.debug("highlighting points:", selectedPoints[canvas.points.id]);
-            canvas.highlightPoints(selectedPoints[canvas.points.id]);
-        } else if (canvas) {
-            console.log("resetting point colors");
-            canvas.resetPointColors();
-        }
-    }, [selectedPoints]);
-
     return { selectedPoints, setSelectedPoints, selecting, setSelecting };
 }
