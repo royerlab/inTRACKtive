@@ -20,10 +20,10 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { Lut } from "three/addons/math/Lut.js";
-import { Line2, LineGeometry, LineMaterial } from "three/examples/jsm/Addons.js";
 
-type Tracks = Map<number, Line2>;
+import { Track } from "./lib/three/Track";
+
+type Tracks = Map<number, Track>;
 
 export class PointCanvas {
     scene: Scene;
@@ -34,6 +34,10 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
+    // this is used to initialize the points geometry, and kept to initialize the
+    // tracks but could be pulled from the points geometry when adding tracks
+    // private here to consolidate external access via `TrackManager` instead
+    private maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -125,15 +129,19 @@ export class PointCanvas {
         this.composer.setSize(width, height);
     }
 
-    initPointsGeometry(numPoints: number) {
+    initPointsGeometry(maxPointsPerTimepoint: number) {
+        this.maxPointsPerTimepoint = maxPointsPerTimepoint;
         const geometry = this.points.geometry;
-        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== numPoints) {
-            geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+        if (!geometry.hasAttribute("position") || geometry.getAttribute("position").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute(
+                "position",
+                new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3),
+            );
             // prevent drawing uninitialized points at the origin
             geometry.setDrawRange(0, 0);
         }
-        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== numPoints) {
-            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * numPoints), 3));
+        if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3));
         }
         // Initialize all the colors immediately.
         this.resetPointColors();
@@ -151,45 +159,29 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array) {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
         if (this.tracks.has(trackID)) {
+            // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
-            return;
+            return null;
         }
-        const pos = [];
-        const colors = [];
-        const lut = new Lut("rainbow", 256);
-
-        for (let i = 0; i < positions.length; i += 3) {
-            pos.push(positions[i], positions[i + 1], positions[i + 2]);
-            const color = lut.getColor(i / positions.length);
-            colors.push(color.r, color.g, color.b);
-        }
-
-        const geometry = new LineGeometry();
-        geometry.setPositions(positions);
-        geometry.setColors(colors);
-        const material = new LineMaterial({
-            linewidth: 0.003,
-            vertexColors: true,
-        });
-        const track = new Line2(geometry, material);
-        this.scene.add(track);
+        const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
         this.tracks.set(trackID, track);
+        this.scene.add(track);
+        return track;
+    }
+
+    updateAllTrackHighlights(minTime: number, maxTime: number) {
+        for (const track of this.tracks.values()) {
+            track.updateHighlightLine(minTime, maxTime);
+        }
     }
 
     removeTrack(trackID: number) {
         const track = this.tracks.get(trackID);
         if (track) {
             this.scene.remove(track);
-            track.geometry.dispose();
-            if (Array.isArray(track.material)) {
-                for (const material of track.material) {
-                    material.dispose();
-                }
-            } else {
-                track.material.dispose();
-            }
+            track.dispose();
             this.tracks.delete(trackID);
         } else {
             console.warn("No track with ID %d to remove", trackID);

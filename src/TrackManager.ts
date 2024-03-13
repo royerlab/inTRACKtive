@@ -67,6 +67,7 @@ export class TrackManager {
     pointsToTracks: SparseZarrArray;
     tracksToPoints: SparseZarrArray;
     tracksToTracks: SparseZarrArray;
+    maxPointsPerTimepoint: number;
 
     constructor(
         store: string,
@@ -80,6 +81,7 @@ export class TrackManager {
         this.pointsToTracks = pointsToTracks;
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
+        this.maxPointsPerTimepoint = points.shape[1] / 3;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -106,15 +108,23 @@ export class TrackManager {
         return trackIDs.data;
     }
 
-    async fetchPointsForTrack(trackID: number): Promise<Float32Array> {
+    async fetchPointsForTrack(trackID: number): Promise<[Float32Array, Int32Array]> {
         const rowStartEnd = await this.tracksToPoints.getIndPtr(slice(trackID, trackID + 2));
-        const points = await this.tracksToPoints.data.get([slice(rowStartEnd[0], rowStartEnd[1]), slice(null)]);
-        // flatten the resulting n x 3 array in to a 1D [xyzxyzxyz...] array
-        const flatPoints = new Float32Array(points.data.length * 3);
-        for (let i = 0; i < points.data.length; i++) {
-            flatPoints.set(points.data[i], i * 3);
+        const points = (await this.tracksToPoints.data.get([slice(rowStartEnd[0], rowStartEnd[1]), slice(null)])).data;
+        // TODO: can bake this into the data array
+        const pointIDs = (await this.tracksToPoints.indices.get([slice(rowStartEnd[0], rowStartEnd[1])])).data;
+
+        if (points.length !== pointIDs.length) {
+            console.error("points and pointIDs are different lengths: %d, %d", points.length, pointIDs.length);
         }
-        return flatPoints;
+
+        // flatten the resulting n x 3 array in to a 1D [xyzxyzxyz...] array
+        const flatPoints = new Float32Array(points.length * 3);
+        for (let i = 0; i < points.length; i++) {
+            flatPoints.set(points[i], i * 3);
+        }
+
+        return [flatPoints, pointIDs];
     }
 
     async fetchLineageForTrack(trackID: number): Promise<Int32Array> {

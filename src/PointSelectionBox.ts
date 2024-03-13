@@ -24,10 +24,7 @@ const _vectemp1 = new Vector3();
 const _vectemp2 = new Vector3();
 const _vectemp3 = new Vector3();
 
-interface PointsCollection {
-    // object_id : [point_index, point_index, ...]
-    [key: number]: number[];
-}
+type PointsCollection = Map<number, number[]>;
 
 class PointSelectionBox {
     camera: OrthographicCamera | PerspectiveCamera;
@@ -42,14 +39,14 @@ class PointSelectionBox {
         this.scene = scene;
         this.startPoint = new Vector3();
         this.endPoint = new Vector3();
-        this.collection = {};
+        this.collection = new Map();
         this.deep = deep;
     }
 
     select(startPoint?: Vector3, endPoint?: Vector3) {
         this.startPoint = startPoint ?? this.startPoint;
         this.endPoint = endPoint ?? this.endPoint;
-        this.collection = {};
+        this.collection = new Map();
 
         this.updateFrustum(this.startPoint, this.endPoint);
         this.searchChildInFrustum(_frustum, this.scene);
@@ -164,10 +161,11 @@ class PointSelectionBox {
             for (let i = start; i < end; i++) {
                 _vec3.set(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
                 if (frustum.containsPoint(_vec3)) {
-                    if (!this.collection[object.id]) {
-                        this.collection[object.id] = [i];
+                    const objectCollection = this.collection.get(object.id);
+                    if (!objectCollection) {
+                        this.collection.set(object.id, [i]);
                     } else {
-                        this.collection[object.id].push(i);
+                        objectCollection.push(i);
                     }
                 }
             }
