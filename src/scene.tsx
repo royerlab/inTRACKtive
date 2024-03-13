@@ -34,7 +34,7 @@ export default function Scene(props: SceneProps) {
     const [playing, setPlaying] = useState(false);
 
     // Other state that is not or does not need to be persisted.
-    const [trackManager, setTrackManager] = useState<TrackManager>();
+    const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
     const [numTimes, setNumTimes] = useState(0);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [loading, setLoading] = useState(false);
@@ -120,15 +120,14 @@ export default function Scene(props: SceneProps) {
     // update the array when the dataUrl changes
     useEffect(() => {
         console.log("load data from %s", dataUrl);
-        const trackManager = loadTrackManager(dataUrl.toString());
+        const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
-            if (!tm) return;
             setTrackManager(tm);
-            setNumTimes(tm.points.shape[0]);
+            setNumTimes(tm?.points.shape[0] || numTimes);
             // Defend against the case when a curTime valid for previous data
             // is no longer valid.
-            setCurTime(Math.min(curTime, tm.points.shape[0] - 1));
+            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || numTimes - 1));
         });
     }, [dataUrl]);
 
@@ -187,6 +186,12 @@ export default function Scene(props: SceneProps) {
             setLoading(false);
             console.debug("IGNORE FETCH points at time %d", curTime);
         }
+
+        // stop playback if there is no data
+        if (!trackManager) {
+            setPlaying(false);
+        }
+
         return () => {
             clearTimeout(loadingTimer);
             ignore = true;
@@ -219,16 +224,16 @@ export default function Scene(props: SceneProps) {
                     <InputText
                         id="url-input"
                         label="Zarr URL"
-                        placeholder={initialViewerState.dataUrl.toString()}
-                        value={dataUrl.toString()}
-                        onChange={(e) => setDataUrl(new URL(e.target.value))}
+                        placeholder={initialViewerState.dataUrl}
+                        defaultValue={initialViewerState.dataUrl}
+                        onChange={(e) => setDataUrl(e.target.value)}
                         fullWidth={true}
                         intent={trackManager ? "default" : "error"}
                     />
                     <InputSlider
                         id="time-frame-slider"
                         aria-labelledby="input-slider-time-frame"
-                        disabled={trackManager === undefined}
+                        disabled={!trackManager}
                         min={0}
                         max={numTimes - 1}
                         valueLabelDisplay="on"
@@ -252,7 +257,7 @@ export default function Scene(props: SceneProps) {
                             onLabel="Spin"
                             offLabel="Spin"
                             checked={autoRotate}
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             onChange={(e) => {
                                 setAutoRotate((e.target as HTMLInputElement).checked);
                             }}
@@ -261,13 +266,13 @@ export default function Scene(props: SceneProps) {
                             onLabel="Play"
                             offLabel="Play"
                             checked={playing}
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             onChange={(e) => {
                                 setPlaying((e.target as HTMLInputElement).checked);
                             }}
                         />
                         <Button
-                            disabled={trackManager === undefined}
+                            disabled={!trackManager}
                             sdsType="primary"
                             sdsStyle="rounded"
                             onClick={() => canvas.current?.removeAllTracks()}

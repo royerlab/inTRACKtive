@@ -1,9 +1,8 @@
 import { Vector3 } from "three";
 
-export const DEFAULT_ZARR_URL = new URL(
+export const DEFAULT_ZARR_URL =
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-        "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr",
-);
+    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
 
 const HASH_KEY = "viewerState";
 
@@ -17,13 +16,13 @@ export function clearUrlHash() {
 
 // Encapsulates all the persistent state in the viewer (e.g. that can be serialized and shared).
 export class ViewerState {
-    dataUrl: URL;
+    dataUrl: string;
     curTime: number;
     cameraPosition: Vector3;
     cameraTarget: Vector3;
 
     constructor(
-        dataUrl: URL = DEFAULT_ZARR_URL,
+        dataUrl: string = DEFAULT_ZARR_URL,
         curTime: number = 0,
         // Default position and target from interacting with ZSNS001.
         cameraPosition: Vector3 = new Vector3(500, 500, -1250),
