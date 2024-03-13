@@ -11,7 +11,6 @@ export class Track {
     pointIDs: Int32Array;
 
     trackLine: TrackLine;
-    highlightLUTTexture: DataTexture = highlightLUTTexture;
 
     constructor(trackID: number, positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
         this.trackID = trackID;
@@ -23,7 +22,7 @@ export class Track {
             vertexColors: true,
             trackwidth: 0.3,
             highlightwidth: 2.0,
-            highlightLUT: this.highlightLUTTexture,
+            highlightLUT: highlightLUTTexture,
             showtrack: true,
             transparent: true,
             opacity: 0.5,
