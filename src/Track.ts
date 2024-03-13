@@ -51,7 +51,6 @@ export class Track {
             this.trackLine.material.maxTime = maxTime;
             this.trackLine.material.needsUpdate = true;
         }
-        return;
     }
 
     dispose() {
