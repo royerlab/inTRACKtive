@@ -20,12 +20,15 @@ import {
 } from "three";
 
 const trackUniforms = {
-    trackwidth: { value: 0.5 },
+    trackwidth: { value: 0.5 }, // this is just linewidth renamed
+    // controls whether to show the full track (not the highlight)
+    showtrack: { value: true },
+    // the following uniforms are added to control the highlight
     highlightwidth: { value: 1.5 },
     highlightLUT: { value: null },
-    showtrack: { value: true },
     minTime: { value: 0 },
     maxTime: { value: -1 },
+    // this was kept from the original LineMaterial code
     resolution: { value: new Vector2(1, 1) },
 };
 
@@ -39,10 +42,12 @@ ShaderLib["track"] = {
         #include <logdepthbuf_pars_vertex>
         #include <clipping_planes_pars_vertex>
 
+        // TRACK SPECIFIC UNIFORMS
         uniform float trackwidth;
         uniform float highlightwidth;
         uniform float minTime;
         uniform float maxTime;
+
         uniform vec2 resolution;
 
         attribute vec3 instanceStart;
@@ -51,9 +56,12 @@ ShaderLib["track"] = {
         attribute vec3 instanceColorStart;
         attribute vec3 instanceColorEnd;
 
+        // TRACK SPECIFIC ATTRIBUTES
+        // SEE TrackGeometry
         attribute float instanceTimeStart;
         attribute float instanceTimeEnd;
 
+        // TRACK SPECIFIC VARYINGS
         varying float vTime;
 
         varying vec4 worldPos;
@@ -77,7 +85,8 @@ ShaderLib["track"] = {
 
         void main() {
 
-            // vTime = ( position.y < 0.5 ) ? 0.0 : 1.0;
+            // TRACK SPECIFIC CODE ADDED
+            // INTERPOLATE TIME BETWEEN START AND END INSTANCES
             vTime = ( position.y < 0.5 ) ? instanceTimeStart : instanceTimeEnd;
 
             #ifdef USE_COLOR
@@ -131,6 +140,8 @@ ShaderLib["track"] = {
             dir.x *= aspect;
             dir = normalize( dir );
 
+            // TRACK SPECIFIC CODE ADDED
+            // UPDATE THE WIDTH IF IN THE HIGHLIGHT
             float w = trackwidth;
             if (vTime > minTime && vTime < maxTime) {
                 w = highlightwidth;
@@ -181,13 +192,16 @@ ShaderLib["track"] = {
     fragmentShader: /* glsl */ `
         uniform vec3 diffuse;
         uniform float opacity;
-        uniform float trackwidth;
+
+        // TRACK SPECIFIC UNIFORMS
+        uniform float trackwidth; // this is just linewidth renamed
+        uniform bool showtrack;
         uniform float highlightwidth;
         uniform sampler2D highlightLUT;
-        uniform bool showtrack;
         uniform float minTime;
         uniform float maxTime;
 
+        // TRACK SPECIFIC VARYINGS
         varying float vTime;
 
         varying vec4 worldPos;
@@ -235,6 +249,8 @@ ShaderLib["track"] = {
 
             float alpha = opacity;
 
+            // TRACK SPECIFIC CODE ADDED
+            // UPDATE THE WIDTH IF IN THE HIGHLIGHT
             float w = trackwidth;
             if (vTime > minTime && vTime < maxTime) {
                 w = highlightwidth;
@@ -273,7 +289,8 @@ ShaderLib["track"] = {
 
             gl_FragColor = vec4( diffuseColor.rgb, alpha );
 
-            // this is where we set the highlight color
+            // TRACK SPECIFIC CODE ADDED
+            // SET THE HIGHLIGHT COLOR, SAMPLED FROM THE LUT
             if (vTime > minTime && vTime < maxTime) {
                 float t = (vTime - minTime) / (maxTime - minTime);
                 gl_FragColor.rgb = texture2D( highlightLUT, vec2(t, 0.0) ).rgb;
@@ -291,6 +308,7 @@ ShaderLib["track"] = {
         `,
 };
 
+// here we add the new uniforms for use in the constructor
 interface TrackMaterialParameters extends ShaderMaterialParameters {
     color?: number;
     trackwidth?: number;
@@ -323,6 +341,8 @@ class TrackMaterial extends ShaderMaterial {
         this.setOpacity(this.opacity);
         this.setAlphaToCoverage(this.alphaToCoverage);
     }
+
+    // getters/setters make sure the uniforms are updated when the properties are set
 
     get color() {
         return this.uniforms.diffuse.value;

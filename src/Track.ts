@@ -70,6 +70,7 @@ export class Track {
 }
 
 const highlightLUT = new Lut();
+// generated using https://waldyrious.net/viridis-palette-generator/
 highlightLUT.addColorMap("plasma", [
     [0.0, 0x000004],
     [0.1, 0x160b39],

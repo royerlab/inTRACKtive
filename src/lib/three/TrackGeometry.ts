@@ -1,11 +1,10 @@
-import { InstancedInterleavedBuffer, InterleavedBufferAttribute } from "three";
-import { LineSegmentsGeometry } from "three/examples/jsm/Addons.js";
-
 /**
  * This class maintains the geometry of the track, adding instanced attributes for time.
  * see:
  *  https://github.com/mrdoob/three.js/blob/dev/examples/jsm/lines/LineGeometry.js
  */
+import { InstancedInterleavedBuffer, InterleavedBufferAttribute } from "three";
+import { LineSegmentsGeometry } from "three/examples/jsm/Addons.js";
 
 class TrackGeometry extends LineSegmentsGeometry {
     isTrackGeometry = true;
@@ -53,9 +52,14 @@ class TrackGeometry extends LineSegmentsGeometry {
         return this;
     }
 
-    setTime(array: number[] | Int32Array) {
+    setTime(array: number[]) {
+        // TRACK SPECIFIC CODE ADDED
         // converts [ t1, t2, ... ] to pairs format
+        // this ecodes the timepoint of each point in the track
+        // this can be used in shaders to highlight specific segments in the
+        // track based on time
 
+        // float32 should be sufficient given we're expecting ~1000 timepoints
         const length = array.length - 1;
         const times = new Float32Array(2 * length);
 
