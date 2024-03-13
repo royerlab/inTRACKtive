@@ -16,7 +16,7 @@ export class TrackLine extends Mesh {
     declare geometry: TrackGeometry;
     declare material: TrackMaterial;
 
-    constructor(geometry = new TrackGeometry(), material = new TrackMaterial({ color: Math.random() * 0xffffff })) {
+    constructor(geometry: TrackGeometry, material: TrackMaterial) {
         super(geometry, material);
     }
 }

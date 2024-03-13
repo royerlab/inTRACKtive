@@ -11,12 +11,8 @@ class TrackGeometry extends LineSegmentsGeometry {
     isTrackGeometry = true;
     type = "TrackGeometry";
 
-    constructor() {
-        super();
-    }
-
     setPositions(array: number[] | Float32Array) {
-        // converts [ x1, y1, z1,  x2, y2, z2, ... ] to pairs format
+        // converts [ x1, y1, z1, x2, y2, z2, ... ] to pairs format
 
         const length = array.length - 3;
         const points = new Float32Array(2 * length);
