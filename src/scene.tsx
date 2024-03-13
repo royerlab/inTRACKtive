@@ -64,20 +64,18 @@ export default function Scene(props: SceneProps) {
 
         // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
-            const tracks = (await trackManager?.fetchTrackIDsForPoint(pointID)) || Int32Array.from([]);
+            if (!canvas.current || !trackManager) return;
+            const minTime = curTime - trackHighlightLength / 2;
+            const maxTime = curTime + trackHighlightLength / 2;
+            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
-                const lineage = (await trackManager?.fetchLineageForTrack(t)) || Int32Array.from([]);
+                const lineage = await trackManager.fetchLineageForTrack(t);
                 for (const l of lineage) {
-                    if (adding.has(l) || (canvas.current && canvas.current.tracks.has(l))) continue;
+                    if (adding.has(l) || canvas.current.tracks.has(l)) continue;
                     adding.add(l);
-                    const [pos, ids] = (await trackManager?.fetchPointsForTrack(l)) || [
-                        Float32Array.from([]),
-                        Int32Array.from([]),
-                    ];
-                    const newTrack = canvas.current?.addTrack(l, pos, ids);
-                    const minTime = curTime - trackHighlightLength / 2;
-                    const maxTime = curTime + trackHighlightLength / 2;
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                    const newTrack = canvas.current.addTrack(l, pos, ids);
                     newTrack?.updateHighlightLine(minTime, maxTime);
                 }
             }
