@@ -127,7 +127,7 @@ export default function Scene(props: SceneProps) {
             setNumTimes(tm?.points.shape[0] || numTimes);
             // Defend against the case when a curTime valid for previous data
             // is no longer valid.
-            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || 0));
+            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || numTimes - 1));
         });
     }, [dataUrl]);
 
