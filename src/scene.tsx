@@ -38,7 +38,7 @@ export default function Scene(props: SceneProps) {
     const [numTimes, setNumTimes] = useState(0);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [loading, setLoading] = useState(false);
-    const { selectedPoints } = useSelectionBox(canvas.current);
+    const { setSelectedPoints, selectedPoints } = useSelectionBox(canvas.current);
 
     // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -63,7 +63,7 @@ export default function Scene(props: SceneProps) {
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        canvas.current = new PointCanvas(renderWidth, renderHeight);
+        canvas.current = new PointCanvas(renderWidth, renderHeight, setSelectedPoints);
         canvas.current!.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 
         // handle any changes to the hash after the initial document has loaded

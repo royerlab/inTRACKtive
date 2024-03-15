@@ -27,7 +27,7 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
             const sBox = selectionBox.current;
             const sHelper = selectionHelper.current;
             pointerUp = () => {
-                console.log("pointerUp: %s", sHelper.enabled);
+                // console.log("pointerUp: %s", sHelper.enabled);
                 if (sHelper.enabled) {
                     // Mouse to normalized render/canvas coords from:
                     // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
@@ -60,7 +60,7 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
             };
             // TODO: improve the behavior when pressing/releasing the mouse and
             // shift key in different orders
-            canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
+            // canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
         }
         const keyDown = (event: KeyboardEvent) => {
             console.log("keyDown: %s", event.key);
@@ -80,8 +80,8 @@ export default function useSelectionBox(canvas: PointCanvas | undefined) {
 
         // key listeners are added to the document because we don't want the
         // canvas to have to be selected prior to listening for them
-        document.addEventListener("keydown", keyDown);
-        document.addEventListener("keyup", keyUp);
+        // document.addEventListener("keydown", keyDown);
+        // document.addEventListener("keyup", keyUp);
 
         return () => {
             selectionHelper.current?.dispose();
