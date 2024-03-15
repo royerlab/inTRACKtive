@@ -5,10 +5,15 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    Group,
+    Mesh,
+    MeshBasicMaterial,
     PerspectiveCamera,
     Points,
     PointsMaterial,
+    Raycaster,
     Scene,
+    SphereGeometry,
     SRGBColorSpace,
     TextureLoader,
     Vector2,
@@ -22,8 +27,12 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
+
+const raycaster = new Raycaster();
+raycaster.params.Points.threshold = 1.5;
 
 export class PointCanvas {
     scene: Scene;
@@ -42,8 +51,14 @@ export class PointCanvas {
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
     private maxPointsPerTimepoint = 0;
+    private setSelectedPoints: (points: PointsCollection) => void;
 
-    constructor(width: number, height: number) {
+    pointer = new Vector2(0, 0);
+    cursor = new Group();
+    cursorLock = false;
+
+    constructor(width: number, height: number, setSelectedPoints: (points: PointsCollection) => void) {
+        this.setSelectedPoints = setSelectedPoints;
         this.scene = new Scene();
         this.renderer = new WebGLRenderer();
 
@@ -60,7 +75,8 @@ export class PointCanvas {
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
             blending: AdditiveBlending,
-            depthTest: false,
+            depthTest: true,
+            alphaTest: 0.1,
             transparent: true,
         });
         this.points = new Points(pointsGeometry, pointsMaterial);
@@ -86,7 +102,92 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
+
+        this.cursor.add(
+            new Mesh(
+                new SphereGeometry(25.2, 8, 8),
+                new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5, wireframe: true }),
+            ),
+        );
+        this.cursor.add(
+            new Mesh(
+                new SphereGeometry(25, 8, 8),
+                new MeshBasicMaterial({ color: 0xff8000, transparent: true, opacity: 0.7 }),
+            ),
+        );
+        this.scene.add(this.cursor);
+        this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
+        this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
+        this.renderer.domElement.addEventListener("wheel", this.mouseWheel);
+        document.addEventListener("keydown", this.keyDown);
+        document.addEventListener("keyup", this.keyUp);
     }
+
+    keyDown = (event: KeyboardEvent) => {
+        if (event.key === "Control") {
+            this.controls.enabled = false;
+        }
+        if (event.key === " ") {
+            this.cursorLock = true;
+        }
+    };
+
+    keyUp = (event: KeyboardEvent) => {
+        if (event.key === "Control") {
+            this.controls.enabled = true;
+        }
+        if (event.key === " ") {
+            this.cursorLock = false;
+        }
+    };
+
+    mouseWheel = (event: WheelEvent) => {
+        if (event.ctrlKey) {
+            console.log("ctrlKey", event);
+            this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
+        }
+    };
+
+    pointerMove = (event: MouseEvent) => {
+        if (this.cursorLock) {
+            return;
+        }
+        const canvasElement = this.renderer.domElement.getBoundingClientRect();
+        this.pointer.x = ((event.clientX - canvasElement.left) / canvasElement.width) * 2 - 1;
+        this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
+        raycaster.setFromCamera(this.pointer, this.camera);
+        const intersects = raycaster.intersectObject(this.points);
+        if (intersects.length > 0) {
+            this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
+        }
+    };
+
+    pointerUp = (event: MouseEvent) => {
+        if (!event.shiftKey) {
+            return;
+        }
+        // return list of points inside cursor sphere
+        const radius =
+            ((this.cursor.children[1] as Mesh).geometry as SphereGeometry).parameters.radius * this.cursor.scale.x;
+        console.log("radius:", radius);
+        const center = this.cursor.position;
+        const geometry = this.points.geometry;
+        const positions = geometry.getAttribute("position");
+        const numPoints = positions.count;
+        const selected = [];
+        for (let i = 0; i < numPoints; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i);
+            const z = positions.getZ(i);
+            if (center.distanceTo(new Vector3(x, y, z)) < radius) {
+                selected.push(i);
+            }
+        }
+        const points: PointsCollection = new Map();
+        points.set(this.points.id, selected);
+        this.setSelectedPoints(points);
+        console.log("selected points:", selected);
+    };
 
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
