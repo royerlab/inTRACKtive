@@ -28,6 +28,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import { Track } from "./lib/three/Track";
 import { PointsCollection } from "./PointSelectionBox";
+import { TransformControls } from "three/examples/jsm/Addons.js";
 
 type Tracks = Map<number, Track>;
 
@@ -52,6 +53,7 @@ export class PointCanvas {
     pointer = new Vector2(0, 0);
     cursor = new Group();
     cursorLock = false;
+    cursorControl: TransformControls;
 
     constructor(width: number, height: number, setSelectedPoints: (points: PointsCollection) => void) {
         this.setSelectedPoints = setSelectedPoints;
@@ -102,16 +104,24 @@ export class PointCanvas {
         this.cursor.add(
             new Mesh(
                 new SphereGeometry(25.2, 8, 8),
-                new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5, wireframe: true }),
+                new MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.5 }),
             ),
         );
         this.cursor.add(
             new Mesh(
                 new SphereGeometry(25, 8, 8),
-                new MeshBasicMaterial({ color: 0xff8000, transparent: true, opacity: 0.7 }),
+                new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 }),
             ),
         );
+        this.cursorControl = new TransformControls(this.camera, this.renderer.domElement);
+        this.cursorControl.size = 0.5;
+        const dragingChanged = (event: { value: unknown }) => {
+            this.controls.enabled = !event.value;
+        };
+        this.cursorControl.addEventListener("dragging-changed", dragingChanged);
         this.scene.add(this.cursor);
+        this.cursorControl.attach(this.cursor);
+
         this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
         this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
         this.renderer.domElement.addEventListener("wheel", this.mouseWheel);
@@ -134,6 +144,15 @@ export class PointCanvas {
         }
         if (event.key === " ") {
             this.cursorLock = false;
+        }
+        if (event.key === "Escape") {
+            if (this.scene.children.includes(this.cursorControl)) {
+                this.cursorLock = false;
+                this.scene.remove(this.cursorControl);
+            } else {
+                this.cursorLock = true;
+                this.scene.add(this.cursorControl);
+            }
         }
     };
 
