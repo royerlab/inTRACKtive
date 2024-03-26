@@ -122,6 +122,10 @@ export class PointCanvas {
         this.scene.add(this.cursor);
         this.cursorControl.attach(this.cursor);
 
+        this.cursorControl.enabled = false;
+        this.cursorControl.visible = false;
+        this.scene.add(this.cursorControl);
+
         this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
         this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
         this.renderer.domElement.addEventListener("wheel", this.mouseWheel);
@@ -146,13 +150,22 @@ export class PointCanvas {
             this.cursorLock = false;
         }
         if (event.key === "Escape") {
-            if (this.scene.children.includes(this.cursorControl)) {
-                this.cursorLock = false;
-                this.scene.remove(this.cursorControl);
-            } else {
-                this.cursorLock = true;
-                this.scene.add(this.cursorControl);
-            }
+            this.cursorControl.enabled = !this.cursorControl.enabled;
+            this.cursorControl.visible = this.cursorControl.enabled;
+            this.cursorLock = this.cursorControl.enabled;
+        }
+        if (event.key === "s") {
+            this.cursor.visible = !this.cursor.visible;
+            this.cursorControl.visible = this.cursorControl.enabled && this.cursor.visible;
+        }
+        if (event.key === "w") {
+            this.cursorControl.setMode("translate");
+        }
+        if (event.key === "e") {
+            this.cursorControl.setMode("rotate");
+        }
+        if (event.key === "r") {
+            this.cursorControl.setMode("scale");
         }
     };
 
