@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import Scene from "../src/scene";
+import Scene from "@/components/scene";
 import React from "react";
 import { render } from "@testing-library/react";
 
