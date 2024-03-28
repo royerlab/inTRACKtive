@@ -16,4 +16,4 @@ Cell tracking data comprises:
    ancestors (parents) and descendents (children) of a given track (cell).
 
 In both code and documentation, "tracks" ends up being overloaded to mean both
-individual tracks, as well as full track lineage.
+individual tracks, as well as full track lineage. Sorry!
