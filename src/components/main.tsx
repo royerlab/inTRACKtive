@@ -4,8 +4,8 @@ import { ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import { StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
 import { defaultTheme } from "@czi-sds/components";
 
-import App from "./app.tsx";
-import "./index.css";
+import App from "@/components/app.tsx";
+import "@/css/index.css";
 
 const domNode = document.getElementById("app")!;
 const root = createRoot(domNode);

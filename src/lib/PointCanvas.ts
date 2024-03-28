@@ -21,7 +21,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
-import { Track } from "./lib/three/Track";
+import { Track } from "@/lib/three/Track";
 
 type Tracks = Map<number, Track>;
 

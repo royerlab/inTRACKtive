@@ -1,8 +1,8 @@
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { useEffect, useRef, useState } from "react";
 
-import { PointSelectionBox, PointsCollection } from "../PointSelectionBox";
-import { PointCanvas } from "../PointCanvas";
+import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
+import { PointCanvas } from "@/lib/PointCanvas";
 
 export default function useSelectionBox(canvas: PointCanvas | undefined) {
     const [selecting, setSelecting] = useState(false);

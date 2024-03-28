@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, InputSlider, InputText, InputToggle, LoadingIndicator } from "@czi-sds/components";
-import { PointCanvas } from "./PointCanvas";
-import { TrackManager, loadTrackManager } from "./TrackManager";
 
-import useSelectionBox from "./hooks/useSelectionBox";
+import { PointCanvas } from "@/lib/PointCanvas";
+import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
+import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 
-import { ViewerState, clearUrlHash } from "./ViewerState";
+import useSelectionBox from "@/hooks/useSelectionBox";
 
 interface SceneProps {
     renderWidth?: number;
@@ -113,7 +113,7 @@ export default function Scene(props: SceneProps) {
         canvas.current?.highlightPoints(selected);
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
-        Promise.all(selected.map((p) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+        Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
