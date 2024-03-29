@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import "./app.css";
-import Scene from "./scene.tsx";
+import "@/css/app.css";
+import Scene from "@/components/scene.tsx";
 
 const aspectRatio = 4 / 3;
 
