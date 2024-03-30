@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { PointCanvas } from "@/lib/PointCanvas";
 
-export default function useSelectionBox(canvas: PointCanvas | undefined) {
+export default function useSelectionBox(canvas: PointCanvas | null) {
     const [selecting, setSelecting] = useState(false);
     const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
 

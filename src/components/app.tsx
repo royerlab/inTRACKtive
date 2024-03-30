@@ -1,41 +1,218 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@/css/app.css";
-import Scene from "@/components/scene.tsx";
 
-const aspectRatio = 4 / 3;
+import { Stack } from "@mui/material";
+
+import Scene from "@/components/scene.tsx";
+import DataControls from "@/components/dataControls.tsx";
+import PlaybackControls from "@/components/playbackControls.tsx";
+
+import useSelectionBox from "@/hooks/useSelectionBox";
+
+import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
+import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
+import { PointCanvas } from "@/lib/PointCanvas";
+
+// Ideally we do this here so that we can use initial values as default values for React state.
+const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
+console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+clearUrlHash();
 
 export default function App() {
-    const [renderWidth, setRenderWidth] = useState(800);
+    // Use references here for two things:
+    // * manage objects that should never change, even when the component re-renders
+    // * avoid triggering re-renders when these *do* change
 
-    function handleWindowResize() {
-        const windowWidth = window.innerWidth;
-        const appPadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--app-padding"));
-        let w: number;
-        if (windowWidth < 800) {
-            w = windowWidth;
-        } else if (windowWidth < 1200) {
-            w = 800;
-        } else if (windowWidth < 1600) {
-            w = 1024;
+    // data state
+    const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
+    const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
+    const canvas = useRef<PointCanvas | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const { selectedPoints } = useSelectionBox(canvas.current);
+    const [trackHighlightLength, setTrackHighlightLength] = useState(11);
+
+    // playback state
+    const [autoRotate, setAutoRotate] = useState(false);
+    const [playing, setPlaying] = useState(false);
+    const [curTime, setCurTime] = useState(initialViewerState.curTime);
+    const [numTimes, setNumTimes] = useState(0);
+
+    // Manage shareable state than can persist across sessions.
+    const copyShareableUrlToClipboard = () => {
+        console.log("copy shareable URL to clipboard");
+        const state = new ViewerState(
+            dataUrl,
+            curTime,
+            canvas.current!.camera.position,
+            canvas.current!.controls.target,
+        );
+        const url = window.location.toString() + "#" + state.toUrlHash();
+        navigator.clipboard.writeText(url);
+    };
+
+    // const setStateFromHash = () => {
+    //     const state = ViewerState.fromUrlHash(window.location.hash);
+    //     clearUrlHash();
+    //     setDataUrl(state.dataUrl);
+    //     setCurTime(state.curTime);
+    //     canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
+    // };
+
+    // update the array when the dataUrl changes
+    useEffect(() => {
+        console.log("load data from %s", dataUrl);
+        const trackManager = loadTrackManager(dataUrl);
+        // TODO: add clean-up by returning another closure
+        trackManager.then((tm: TrackManager | null) => {
+            setTrackManager(tm);
+            setNumTimes(tm?.points.shape[0] || numTimes);
+            // Defend against the case when a curTime valid for previous data
+            // is no longer valid.
+            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || numTimes - 1));
+        });
+    }, [dataUrl]);
+
+    // update the geometry buffers when the array changes
+    // TODO: do this in the above useEffect
+    useEffect(() => {
+        if (!trackManager || !canvas.current) return;
+        canvas.current.initPointsGeometry(trackManager.maxPointsPerTimepoint);
+    }, [trackManager]);
+
+    // update the points when the array or timepoint changes
+    useEffect(() => {
+        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
+        const loadingTimer = setTimeout(() => setLoading(true), 100);
+        let ignore = false;
+        // TODO: this is a very basic attempt to prevent stale data
+        // in addition, we should debounce the input and verify the data is current
+        // before rendering it
+        console.log("trackManager: %s", trackManager);
+        console.log("canvas.current: %s", canvas.current);
+        if (canvas.current && trackManager && !ignore) {
+            const getPoints = async (canvas: PointCanvas, time: number) => {
+                console.debug("fetch points at time %d", time);
+                const data = await trackManager.fetchPointsAtTime(time);
+                console.debug("got %d points for time %d", data.length / 3, time);
+
+                if (ignore) {
+                    console.debug("IGNORE SET points at time %d", time);
+                    return;
+                }
+
+                // clearTimeout(loadingTimer);
+                setTimeout(() => setLoading(false), 250);
+                setLoading(false);
+                canvas.setPointsPositions(data);
+                canvas.resetPointColors();
+            };
+            getPoints(canvas.current, curTime);
         } else {
-            w = 1200;
+            // clearTimeout(loadingTimer);
+            setTimeout(() => setLoading(false), 250);
+            setLoading(false);
+            console.debug("IGNORE FETCH points at time %d", curTime);
         }
-        let renderWidth = w - appPadding * 2;
-        renderWidth = renderWidth < 0 ? windowWidth : renderWidth;
-        setRenderWidth(renderWidth);
-    }
+
+        // stop playback if there is no data
+        if (!trackManager) {
+            setPlaying(false);
+        }
+
+        return () => {
+            clearTimeout(loadingTimer);
+            ignore = true;
+        };
+    }, [trackManager, curTime]);
 
     useEffect(() => {
-        handleWindowResize();
-        window.addEventListener("resize", handleWindowResize);
-        return () => {
-            window.removeEventListener("resize", handleWindowResize);
+        // update the track highlights
+        const minTime = curTime - trackHighlightLength / 2;
+        const maxTime = curTime + trackHighlightLength / 2;
+        canvas.current?.updateAllTrackHighlights(minTime, maxTime);
+    }, [curTime, trackHighlightLength]);
+
+    useEffect(() => {
+        const pointsID = canvas.current?.points.id || -1;
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
+        // keep track of which tracks we are adding to avoid duplicate fetching
+        const adding = new Set<number>();
+
+        // this fetches the entire lineage for each track
+        const fetchAndAddTrack = async (pointID: number) => {
+            if (!canvas.current || !trackManager) return;
+            const minTime = curTime - trackHighlightLength / 2;
+            const maxTime = curTime + trackHighlightLength / 2;
+            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
+            for (const t of tracks) {
+                const lineage = await trackManager.fetchLineageForTrack(t);
+                for (const l of lineage) {
+                    if (adding.has(l) || canvas.current.tracks.has(l)) continue;
+                    adding.add(l);
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                    const newTrack = canvas.current.addTrack(l, pos, ids);
+                    newTrack?.updateHighlightLine(minTime, maxTime);
+                }
+            }
         };
-    }, [renderWidth]);
+
+        const selected = selectedPoints.get(pointsID) || [];
+        canvas.current?.highlightPoints(selected);
+
+        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
+        Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+        // TODO: cancel the fetch if the selection changes?
+    }, [selectedPoints]);
+
+    // TODO: maybe can be done without useEffect?
+    // could be a prop into the Scene component
+    useEffect(() => {
+        console.log("autoRotate: %s", autoRotate);
+        if (canvas.current) {
+            canvas.current.controls.autoRotate = autoRotate;
+        }
+    }, [autoRotate]);
+
+    // playback time points
+    // TODO: this is basic and may drop frames
+    useEffect(() => {
+        if (playing) {
+            const frameDelay = 1000 / 8; // 1000 / fps
+            const interval = setInterval(() => {
+                setCurTime((curTime + 1) % numTimes);
+            }, frameDelay);
+            return () => {
+                clearInterval(interval);
+            };
+        }
+    }, [numTimes, curTime, playing]);
 
     return (
-        <>
-            <Scene renderWidth={renderWidth} renderHeight={renderWidth / aspectRatio} />
-        </>
+        <Stack spacing={4} sx={{ width: "90vw", height: "90vh" }}>
+            <DataControls
+                dataUrl={dataUrl}
+                initialDataUrl={initialViewerState.dataUrl}
+                trackManager={trackManager}
+                trackHighlightLength={trackHighlightLength}
+                setDataUrl={setDataUrl}
+                setTrackManager={setTrackManager}
+                setTrackHighlightLength={setTrackHighlightLength}
+                copyShareableUrlToClipboard={copyShareableUrlToClipboard}
+                clearTracks={() => canvas.current?.removeAllTracks()}
+            />
+            <Scene canvas={canvas} curTime={curTime} loading={loading} />
+            <PlaybackControls
+                enabled={true}
+                autoRotate={autoRotate}
+                playing={playing}
+                curTime={curTime}
+                numTimes={numTimes}
+                setAutoRotate={setAutoRotate}
+                setPlaying={setPlaying}
+                setCurTime={setCurTime}
+            />
+        </Stack>
     );
 }
