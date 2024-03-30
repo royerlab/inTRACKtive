@@ -5,7 +5,6 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { LoadingIndicator } from "@czi-sds/components";
 
 interface SceneProps {
-    curTime: number;
     canvas: React.MutableRefObject<PointCanvas | null>;
     loading: boolean;
 }
@@ -29,7 +28,6 @@ export default function Scene(props: SceneProps) {
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        console.log("initialize canvas");
         canvas.current = new PointCanvas(renderWidth, renderHeight);
         canvas.current!.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 

@@ -202,7 +202,7 @@ export default function App() {
                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                 clearTracks={() => canvas.current?.removeAllTracks()}
             />
-            <Scene canvas={canvas} curTime={curTime} loading={loading} />
+            <Scene canvas={canvas} loading={loading} />
             <PlaybackControls
                 enabled={true}
                 autoRotate={autoRotate}

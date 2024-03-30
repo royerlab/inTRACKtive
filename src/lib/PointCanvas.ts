@@ -39,9 +39,9 @@ export class PointCanvas {
     // private here to consolidate external access via `TrackManager` instead
     private maxPointsPerTimepoint = 0;
 
-    constructor(width: number, height: number, canvas?: HTMLCanvasElement) {
+    constructor(width: number, height: number) {
         this.scene = new Scene();
-        this.renderer = new WebGLRenderer({ canvas: canvas });
+        this.renderer = new WebGLRenderer();
 
         this.camera = new PerspectiveCamera(
             35, // FOV

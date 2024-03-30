@@ -13,6 +13,6 @@ test("render Scene", () => {
     const canvasRef = {
         current: new PointCanvas(800, 600),
     };
-    const { container } = render(<Scene canvas={canvasRef} curTime={0} loading={false} />);
+    const { container } = render(<Scene canvas={canvasRef} loading={false} />);
     expect(container).not.toBeNull();
 });
