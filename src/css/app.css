@@ -1,10 +1,4 @@
-:root {
-    --app-padding: 32px;
-}
-
 #app {
-    /* margin: 0 auto; */
-    /* padding: var(--app-padding); */
     margin: auto;
     padding: 0px;
     display: flex;

@@ -36,6 +36,7 @@ export default function DataControls(props: DataControlsProps) {
                 disabled={!props.trackManager}
                 min={0}
                 max={100}
+                valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
                 onChange={(_, value) => {
                     if (!props.trackManager) return;
