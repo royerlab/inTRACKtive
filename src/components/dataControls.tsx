@@ -30,6 +30,7 @@ export default function DataControls(props: DataControlsProps) {
                 fullWidth={true}
                 intent={props.trackManager ? "default" : "error"}
             />
+            <label htmlFor="track-highlight-length-slider">Track Highlight Length</label>
             <InputSlider
                 id="track-highlight-length-slider"
                 aria-labelledby="input-slider-track-highlight-length"

@@ -16,6 +16,7 @@ interface PlaybackControlsProps {
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Stack direction="row" spacing={8}>
+            <label htmlFor="auto-rotate-toggle">Auto Rotate</label>
             <InputToggle
                 checked={props.autoRotate}
                 disabled={!props.enabled}
@@ -23,6 +24,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                     props.setAutoRotate((e.target as HTMLInputElement).checked);
                 }}
             />
+            <label htmlFor="playback-toggle">Playback</label>
             <InputToggle
                 checked={props.playing}
                 disabled={!props.enabled}
