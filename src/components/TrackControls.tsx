@@ -28,7 +28,10 @@ export default function TrackControls(props: TrackControlsProps) {
                 fullWidth={true}
                 intent={props.trackManager ? "default" : "error"}
             />
-            <label htmlFor="track-highlight-length-slider">Track Highlight Length</label>
+
+            <label htmlFor="track-highlight-length-slider">
+                <h5>Track Highlights Length</h5>
+            </label>
             <InputSlider
                 id="track-highlight-length-slider"
                 aria-labelledby="input-slider-track-highlight-length"

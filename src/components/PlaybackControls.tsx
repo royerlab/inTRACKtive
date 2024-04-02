@@ -33,6 +33,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 onChange={(_, value) => props.setCurTime(value as number)}
                 value={props.curTime}
             />
+            {/* TODO: add control button groups - perhaps a separate component */}
             <ButtonIcon
                 sdsIcon="dna"
                 sdsSize="large"
@@ -44,10 +45,3 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
         </Box>
     );
 }
-// <InputToggle
-//     checked={props.autoRotate}
-//     disabled={!props.enabled}
-//     onChange={(e) => {
-//         props.setAutoRotate((e.target as HTMLInputElement).checked);
-//     }}
-// />
