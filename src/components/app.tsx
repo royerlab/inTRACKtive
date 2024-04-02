@@ -51,13 +51,14 @@ export default function App() {
         navigator.clipboard.writeText(url);
     };
 
-    // const setStateFromHash = () => {
-    //     const state = ViewerState.fromUrlHash(window.location.hash);
-    //     clearUrlHash();
-    //     setDataUrl(state.dataUrl);
-    //     setCurTime(state.curTime);
-    //     canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
-    // };
+    const setStateFromHash = () => {
+        const state = ViewerState.fromUrlHash(window.location.hash);
+        clearUrlHash();
+        setDataUrl(state.dataUrl);
+        setCurTime(state.curTime);
+        canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
+    };
+    window.addEventListener("hashchange", setStateFromHash);
 
     // update the array when the dataUrl changes
     useEffect(() => {
