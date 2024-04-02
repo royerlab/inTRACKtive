@@ -1,6 +1,5 @@
-import { Stack } from "@mui/material";
-
-import { InputSlider, InputToggle } from "@czi-sds/components";
+import { Box } from "@mui/material";
+import { ButtonIcon, InputSlider } from "@czi-sds/components";
 
 interface PlaybackControlsProps {
     enabled: boolean;
@@ -15,22 +14,14 @@ interface PlaybackControlsProps {
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
-        <Stack direction="row" spacing={8} sx={{ margin: "2em" }}>
-            <label htmlFor="auto-rotate-toggle">Auto Rotate</label>
-            <InputToggle
-                checked={props.autoRotate}
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
+            <ButtonIcon
+                sdsIcon="play"
+                sdsSize="large"
+                sdsType="primary"
+                on={props.playing}
                 disabled={!props.enabled}
-                onChange={(e) => {
-                    props.setAutoRotate((e.target as HTMLInputElement).checked);
-                }}
-            />
-            <label htmlFor="playback-toggle">Playback</label>
-            <InputToggle
-                checked={props.playing}
-                disabled={!props.enabled}
-                onChange={(e) => {
-                    props.setPlaying((e.target as HTMLInputElement).checked);
-                }}
+                onClick={() => props.setPlaying(!props.playing)}
             />
             <InputSlider
                 id="time-frame-slider"
@@ -42,6 +33,21 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 onChange={(_, value) => props.setCurTime(value as number)}
                 value={props.curTime}
             />
-        </Stack>
+            <ButtonIcon
+                sdsIcon="dna"
+                sdsSize="large"
+                sdsType="primary"
+                on={props.autoRotate}
+                disabled={!props.enabled}
+                onClick={() => props.setAutoRotate(!props.autoRotate)}
+            />
+        </Box>
     );
 }
+// <InputToggle
+//     checked={props.autoRotate}
+//     disabled={!props.enabled}
+//     onChange={(e) => {
+//         props.setAutoRotate((e.target as HTMLInputElement).checked);
+//     }}
+// />

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import "@/css/app.css";
 
-import { Box } from "@mui/material";
+import { Box, Divider, Drawer } from "@mui/material";
 
-import Scene from "@/components/Scene.tsx";
-import TrackControls from "@/components/TrackControls.tsx";
-import PlaybackControls from "@/components/PlaybackControls.tsx";
+import Scene from "@/components/Scene";
+import DataControls from "@/components/DataControls";
+import TrackControls from "@/components/TrackControls";
+import PlaybackControls from "@/components/PlaybackControls";
 
 import useSelectionBox from "@/hooks/useSelectionBox";
 
@@ -17,6 +18,8 @@ import { PointCanvas } from "@/lib/PointCanvas";
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 clearUrlHash();
+
+const drawerWidth = 300;
 
 export default function App() {
     // Use references here for two things:
@@ -190,33 +193,78 @@ export default function App() {
     }, [numTimes, curTime, playing]);
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", width: "80%", height: "100%" }}>
-            <TrackControls
-                dataUrl={dataUrl}
-                initialDataUrl={initialViewerState.dataUrl}
-                trackManager={trackManager}
-                trackHighlightLength={trackHighlightLength}
-                setDataUrl={setDataUrl}
-                setTrackHighlightLength={setTrackHighlightLength}
-                copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                clearTracks={() => canvas?.removeAllTracks()}
-            />
-            <Scene
-                setCanvas={setCanvas}
-                loading={loading}
-                initialCameraPosition={initialViewerState.cameraPosition}
-                initialCameraTarget={initialViewerState.cameraTarget}
-            />
-            <PlaybackControls
-                enabled={true}
-                autoRotate={autoRotate}
-                playing={playing}
-                curTime={curTime}
-                numTimes={numTimes}
-                setAutoRotate={setAutoRotate}
-                setPlaying={setPlaying}
-                setCurTime={setCurTime}
-            />
+        <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
+            {/* TODO: components *could* go deeper still for organization */}
+            <Drawer
+                anchor="left"
+                variant="permanent"
+                sx={{
+                    "width": drawerWidth,
+                    "flexShrink": 0,
+                    "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
+                }}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        height: "100%",
+                    }}
+                >
+                    <Box flexGrow={1} padding="1em">
+                        <TrackControls
+                            dataUrl={dataUrl}
+                            initialDataUrl={initialViewerState.dataUrl}
+                            trackManager={trackManager}
+                            trackHighlightLength={trackHighlightLength}
+                            setDataUrl={setDataUrl}
+                            setTrackHighlightLength={setTrackHighlightLength}
+                            copyShareableUrlToClipboard={copyShareableUrlToClipboard}
+                            clearTracks={() => canvas?.removeAllTracks()}
+                        />
+                    </Box>
+                    <Divider />
+                    <Box flexGrow={0} padding="1em">
+                        <DataControls
+                            dataUrl={dataUrl}
+                            initialDataUrl={initialViewerState.dataUrl}
+                            setDataUrl={setDataUrl}
+                            copyShareableUrlToClipboard={copyShareableUrlToClipboard}
+                            trackManager={trackManager}
+                        />
+                    </Box>
+                </Box>
+            </Drawer>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                    height: "100%",
+                    overflow: "hidden",
+                }}
+            >
+                <Scene
+                    setCanvas={setCanvas}
+                    loading={loading}
+                    initialCameraPosition={initialViewerState.cameraPosition}
+                    initialCameraTarget={initialViewerState.cameraTarget}
+                />
+                <Box flexGrow={0} padding="1em">
+                    <PlaybackControls
+                        enabled={true}
+                        autoRotate={autoRotate}
+                        playing={playing}
+                        curTime={curTime}
+                        numTimes={numTimes}
+                        setAutoRotate={setAutoRotate}
+                        setPlaying={setPlaying}
+                        setCurTime={setCurTime}
+                    />
+                </Box>
+            </Box>
         </Box>
     );
 }

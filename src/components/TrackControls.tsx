@@ -1,5 +1,5 @@
 import { TrackManager } from "@/lib/TrackManager";
-import { Button, ButtonIcon, InputSlider, InputText } from "@czi-sds/components";
+import { Button, InputSlider, InputText } from "@czi-sds/components";
 import { Stack } from "@mui/material";
 
 interface TrackControlsProps {
@@ -17,7 +17,6 @@ export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
     const trackLengthPct = numTimes ? (props.trackHighlightLength / 2 / numTimes) * 100 : 0;
 
-    console.log("trackLengthPct: %s", props.trackManager?.maxPointsPerTimepoint);
     return (
         <Stack spacing={4} sx={{ margin: "2em" }}>
             <InputText
@@ -49,13 +48,6 @@ export default function TrackControls(props: TrackControlsProps) {
                 <Button disabled={!props.trackManager} onClick={props.clearTracks}>
                     Clear Tracks
                 </Button>
-                <ButtonIcon
-                    sdsIcon="share"
-                    sdsSize="large"
-                    sdsType="primary"
-                    disabled={!props.trackManager}
-                    onClick={props.copyShareableUrlToClipboard}
-                />
             </Stack>
         </Stack>
     );
