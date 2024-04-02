@@ -1,18 +1,14 @@
 import { useEffect, useRef } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
-import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { LoadingIndicator } from "@czi-sds/components";
 
 interface SceneProps {
+    initialCameraPosition?: THREE.Vector3;
+    initialCameraTarget?: THREE.Vector3;
     canvas: React.MutableRefObject<PointCanvas | null>;
     loading: boolean;
 }
-
-// Ideally we do this here so that we can use initial values as default values for React state.
-const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
-console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
-clearUrlHash();
 
 export default function Scene(props: SceneProps) {
     const canvas = props.canvas;
@@ -29,7 +25,7 @@ export default function Scene(props: SceneProps) {
     useEffect(() => {
         // initialize the canvas
         canvas.current = new PointCanvas(renderWidth, renderHeight);
-        canvas.current!.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
+        canvas.current!.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
 
         // append renderer canvas
         const divCurrent = divRef.current;
