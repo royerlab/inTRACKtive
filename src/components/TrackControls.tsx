@@ -2,7 +2,7 @@ import { TrackManager } from "@/lib/TrackManager";
 import { Button, ButtonIcon, InputSlider, InputText } from "@czi-sds/components";
 import { Stack } from "@mui/material";
 
-interface DataControlsProps {
+interface TrackControlsProps {
     dataUrl: string;
     initialDataUrl: string;
     trackManager: TrackManager | null;
@@ -13,7 +13,7 @@ interface DataControlsProps {
     clearTracks: () => void;
 }
 
-export default function DataControls(props: DataControlsProps) {
+export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
     const trackLengthPct = numTimes ? (props.trackHighlightLength / 2 / numTimes) * 100 : 0;
 

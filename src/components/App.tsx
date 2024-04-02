@@ -3,9 +3,9 @@ import "@/css/app.css";
 
 import { Box } from "@mui/material";
 
-import Scene from "@/components/scene.tsx";
-import DataControls from "@/components/dataControls.tsx";
-import PlaybackControls from "@/components/playbackControls.tsx";
+import Scene from "@/components/Scene.tsx";
+import TrackControls from "@/components/TrackControls.tsx";
+import PlaybackControls from "@/components/PlaybackControls.tsx";
 
 import useSelectionBox from "@/hooks/useSelectionBox";
 
@@ -191,7 +191,7 @@ export default function App() {
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", width: "80%", height: "100%" }}>
-            <DataControls
+            <TrackControls
                 dataUrl={dataUrl}
                 initialDataUrl={initialViewerState.dataUrl}
                 trackManager={trackManager}
