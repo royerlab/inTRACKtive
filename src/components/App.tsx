@@ -19,7 +19,7 @@ const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 clearUrlHash();
 
-const drawerWidth = 300;
+const drawerWidth = 256;
 
 export default function App() {
     // Use references here for two things:
@@ -213,6 +213,20 @@ export default function App() {
                         height: "100%",
                     }}
                 >
+                    <Box
+                        sx={{
+                            flexGrow: 0,
+                            padding: "1em 1.5em",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        <img src="/zebrahub-favicon-60x60.png" alt="logo" />
+                        <Divider orientation="vertical" flexItem />
+                        <h2>ZEBRAHUB</h2>
+                    </Box>
                     <Box flexGrow={1} padding="1em">
                         <TrackControls
                             dataUrl={dataUrl}
