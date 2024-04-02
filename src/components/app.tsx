@@ -58,7 +58,13 @@ export default function App() {
         setCurTime(state.curTime);
         canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
     };
-    window.addEventListener("hashchange", setStateFromHash);
+    // update the state when the hash changes, but only register the listener once
+    useEffect(() => {
+        window.addEventListener("hashchange", setStateFromHash);
+        return () => {
+            window.removeEventListener("hashchange", setStateFromHash);
+        };
+    }, []);
 
     // update the array when the dataUrl changes
     useEffect(() => {
