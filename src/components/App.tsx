@@ -229,13 +229,9 @@ export default function App() {
                     </Box>
                     <Box flexGrow={1} padding="1em">
                         <TrackControls
-                            dataUrl={dataUrl}
-                            initialDataUrl={initialViewerState.dataUrl}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
-                            setDataUrl={setDataUrl}
                             setTrackHighlightLength={setTrackHighlightLength}
-                            copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                             clearTracks={() => canvas?.removeAllTracks()}
                         />
                     </Box>

@@ -1,15 +1,11 @@
 import { TrackManager } from "@/lib/TrackManager";
-import { Button, InputSlider, InputText } from "@czi-sds/components";
+import { Button, InputSlider } from "@czi-sds/components";
 import { Stack } from "@mui/material";
 
 interface TrackControlsProps {
-    dataUrl: string;
-    initialDataUrl: string;
     trackManager: TrackManager | null;
     trackHighlightLength: number;
-    setDataUrl: (dataUrl: string) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
-    copyShareableUrlToClipboard: () => void;
     clearTracks: () => void;
 }
 
@@ -19,16 +15,6 @@ export default function TrackControls(props: TrackControlsProps) {
 
     return (
         <Stack spacing={4} sx={{ margin: "2em" }}>
-            <InputText
-                id="url-input"
-                label="Zarr URL"
-                placeholder={props.initialDataUrl}
-                defaultValue={props.initialDataUrl}
-                onChange={(e) => props.setDataUrl(e.target.value)}
-                fullWidth={true}
-                intent={props.trackManager ? "default" : "error"}
-            />
-
             <label htmlFor="track-highlight-length-slider">
                 <h5>Track Highlights Length</h5>
             </label>
