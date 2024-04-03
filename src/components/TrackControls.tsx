@@ -48,7 +48,7 @@ export default function TrackControls(props: TrackControlsProps) {
                 value={Math.round(trackLengthPct)}
             />
             <Stack direction="row" spacing={4}>
-                <Button disabled={!props.trackManager} onClick={props.clearTracks}>
+                <Button sdsStyle="minimal" sdsType="primary" disabled={!props.trackManager} onClick={props.clearTracks}>
                     Clear Tracks
                 </Button>
             </Stack>
