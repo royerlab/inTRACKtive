@@ -97,9 +97,9 @@ export class PointCanvas {
         this.controls.update();
     };
 
-    setCameraProperties(position?: Vector3, target?: Vector3) {
-        position && this.camera.position.set(position.x, position.y, position.z);
-        target && this.controls.target.set(target.x, target.y, target.z);
+    setCameraProperties(position: Vector3, target: Vector3) {
+        this.camera.position.set(position.x, position.y, position.z);
+        this.controls.target.set(target.x, target.y, target.z);
     }
 
     highlightPoints(points: number[]) {

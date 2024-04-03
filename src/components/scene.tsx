@@ -4,13 +4,13 @@ import { PointCanvas } from "@/lib/PointCanvas";
 import { LoadingIndicator } from "@czi-sds/components";
 import { Box } from "@mui/material";
 import { PointsCollection } from "@/lib/PointSelectionBox";
+import { ViewerState } from "@/lib/ViewerState";
 
 interface SceneProps {
     setCanvas: (canvas: PointCanvas) => void;
     setSelectedPoints: (selectedPoints: PointsCollection) => void;
     loading: boolean;
-    initialCameraPosition?: THREE.Vector3;
-    initialCameraTarget?: THREE.Vector3;
+    initialViewerState: ViewerState;
 }
 
 export default function Scene(props: SceneProps) {
@@ -27,7 +27,11 @@ export default function Scene(props: SceneProps) {
         // initialize the canvas
         const canvas = new PointCanvas(renderWidth, renderHeight);
         // TODO: pass these through directly to PointCanvas
-        canvas.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
+        canvas.setCameraProperties(props.initialViewerState.cameraPosition, props.initialViewerState.cameraTarget);
+        // TODO: this seems fragile.
+        // We currently set selection before the changed callback to avoid
+        // react state change side effects (which will fetch tracks prematurely).
+        canvas.selection.setSelectedPoints(props.initialViewerState.selectedPoints);
         canvas.selection.selectionChanged = props.setSelectedPoints;
 
         // store the canvas in the parent component

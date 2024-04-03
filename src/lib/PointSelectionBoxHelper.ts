@@ -1,8 +1,4 @@
-import {
-    PerspectiveCamera,
-    Scene,
-    WebGLRenderer,
-} from "three";
+import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
@@ -16,12 +12,7 @@ export class PointSelectionBoxHelper {
     selectionChanged: ((selection: PointsCollection) => void) | null = null;
     blocked: boolean = false;
 
-    constructor(
-        scene: Scene,
-        renderer: WebGLRenderer,
-        camera: PerspectiveCamera,
-        controls: OrbitControls,
-    ) {
+    constructor(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls) {
         this.controls = controls;
         this.canvas = renderer.domElement;
         this.helper = new SelectionHelper(renderer, "selectBox");
@@ -106,13 +97,7 @@ export class PointSelectionBoxHelper {
         const bottomRight = this.helper.pointBottomRight;
         const right = ((bottomRight.x - canvasRect.left) / canvasRect.width) * 2 - 1;
         const bottom = (-(bottomRight.y - canvasRect.top) / canvasRect.height) * 2 + 1;
-        console.debug(
-            "updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f",
-            top,
-            left,
-            bottom,
-            right,
-        );
+        console.debug("updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
 
         // TODO: check the z-value of these points
         this.box.startPoint.set(left, top, 0.5);
@@ -133,4 +118,4 @@ export class PointSelectionBoxHelper {
 
         this.helper.dispose();
     }
-};
+}

@@ -14,7 +14,7 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
-console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
 export default function App() {
@@ -28,7 +28,10 @@ export default function App() {
     const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
+    // TODO: this should take initialViewerState.selectedPoints as its default
+    // value, but it we do that then react won't detect a change and won't
+    // fetch the corresponding tracks data.
+    const [selectedPoints, setSelectedPoints] = useState<PointsCollection>(new Map());
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
 
     // playback state
@@ -41,8 +44,8 @@ export default function App() {
     const copyShareableUrlToClipboard = () => {
         if (canvas === null) return;
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target);
-        const url = window.location.toString() + "#" + state.toUrlHash();
+        const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target, selectedPoints);
+        const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
 
@@ -52,6 +55,7 @@ export default function App() {
         setDataUrl(state.dataUrl);
         setCurTime(state.curTime);
         canvas?.setCameraProperties(state.cameraPosition, state.cameraTarget);
+        canvas?.selection.setSelectedPoints(state.selectedPoints);
     };
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -106,6 +110,11 @@ export default function App() {
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
+
+                // Consume the internal selection here to handle initialization
+                // which will update the react state, and will then fetch the
+                // tracks data.
+                canvas.selection.setSelectedPoints(canvas.selection.selectedPoints());
             };
             getPoints(canvas, curTime);
         } else {
@@ -204,8 +213,7 @@ export default function App() {
                 setCanvas={setCanvas}
                 setSelectedPoints={setSelectedPoints}
                 loading={loading}
-                initialCameraPosition={initialViewerState.cameraPosition}
-                initialCameraTarget={initialViewerState.cameraTarget}
+                initialViewerState={initialViewerState}
             />
             <PlaybackControls
                 enabled={true}
