@@ -29,7 +29,7 @@ export default function App() {
     const canvas = useRef<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const { selectedPoints } = useSelectionBox(canvas.current);
+    const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
 
     // playback state
