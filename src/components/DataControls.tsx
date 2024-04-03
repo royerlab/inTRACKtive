@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Box, Popover, Stack, Typography } from "@mui/material";
+import { Alert, Box, Popover, Snackbar, Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { fontBodyXs } from "czifui";
 
@@ -17,14 +17,24 @@ interface DataControlsProps {
 }
 
 export default function DataControls(props: DataControlsProps) {
-    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [copyUrlSnackBarOpen, setCopyUrlSnackBarOpen] = useState(false);
+    const [urlPopoverAnchor, setUrlPopoverAnchor] = useState<HTMLButtonElement | null>(null);
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
+    const copyShareableUrlToClipBoard = () => {
+        props.copyShareableUrlToClipboard();
+        setCopyUrlSnackBarOpen(true);
     };
 
-    const handleClose = () => {
-        setAnchorEl(null);
+    const handleShareableUrlSnackBarClose = () => {
+        setCopyUrlSnackBarOpen(false);
+    };
+
+    const showUrlPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setUrlPopoverAnchor(event.currentTarget);
+    };
+
+    const handleUrlPopoverClose = () => {
+        setUrlPopoverAnchor(null);
     };
 
     return (
@@ -39,22 +49,46 @@ export default function DataControls(props: DataControlsProps) {
             }}
         >
             {/* TODO: make this do something */}
-            <ButtonIcon sdsIcon="infoCircle" sdsSize="large" sdsType="secondary" />
+            <ButtonIcon
+                sdsIcon="infoCircle"
+                sdsSize="large"
+                sdsType="secondary"
+                onClick={() => {
+                    window.alert("Not implemented :)");
+                }}
+            />
 
             <ButtonIcon
                 sdsIcon="share"
                 sdsSize="large"
                 sdsType="secondary"
                 disabled={!props.trackManager}
-                onClick={props.copyShareableUrlToClipboard}
+                onClick={copyShareableUrlToClipBoard}
             />
+            <Snackbar
+                open={copyUrlSnackBarOpen}
+                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                autoHideDuration={2500}
+                onClose={handleShareableUrlSnackBarClose}
+                // This is a hack to make the snackbar appear above the bottom bar
+                sx={{
+                    "&.MuiSnackbar-root": { bottom: "100px" },
+                }}
+            >
+                <Alert
+                    // SDS alert does not work in here
+                    severity="success"
+                    variant="filled"
+                >
+                    Shareable URL copied to clipboard!
+                </Alert>
+            </Snackbar>
 
-            {/* TODO: make this do something */}
-            <ButtonIcon sdsIcon="globeBasic" sdsSize="large" sdsType="secondary" onClick={handleClick} />
+            <ButtonIcon sdsIcon="globeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
             <Popover
-                open={Boolean(anchorEl)}
-                anchorEl={anchorEl}
-                onClose={handleClose}
+                open={Boolean(urlPopoverAnchor)}
+                anchorEl={urlPopoverAnchor}
+                onClose={handleUrlPopoverClose}
                 anchorOrigin={{
                     vertical: "top",
                     horizontal: "right",
@@ -85,7 +119,7 @@ export default function DataControls(props: DataControlsProps) {
                         <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
                     </Note>
                     <Stack direction="row" spacing={4}>
-                        <Button sdsStyle="square" sdsType="secondary" onClick={handleClose}>
+                        <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
                             Cancel
                         </Button>
                         <Button sdsStyle="square" sdsType="primary">
