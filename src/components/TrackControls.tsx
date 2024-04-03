@@ -11,7 +11,6 @@ interface TrackControlsProps {
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
-    const trackLengthPct = numTimes ? (props.trackHighlightLength / 2 / numTimes) * 100 : 0;
 
     return (
         <Stack spacing={4}>
@@ -23,15 +22,13 @@ export default function TrackControls(props: TrackControlsProps) {
                 aria-labelledby="input-slider-track-highlight-length"
                 disabled={!props.trackManager}
                 min={0}
-                max={100}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `${value}%`}
+                max={numTimes * 2}
+                valueLabelDisplay="on"
+                valueLabelFormat={(value) => `${value} frames`}
                 onChange={(_, value) => {
-                    if (!props.trackManager) return;
-                    const v = ((value as number) / 100) * 2 * numTimes;
-                    props.setTrackHighlightLength(v);
+                    props.setTrackHighlightLength(value as number);
                 }}
-                value={Math.round(trackLengthPct)}
+                value={props.trackHighlightLength}
             />
             <Stack direction="row" spacing={4}>
                 <Button sdsStyle="minimal" sdsType="primary" disabled={!props.trackManager} onClick={props.clearTracks}>
