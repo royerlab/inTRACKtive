@@ -12,7 +12,16 @@ interface DataControlsProps {
 
 export default function DataControls(props: DataControlsProps) {
     return (
-        <Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                // 5px margin makes this bar match the PlaybackControls height
+                // because that component uses primary buttons, which hava a 5px margin
+                margin: "5px",
+            }}
+        >
             {/* TODO: make this do something */}
             <ButtonIcon sdsIcon="infoCircle" sdsSize="large" sdsType="secondary" />
 
