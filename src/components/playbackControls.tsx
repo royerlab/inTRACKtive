@@ -15,7 +15,7 @@ interface PlaybackControlsProps {
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
-        <Stack direction="row" spacing={8}>
+        <Stack direction="row" spacing={8} sx={{ margin: "2em" }}>
             <label htmlFor="auto-rotate-toggle">Auto Rotate</label>
             <InputToggle
                 checked={props.autoRotate}

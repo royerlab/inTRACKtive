@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { LoadingIndicator } from "@czi-sds/components";
+import { Box } from "@mui/material";
 
 interface SceneProps {
     initialCameraPosition?: THREE.Vector3;
@@ -30,23 +31,21 @@ export default function Scene(props: SceneProps) {
         // append renderer canvas
         const divCurrent = divRef.current;
         const renderer = canvas.current!.renderer;
-        divCurrent?.appendChild(renderer.domElement);
+        divCurrent?.insertBefore(renderer.domElement, divCurrent.firstChild);
 
         // start animating - this keeps the scene rendering when controls change, etc.
         canvas.current.animate();
 
         const handleWindowResize = () => {
             if (!divCurrent) return;
-            console.log("resize canvas", divCurrent.offsetWidth, divCurrent.offsetHeight);
-            const renderWidth = divCurrent.offsetWidth;
-            const renderHeight = 0.9 * divCurrent.offsetHeight;
+            const renderWidth = divCurrent.clientWidth;
+            const renderHeight = divCurrent.clientHeight;
             canvas.current?.setSize(renderWidth, renderHeight);
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
 
         return () => {
-            window.removeEventListener("resize", handleWindowResize);
             renderer.domElement.remove();
             canvas.current?.dispose();
         };
@@ -55,10 +54,20 @@ export default function Scene(props: SceneProps) {
     const loading = props.loading ? "visible" : "hidden";
 
     return (
-        <div ref={divRef} style={{ width: "100%", height: "100%" }}>
-            <div style={{ position: "relative", top: "85%", left: "50%", visibility: loading }}>
+        <Box
+            ref={divRef}
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: 1,
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+            }}
+        >
+            <Box sx={{ margin: "-5% auto", visibility: loading, zIndex: 1000, opacity: "70%" }}>
                 <LoadingIndicator sdsStyle="tag" />
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }

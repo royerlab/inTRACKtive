@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "@/css/app.css";
 
-import { Stack } from "@mui/material";
+import { Box } from "@mui/material";
 
 import Scene from "@/components/scene.tsx";
 import DataControls from "@/components/dataControls.tsx";
@@ -197,7 +197,7 @@ export default function App() {
     }, [numTimes, curTime, playing]);
 
     return (
-        <Stack spacing={4} sx={{ width: "90vw", height: "90vh" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", width: "80%", height: "100%" }}>
             <DataControls
                 dataUrl={dataUrl}
                 initialDataUrl={initialViewerState.dataUrl}
@@ -225,6 +225,6 @@ export default function App() {
                 setPlaying={setPlaying}
                 setCurTime={setCurTime}
             />
-        </Stack>
+        </Box>
     );
 }

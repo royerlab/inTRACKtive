@@ -20,7 +20,7 @@ export default function DataControls(props: DataControlsProps) {
 
     console.log("trackLengthPct: %s", props.trackManager?.maxPointsPerTimepoint);
     return (
-        <Stack spacing={4}>
+        <Stack spacing={4} sx={{ margin: "2em" }}>
             <InputText
                 id="url-input"
                 label="Zarr URL"
