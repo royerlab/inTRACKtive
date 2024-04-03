@@ -32,7 +32,7 @@ export default function App() {
     // value, but it we do that then react won't detect a change and won't
     // fetch the corresponding tracks data.
     const [selectedPoints, setSelectedPoints] = useState<PointsCollection>(new Map());
-    const [trackHighlightLength, setTrackHighlightLength] = useState(11);
+    const [trackHighlightLength, setTrackHighlightLength] = useState(initialViewerState.trackHighlightLength);
 
     // playback state
     const [autoRotate, setAutoRotate] = useState(false);
@@ -44,7 +44,13 @@ export default function App() {
     const copyShareableUrlToClipboard = () => {
         if (canvas === null) return;
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target, selectedPoints);
+        const state = new ViewerState(
+            dataUrl,
+            curTime,
+            canvas.camera.position,
+            canvas.controls.target,
+            selectedPoints,
+            trackHighlightLength);
         const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
@@ -56,6 +62,7 @@ export default function App() {
         setCurTime(state.curTime);
         canvas?.setCameraProperties(state.cameraPosition, state.cameraTarget);
         canvas?.selection.setSelectedPoints(state.selectedPoints);
+        setTrackHighlightLength(state.trackHighlightLength);
     };
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {

@@ -51,6 +51,7 @@ export class ViewerState {
     cameraPosition: Vector3;
     cameraTarget: Vector3;
     selectedPoints: PointsCollection;
+    trackHighlightLength: number;
 
     constructor(
         dataUrl: string = DEFAULT_ZARR_URL,
@@ -59,12 +60,14 @@ export class ViewerState {
         cameraPosition: Vector3 = new Vector3(500, 500, -1250),
         cameraTarget: Vector3 = new Vector3(500, 500, 250),
         selectedPoints: PointsCollection = new Map(),
+        trackHighlightLength: number = 11,
     ) {
         this.dataUrl = dataUrl;
         this.curTime = curTime;
         this.cameraPosition = cameraPosition;
         this.cameraTarget = cameraTarget;
         this.selectedPoints = selectedPoints;
+        this.trackHighlightLength = trackHighlightLength;
     }
 
     toUrlHash(): string {
