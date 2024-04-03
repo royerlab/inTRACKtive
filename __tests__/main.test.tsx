@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
-import Scene from "@/components/scene";
+import { PointCanvas } from "../src/lib/PointCanvas.ts";
+import Scene from "../src/components/scene";
 import React from "react";
 import { render } from "@testing-library/react";
 
@@ -9,6 +10,11 @@ test("tests work", () => {
 });
 
 test("render Scene", () => {
-    const { container } = render(<Scene renderWidth={800} />);
+    let canvasState: PointCanvas | null = null;
+    const setCanvas = (canvas: PointCanvas) => {
+        canvasState = canvas;
+    };
+    const { container } = render(<Scene setCanvas={setCanvas} loading={false} />);
     expect(container).not.toBeNull();
+    expect(canvasState).not.toBeNull();
 });

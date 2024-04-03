@@ -17,6 +17,19 @@ module.exports = {
         "semi": ["error", "always"],
         "quotes": ["error", "double"],
         "no-duplicate-imports": "error",
+        // ignore unused vars that start with _
+        // https://stackoverflow.com/a/64067915/333308
+        // note you must disable the base rule
+        // as it can report incorrect errors
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                argsIgnorePattern: "^_",
+                varsIgnorePattern: "^_",
+                caughtErrorsIgnorePattern: "^_",
+            },
+        ],
     },
     settings: {
         "import/resolver": {
