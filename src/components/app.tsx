@@ -43,7 +43,7 @@ export default function App() {
         if (canvas === null) return;
         console.log("copy shareable URL to clipboard");
         const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target);
-        const url = window.location.toString() + "#" + state.toUrlHash();
+        const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
 

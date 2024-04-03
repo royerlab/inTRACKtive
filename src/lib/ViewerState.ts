@@ -14,6 +14,28 @@ export function clearUrlHash() {
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 }
 
+// Define custom replacer and revivers to handle types that do
+// not automatically deserialize from JSON. Adapted from:
+// https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+function replacer(_key: string, value: any) {
+    if (value instanceof Vector3) {
+        return {
+            dataType: "Vector3",
+            elements: [value.x, value.y, value.z],
+        };
+    }
+    return value;
+}
+
+function reviver(_key: string, value: any) {
+    if (typeof value === "object" && value !== null) {
+        if (value.dataType === "Vector3") {
+            return new Vector3(...value.elements);
+        }
+    }
+    return value;
+}
+
 // Encapsulates all the persistent state in the viewer (e.g. that can be serialized and shared).
 export class ViewerState {
     dataUrl: string;
@@ -37,20 +59,20 @@ export class ViewerState {
     toUrlHash(): string {
         // Use SearchParams to sanitize serialized string values for URL.
         const searchParams = new URLSearchParams();
-        searchParams.append(HASH_KEY, JSON.stringify(this));
-        return searchParams.toString();
+        searchParams.append(HASH_KEY, JSON.stringify(this, replacer));
+        return "#" + searchParams.toString();
     }
 
     static fromUrlHash(urlHash: string): ViewerState {
         console.debug("getting state from hash: %s", urlHash);
+        const state = new ViewerState();
         // Remove the # from the hash to get the fragment.
         const searchParams = new URLSearchParams(urlHash.slice(1));
         if (searchParams.has(HASH_KEY)) {
-            return JSON.parse(searchParams.get(HASH_KEY)!);
-        }
-        if (urlHash.length > 0) {
+            return Object.assign(state, JSON.parse(searchParams.get(HASH_KEY)!, reviver));
+        } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }
-        return new ViewerState();
+        return state;
     }
 }
