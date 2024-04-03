@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { PointCanvas } from "@/lib/PointCanvas";
 
-export default function useSelectionBox(canvasRef: React.MutableRefObject<PointCanvas | null>) {
+export default function useSelectionBox(canvas: PointCanvas | null) {
     const [selecting, setSelecting] = useState(false);
     const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
 
@@ -12,7 +12,6 @@ export default function useSelectionBox(canvasRef: React.MutableRefObject<PointC
     const selectionHelper = useRef<SelectionHelper>();
 
     useEffect(() => {
-        const canvas = canvasRef.current;
         if (!canvas) {
             console.debug("canvas is undefined - deferring useSelectionBox setup");
             return;
@@ -90,14 +89,14 @@ export default function useSelectionBox(canvasRef: React.MutableRefObject<PointC
             document.removeEventListener("keydown", keyDown);
             document.removeEventListener("keyup", keyUp);
         };
-    }, [canvasRef.current]);
+    }, [canvas]);
 
     useEffect(() => {
         if (selectionHelper.current) {
             selectionHelper.current.enabled = selecting;
         }
-        if (canvasRef.current) {
-            canvasRef.current.controls.enabled = !selecting;
+        if (canvas) {
+            canvas.controls.enabled = !selecting;
         }
     }, [selecting]);
 

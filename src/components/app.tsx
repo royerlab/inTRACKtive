@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import "@/css/app.css";
 
 import { Box } from "@mui/material";
@@ -26,7 +26,7 @@ export default function App() {
     // data state
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
     const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
-    const canvas = useRef<PointCanvas | null>(null);
+    const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
 
     const { selectedPoints } = useSelectionBox(canvas);
@@ -40,13 +40,9 @@ export default function App() {
 
     // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
+        if (canvas === null) return;
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(
-            dataUrl,
-            curTime,
-            canvas.current!.camera.position,
-            canvas.current!.controls.target,
-        );
+        const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target);
         const url = window.location.toString() + "#" + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
@@ -56,7 +52,7 @@ export default function App() {
         clearUrlHash();
         setDataUrl(state.dataUrl);
         setCurTime(state.curTime);
-        canvas.current?.setCameraProperties(state.cameraPosition, state.cameraTarget);
+        canvas?.setCameraProperties(state.cameraPosition, state.cameraTarget);
     };
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -83,8 +79,8 @@ export default function App() {
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
     useEffect(() => {
-        if (!trackManager || !canvas.current) return;
-        canvas.current.initPointsGeometry(trackManager.maxPointsPerTimepoint);
+        if (!trackManager || !canvas) return;
+        canvas.initPointsGeometry(trackManager.maxPointsPerTimepoint);
     }, [trackManager]);
 
     // update the points when the array or timepoint changes
@@ -95,9 +91,7 @@ export default function App() {
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
-        console.log("trackManager: %s", trackManager);
-        console.log("canvas.current: %s", canvas.current);
-        if (canvas.current && trackManager && !ignore) {
+        if (canvas && trackManager && !ignore) {
             const getPoints = async (canvas: PointCanvas, time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
@@ -114,7 +108,7 @@ export default function App() {
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
-            getPoints(canvas.current, curTime);
+            getPoints(canvas, curTime);
         } else {
             // clearTimeout(loadingTimer);
             setTimeout(() => setLoading(false), 250);
@@ -137,18 +131,18 @@ export default function App() {
         // update the track highlights
         const minTime = curTime - trackHighlightLength / 2;
         const maxTime = curTime + trackHighlightLength / 2;
-        canvas.current?.updateAllTrackHighlights(minTime, maxTime);
+        canvas?.updateAllTrackHighlights(minTime, maxTime);
     }, [curTime, trackHighlightLength]);
 
     useEffect(() => {
-        const pointsID = canvas.current?.points.id || -1;
+        const pointsID = canvas?.points.id || -1;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();
 
         // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
-            if (!canvas.current || !trackManager) return;
+            if (!canvas || !trackManager) return;
             const minTime = curTime - trackHighlightLength / 2;
             const maxTime = curTime + trackHighlightLength / 2;
             const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
@@ -156,17 +150,17 @@ export default function App() {
             for (const t of tracks) {
                 const lineage = await trackManager.fetchLineageForTrack(t);
                 for (const l of lineage) {
-                    if (adding.has(l) || canvas.current.tracks.has(l)) continue;
+                    if (adding.has(l) || canvas.tracks.has(l)) continue;
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    const newTrack = canvas.current.addTrack(l, pos, ids);
+                    const newTrack = canvas.addTrack(l, pos, ids);
                     newTrack?.updateHighlightLine(minTime, maxTime);
                 }
             }
         };
 
         const selected = selectedPoints.get(pointsID) || [];
-        canvas.current?.highlightPoints(selected);
+        canvas?.highlightPoints(selected);
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
         Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
@@ -176,9 +170,8 @@ export default function App() {
     // TODO: maybe can be done without useEffect?
     // could be a prop into the Scene component
     useEffect(() => {
-        console.log("autoRotate: %s", autoRotate);
-        if (canvas.current) {
-            canvas.current.controls.autoRotate = autoRotate;
+        if (canvas) {
+            canvas.controls.autoRotate = autoRotate;
         }
     }, [autoRotate]);
 
@@ -207,10 +200,10 @@ export default function App() {
                 setTrackManager={setTrackManager}
                 setTrackHighlightLength={setTrackHighlightLength}
                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                clearTracks={() => canvas.current?.removeAllTracks()}
+                clearTracks={() => canvas?.removeAllTracks()}
             />
             <Scene
-                canvas={canvas}
+                setCanvas={setCanvas}
                 loading={loading}
                 initialCameraPosition={initialViewerState.cameraPosition}
                 initialCameraTarget={initialViewerState.cameraTarget}

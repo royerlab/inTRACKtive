@@ -5,15 +5,13 @@ import { LoadingIndicator } from "@czi-sds/components";
 import { Box } from "@mui/material";
 
 interface SceneProps {
+    setCanvas: (canvas: PointCanvas) => void;
+    loading: boolean;
     initialCameraPosition?: THREE.Vector3;
     initialCameraTarget?: THREE.Vector3;
-    canvas: React.MutableRefObject<PointCanvas | null>;
-    loading: boolean;
 }
 
 export default function Scene(props: SceneProps) {
-    const canvas = props.canvas;
-
     // Use references here for two things:
     // * manage objects that should never change, even when the component re-renders
     // * avoid triggering re-renders when these *do* change
@@ -25,29 +23,33 @@ export default function Scene(props: SceneProps) {
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        canvas.current = new PointCanvas(renderWidth, renderHeight);
-        canvas.current!.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
+        const canvas = new PointCanvas(renderWidth, renderHeight);
+        canvas.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
+
+        // store the canvas in the parent component
+        // TODO: move this hook to the parent component?
+        props.setCanvas(canvas);
 
         // append renderer canvas
         const divCurrent = divRef.current;
-        const renderer = canvas.current!.renderer;
+        const renderer = canvas.renderer;
         divCurrent?.insertBefore(renderer.domElement, divCurrent.firstChild);
 
         // start animating - this keeps the scene rendering when controls change, etc.
-        canvas.current.animate();
+        canvas.animate();
 
         const handleWindowResize = () => {
             if (!divCurrent) return;
             const renderWidth = divCurrent.clientWidth;
             const renderHeight = divCurrent.clientHeight;
-            canvas.current?.setSize(renderWidth, renderHeight);
+            canvas.setSize(renderWidth, renderHeight);
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
 
         return () => {
             renderer.domElement.remove();
-            canvas.current?.dispose();
+            canvas.dispose();
         };
     }, []); // dependency array must be empty to run only on mount!
 

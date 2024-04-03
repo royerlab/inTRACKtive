@@ -10,9 +10,11 @@ test("tests work", () => {
 });
 
 test("render Scene", () => {
-    const canvasRef = {
-        current: new PointCanvas(800, 600),
+    let canvasState: PointCanvas | null = null;
+    const setCanvas = (canvas: PointCanvas) => {
+        canvasState = canvas;
     };
-    const { container } = render(<Scene canvas={canvasRef} loading={false} />);
+    const { container } = render(<Scene setCanvas={setCanvas} loading={false} />);
     expect(container).not.toBeNull();
+    expect(canvasState).not.toBeNull();
 });
