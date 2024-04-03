@@ -26,8 +26,9 @@ export default function Scene(props: SceneProps) {
     useEffect(() => {
         // initialize the canvas
         const canvas = new PointCanvas(renderWidth, renderHeight);
+        // TODO: pass these through directly to PointCanvas
         canvas.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
-        canvas.selection.callback = props.setSelectedPoints;
+        canvas.selection.selectionChanged = props.setSelectedPoints;
 
         // store the canvas in the parent component
         // TODO: move this hook to the parent component?

@@ -1,22 +1,27 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import {
+    PerspectiveCamera,
+    Scene,
+    WebGLRenderer,
+} from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
-
-interface SetSelectionCallback {
-    (selection: PointsCollection): void;
-}
 
 export class PointSelectionBoxHelper {
     canvas: HTMLCanvasElement;
     controls: OrbitControls;
     box: PointSelectionBox;
     helper: SelectionHelper;
-    callback: SetSelectionCallback | null = null;
+    selectionChanged: ((selection: PointsCollection) => void) | null = null;
     blocked: boolean = false;
 
-    constructor(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls) {
+    constructor(
+        scene: Scene,
+        renderer: WebGLRenderer,
+        camera: PerspectiveCamera,
+        controls: OrbitControls,
+    ) {
         this.controls = controls;
         this.canvas = renderer.domElement;
         this.helper = new SelectionHelper(renderer, "selectBox");
@@ -27,7 +32,7 @@ export class PointSelectionBoxHelper {
         this.canvas.addEventListener("pointercancel", this.onPointerCancel);
         this.canvas.addEventListener("pointerdown", this.onPointerDown);
 
-        // key listeners are added to the document because we don't want the
+        // Key listeners are added to the document because we don't want the
         // canvas to have to be selected prior to listening for them
         document.addEventListener("keydown", this.onKeyDown);
         document.addEventListener("keyup", this.onKeyUp);
@@ -84,8 +89,8 @@ export class PointSelectionBoxHelper {
     setSelectedPoints(selectedPoints: PointsCollection) {
         console.debug("setSelectedPoints: ", selectedPoints);
         this.box.collection = selectedPoints;
-        if (this.callback) {
-            this.callback(selectedPoints);
+        if (this.selectionChanged) {
+            this.selectionChanged(selectedPoints);
         }
     }
 
@@ -101,7 +106,13 @@ export class PointSelectionBoxHelper {
         const bottomRight = this.helper.pointBottomRight;
         const right = ((bottomRight.x - canvasRect.left) / canvasRect.width) * 2 - 1;
         const bottom = (-(bottomRight.y - canvasRect.top) / canvasRect.height) * 2 + 1;
-        console.debug("updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
+        console.debug(
+            "updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f",
+            top,
+            left,
+            bottom,
+            right,
+        );
 
         // TODO: check the z-value of these points
         this.box.startPoint.set(left, top, 0.5);
@@ -122,4 +133,4 @@ export class PointSelectionBoxHelper {
 
         this.helper.dispose();
     }
-}
+};
