@@ -14,7 +14,7 @@ export default function TrackControls(props: TrackControlsProps) {
     const trackLengthPct = numTimes ? (props.trackHighlightLength / 2 / numTimes) * 100 : 0;
 
     return (
-        <Stack spacing={4} sx={{ margin: "2em" }}>
+        <Stack spacing={4}>
             <label htmlFor="track-highlight-length-slider">
                 <h5>Track Highlights Length</h5>
             </label>

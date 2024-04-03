@@ -227,7 +227,7 @@ export default function App() {
                         <Divider orientation="vertical" flexItem />
                         <h2>ZEBRAHUB</h2>
                     </Box>
-                    <Box flexGrow={1} padding="1em">
+                    <Box flexGrow={1} padding="2em">
                         <TrackControls
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
