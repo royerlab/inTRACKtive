@@ -7,11 +7,10 @@ import Scene from "@/components/scene.tsx";
 import DataControls from "@/components/dataControls.tsx";
 import PlaybackControls from "@/components/playbackControls.tsx";
 
-import useSelectionBox from "@/hooks/useSelectionBox";
-
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -29,7 +28,7 @@ export default function App() {
     const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const { selectedPoints } = useSelectionBox(canvas);
+    const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
 
     // playback state
@@ -203,6 +202,7 @@ export default function App() {
             />
             <Scene
                 setCanvas={setCanvas}
+                setSelectedPoints={setSelectedPoints}
                 loading={loading}
                 initialCameraPosition={initialViewerState.cameraPosition}
                 initialCameraTarget={initialViewerState.cameraTarget}

@@ -22,6 +22,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
+import { PointSelectionBoxHelper } from "@/lib/PointSelectionBoxHelper";
 
 type Tracks = Map<number, Track>;
 
@@ -33,7 +34,9 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
+    selection: PointSelectionBoxHelper;
     tracks: Tracks = new Map();
+
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
@@ -82,6 +85,7 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
+        this.selection = new PointSelectionBoxHelper(this.scene, this.renderer, this.camera, this.controls);
     }
 
     // Use an arrow function so that each instance of the class is bound and
@@ -196,6 +200,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        this.selection.dispose();
         this.renderer.dispose();
         this.points.geometry.dispose();
         if (Array.isArray(this.points.material)) {

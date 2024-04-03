@@ -3,9 +3,11 @@ import { useEffect, useRef } from "react";
 import { PointCanvas } from "@/lib/PointCanvas";
 import { LoadingIndicator } from "@czi-sds/components";
 import { Box } from "@mui/material";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 interface SceneProps {
     setCanvas: (canvas: PointCanvas) => void;
+    setSelectedPoints: (selectedPoints: PointsCollection) => void;
     loading: boolean;
     initialCameraPosition?: THREE.Vector3;
     initialCameraTarget?: THREE.Vector3;
@@ -25,6 +27,7 @@ export default function Scene(props: SceneProps) {
         // initialize the canvas
         const canvas = new PointCanvas(renderWidth, renderHeight);
         canvas.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
+        canvas.selection.callback = props.setSelectedPoints;
 
         // store the canvas in the parent component
         // TODO: move this hook to the parent component?
