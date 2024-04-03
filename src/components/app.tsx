@@ -197,7 +197,6 @@ export default function App() {
                 trackManager={trackManager}
                 trackHighlightLength={trackHighlightLength}
                 setDataUrl={setDataUrl}
-                setTrackManager={setTrackManager}
                 setTrackHighlightLength={setTrackHighlightLength}
                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                 clearTracks={() => canvas?.removeAllTracks()}

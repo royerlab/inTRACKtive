@@ -8,7 +8,6 @@ interface DataControlsProps {
     trackManager: TrackManager | null;
     trackHighlightLength: number;
     setDataUrl: (dataUrl: string) => void;
-    setTrackManager: (trackManager: TrackManager) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
     copyShareableUrlToClipboard: () => void;
     clearTracks: () => void;
