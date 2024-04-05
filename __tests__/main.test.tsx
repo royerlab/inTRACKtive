@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { PointCanvas } from "../src/lib/PointCanvas.ts";
-import Scene from "../src/components/scene";
+import Scene from "../src/components/Scene";
 import React from "react";
 import { render } from "@testing-library/react";
 

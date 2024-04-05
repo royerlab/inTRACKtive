@@ -4,7 +4,7 @@ import { ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import { StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
 import { defaultTheme } from "@czi-sds/components";
 
-import App from "@/components/app.tsx";
+import App from "@/components/App.tsx";
 import "@/css/index.css";
 
 const domNode = document.getElementById("app")!;
