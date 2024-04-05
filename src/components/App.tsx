@@ -242,7 +242,7 @@ export default function App() {
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                            trackManager={trackManager}
+                            validTrackManager={trackManager !== null}
                         />
                     </Box>
                 </Box>

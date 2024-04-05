@@ -1,19 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Alert, Box, Popover, Snackbar, Stack, Typography } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import { fontBodyXs } from "czifui";
+import { Alert, Box, Popover, Snackbar, Stack, Typography, styled } from "@mui/material";
 
-import { Button, ButtonIcon, InputText } from "@czi-sds/components";
-
-import { TrackManager } from "@/lib/TrackManager";
+import { Button, ButtonIcon, InputText, fontBodyXs } from "@czi-sds/components";
 
 interface DataControlsProps {
     dataUrl: string;
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
-    trackManager: TrackManager | null; // TODO: remove this?
+    validTrackManager: boolean;
 }
 
 export default function DataControls(props: DataControlsProps) {
@@ -36,6 +32,21 @@ export default function DataControls(props: DataControlsProps) {
     const handleUrlPopoverClose = () => {
         setUrlPopoverAnchor(null);
     };
+
+    const handleDataUrlSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
+        if (urlInput) {
+            props.setDataUrl(urlInput.value);
+        }
+    };
+
+    // only close the popover if the URL gives a valid track manager
+    useEffect(() => {
+        if (props.validTrackManager && urlPopoverAnchor) {
+            setUrlPopoverAnchor(null);
+        }
+    }, [props.validTrackManager]);
 
     return (
         <Box
@@ -62,7 +73,7 @@ export default function DataControls(props: DataControlsProps) {
                 sdsIcon="share"
                 sdsSize="large"
                 sdsType="secondary"
-                disabled={!props.trackManager}
+                disabled={!props.validTrackManager}
                 onClick={copyShareableUrlToClipBoard}
             />
             <Snackbar
@@ -97,36 +108,42 @@ export default function DataControls(props: DataControlsProps) {
                     vertical: "bottom",
                     horizontal: "left",
                 }}
+                disableRestoreFocus // this is needed to autofocus the input when opening
             >
-                <Stack
-                    spacing={4}
-                    sx={{
-                        "padding": "1em",
-                        "width": "768px",
-                        "& > label": { fontSize: "0.83em", fontWeight: "bold" },
-                    }}
-                >
-                    <InputText
-                        id="url-input"
-                        label="Zarr URL"
-                        placeholder={props.initialDataUrl}
-                        defaultValue={props.initialDataUrl}
-                        onChange={(e) => props.setDataUrl(e.target.value)}
-                        fullWidth={true}
-                        intent={props.trackManager ? "default" : "error"}
-                    />
-                    <Note>
-                        <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
-                    </Note>
-                    <Stack direction="row" spacing={4}>
-                        <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
-                            Cancel
-                        </Button>
-                        <Button sdsStyle="square" sdsType="primary">
-                            Apply
-                        </Button>
+                <form onSubmit={handleDataUrlSubmit}>
+                    <Stack
+                        spacing={4}
+                        sx={{
+                            padding: "1em",
+                            width: "50vw",
+                        }}
+                    >
+                        <label htmlFor="data-url-input">
+                            <h5 style={{ margin: 0 }}>Zarr URL</h5>
+                        </label>
+                        <InputText
+                            id="data-url-input"
+                            autoFocus
+                            label="Zarr URL"
+                            hideLabel
+                            placeholder={props.initialDataUrl}
+                            defaultValue={props.dataUrl}
+                            fullWidth={true}
+                            intent={props.validTrackManager ? "default" : "error"}
+                        />
+                        <Note>
+                            <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
+                        </Note>
+                        <Stack direction="row" spacing={4}>
+                            <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
+                                Cancel
+                            </Button>
+                            <Button sdsStyle="square" sdsType="primary" type="submit">
+                                Apply
+                            </Button>
+                        </Stack>
                     </Stack>
-                </Stack>
+                </form>
             </Popover>
         </Box>
     );
