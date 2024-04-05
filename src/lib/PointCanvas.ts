@@ -82,10 +82,6 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
-
-        const cameraPosition: Vector3 = new Vector3(500, 500, -1250);
-        const cameraTarget: Vector3 = new Vector3(500, 500, 250);
-        this.setCameraProperties(cameraPosition, cameraTarget);
     }
 
     // Use an arrow function so that each instance of the class is bound and
