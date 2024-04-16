@@ -16,7 +16,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
             <ButtonIcon
-                sdsIcon="play"
+                icon="Play"
                 sdsSize="large"
                 sdsType="primary"
                 on={props.playing}
@@ -35,7 +35,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
             />
             {/* TODO: add control button groups - perhaps a separate component */}
             <ButtonIcon
-                sdsIcon="dna"
+                icon="DNA"
                 sdsSize="large"
                 sdsType="primary"
                 on={props.autoRotate}
