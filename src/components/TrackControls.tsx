@@ -1,5 +1,5 @@
 import { TrackManager } from "@/lib/TrackManager";
-import { Button, InputSlider, InputToggle } from "@czi-sds/components";
+import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
 
 interface TrackControlsProps {
@@ -10,7 +10,6 @@ interface TrackControlsProps {
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
-    clearTracks: () => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
@@ -60,9 +59,6 @@ export default function TrackControls(props: TrackControlsProps) {
                 }}
                 value={props.trackHighlightLength / 2}
             />
-            <Button sdsStyle="minimal" sdsType="primary" disabled={!props.trackManager} onClick={props.clearTracks}>
-                Clear Tracks
-            </Button>
         </Stack>
     );
 }

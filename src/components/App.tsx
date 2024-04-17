@@ -4,6 +4,7 @@ import "@/css/app.css";
 import { Box, Divider, Drawer } from "@mui/material";
 
 import Scene from "@/components/Scene";
+import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import TrackControls from "@/components/TrackControls";
 import PlaybackControls from "@/components/PlaybackControls";
@@ -33,6 +34,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [showTracks, setShowTracks] = useState(true);
     const [showTrackHighlights, setShowTrackHighlights] = useState(true);
+    const [numCells, setNumCells] = useState(0);
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
@@ -163,6 +165,7 @@ export default function App() {
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
                     const newTrack = canvas.addTrack(l, pos, ids);
                     newTrack?.updateHighlightLine(minTime, maxTime);
+                    setNumCells((numCells) => numCells + 1);
                 }
             }
         };
@@ -232,7 +235,18 @@ export default function App() {
                         <Divider orientation="vertical" flexItem />
                         <h2>ZEBRAHUB</h2>
                     </Box>
-                    <Box flexGrow={1} padding="2em">
+                    <Box flexGrow={0} padding="2em">
+                        <CellControls
+                            numCells={numCells}
+                            trackManager={trackManager}
+                            clearTracks={() => {
+                                canvas?.removeAllTracks();
+                                setNumCells(0);
+                            }}
+                        />
+                    </Box>
+                    <Divider />
+                    <Box flexGrow={4} padding="2em">
                         <TrackControls
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
@@ -241,7 +255,6 @@ export default function App() {
                             showTrackHighlights={showTrackHighlights}
                             setShowTrackHighlights={setShowTrackHighlights}
                             setTrackHighlightLength={setTrackHighlightLength}
-                            clearTracks={() => canvas?.removeAllTracks()}
                         />
                     </Box>
                     <Divider />
