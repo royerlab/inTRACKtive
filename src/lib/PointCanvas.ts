@@ -34,6 +34,10 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
+
+    showTracks = true;
+    showTrackHighlights = true;
+
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
@@ -166,6 +170,8 @@ export class PointCanvas {
             return null;
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
+        track.material.showtrack = this.showTracks;
+        track.material.showhighlight = this.showTrackHighlights;
         this.tracks.set(trackID, track);
         this.scene.add(track);
         return track;
@@ -173,7 +179,7 @@ export class PointCanvas {
 
     updateAllTrackHighlights(minTime: number, maxTime: number) {
         for (const track of this.tracks.values()) {
-            track.updateHighlightLine(minTime, maxTime);
+            track.updateHighlightLine(minTime, maxTime, this.showTracks, this.showTrackHighlights);
         }
     }
 

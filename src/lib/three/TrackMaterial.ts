@@ -58,6 +58,7 @@ const trackUniforms = {
     // the following uniforms are added to control the highlight
     highlightwidth: { value: 1.5 },
     highlightLUT: { value: highlightLUTTexture },
+    showhighlight: { value: true },
     minTime: { value: 0 },
     maxTime: { value: -1 },
     // this was kept from the original LineMaterial code
@@ -77,6 +78,7 @@ ShaderLib["track"] = {
         // TRACK SPECIFIC UNIFORMS
         uniform float trackwidth;
         uniform float highlightwidth;
+        uniform bool showhighlight;
         uniform float minTime;
         uniform float maxTime;
 
@@ -175,7 +177,7 @@ ShaderLib["track"] = {
             // TRACK SPECIFIC CODE ADDED
             // UPDATE THE WIDTH IF IN THE HIGHLIGHT
             float w = trackwidth;
-            if (vTime > minTime && vTime < maxTime) {
+            if (showhighlight && vTime > minTime && vTime < maxTime) {
                 w = highlightwidth;
             }
 
@@ -229,6 +231,7 @@ ShaderLib["track"] = {
         uniform float trackwidth; // this is just linewidth renamed
         uniform bool showtrack;
         uniform float highlightwidth;
+        uniform bool showhighlight;
         uniform sampler2D highlightLUT;
         uniform float minTime;
         uniform float maxTime;
@@ -284,7 +287,7 @@ ShaderLib["track"] = {
             // TRACK SPECIFIC CODE ADDED
             // UPDATE THE WIDTH IF IN THE HIGHLIGHT
             float w = trackwidth;
-            if (vTime > minTime && vTime < maxTime) {
+            if (showhighlight && vTime > minTime && vTime < maxTime) {
                 w = highlightwidth;
             }
 
@@ -323,7 +326,7 @@ ShaderLib["track"] = {
 
             // TRACK SPECIFIC CODE ADDED
             // SET THE HIGHLIGHT COLOR, SAMPLED FROM THE LUT
-            if (vTime > minTime && vTime < maxTime) {
+            if (showhighlight && vTime > minTime && vTime < maxTime) {
                 float t = (vTime - minTime) / (maxTime - minTime);
                 gl_FragColor.rgb = texture2D( highlightLUT, vec2(t, 0.0) ).rgb;
                 gl_FragColor.a = 0.9;
@@ -345,6 +348,7 @@ interface TrackMaterialParameters extends ShaderMaterialParameters {
     color?: number;
     trackwidth?: number;
     showtrack?: boolean;
+    showhighlight?: boolean;
     highlightwidth?: number;
     highlightLUT?: DataTexture;
     minTime?: number;
@@ -437,6 +441,15 @@ class TrackMaterial extends ShaderMaterial {
     set showtrack(value) {
         if (!this.uniforms.showtrack) return;
         this.uniforms.showtrack.value = value;
+    }
+
+    get showhighlight() {
+        return this.uniforms.showhighlight.value;
+    }
+
+    set showhighlight(value) {
+        if (!this.uniforms.showhighlight) return;
+        this.uniforms.showhighlight.value = value;
     }
 
     get resolution() {

@@ -31,6 +31,8 @@ export default function App() {
     const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
     const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showTracks, setShowTracks] = useState(true);
+    const [showTrackHighlights, setShowTrackHighlights] = useState(true);
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
@@ -131,11 +133,14 @@ export default function App() {
     }, [trackManager, curTime]);
 
     useEffect(() => {
+        if (!canvas) return;
         // update the track highlights
+        canvas.showTracks = showTracks;
+        canvas.showTrackHighlights = showTrackHighlights;
         const minTime = curTime - trackHighlightLength / 2;
         const maxTime = curTime + trackHighlightLength / 2;
-        canvas?.updateAllTrackHighlights(minTime, maxTime);
-    }, [curTime, trackHighlightLength]);
+        canvas.updateAllTrackHighlights(minTime, maxTime);
+    }, [curTime, trackHighlightLength, showTracks, showTrackHighlights]);
 
     useEffect(() => {
         const pointsID = canvas?.points.id || -1;
@@ -231,6 +236,10 @@ export default function App() {
                         <TrackControls
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
+                            showTracks={showTracks}
+                            setShowTracks={setShowTracks}
+                            showTrackHighlights={showTrackHighlights}
+                            setShowTrackHighlights={setShowTrackHighlights}
                             setTrackHighlightLength={setTrackHighlightLength}
                             clearTracks={() => canvas?.removeAllTracks()}
                         />
