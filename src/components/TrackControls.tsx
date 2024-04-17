@@ -2,6 +2,8 @@ import { TrackManager } from "@/lib/TrackManager";
 import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
 
+import { ControlLabel } from "@/components/Styled";
+
 interface TrackControlsProps {
     trackManager: TrackManager | null;
     trackHighlightLength: number;
@@ -16,10 +18,10 @@ export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
 
     return (
-        <Stack spacing={4}>
+        <Stack spacing={"2em"}>
             <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
                 <label htmlFor="show-tracks">
-                    <h5>Tracks</h5>
+                    <ControlLabel>Tracks</ControlLabel>
                 </label>
                 <InputToggle
                     id="show-tracks"
@@ -31,7 +33,7 @@ export default function TrackControls(props: TrackControlsProps) {
             </Box>
             <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
                 <label htmlFor="show-track-highlights">
-                    <h5>Track Highlights</h5>
+                    <ControlLabel>Track Highlights</ControlLabel>
                 </label>
                 <Box>
                     <InputToggle
@@ -44,7 +46,7 @@ export default function TrackControls(props: TrackControlsProps) {
                 </Box>
             </Box>
             <label htmlFor="track-highlight-length-slider">
-                <h5>Track Highlight Length</h5>
+                <ControlLabel>Track Highlight Length</ControlLabel>
             </label>
             <InputSlider
                 id="track-highlight-length-slider"

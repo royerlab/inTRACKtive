@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { Alert, Box, Popover, Snackbar, Stack, Typography, styled } from "@mui/material";
+import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
 
-import { Button, ButtonIcon, InputText, fontBodyXs } from "@czi-sds/components";
+import { Button, ButtonIcon, InputText } from "@czi-sds/components";
+import { ControlLabel, Note } from "@/components/Styled";
 
 interface DataControlsProps {
     dataUrl: string;
@@ -112,14 +113,14 @@ export default function DataControls(props: DataControlsProps) {
             >
                 <form onSubmit={handleDataUrlSubmit}>
                     <Stack
-                        spacing={4}
+                        spacing={"2em"}
                         sx={{
                             padding: "1em",
                             width: "50vw",
                         }}
                     >
                         <label htmlFor="data-url-input">
-                            <h5 style={{ margin: 0 }}>Zarr URL</h5>
+                            <ControlLabel>Zarr URL</ControlLabel>
                         </label>
                         <InputText
                             id="data-url-input"
@@ -134,7 +135,7 @@ export default function DataControls(props: DataControlsProps) {
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
                         </Note>
-                        <Stack direction="row" spacing={4}>
+                        <Stack direction="row" spacing={"2em"}>
                             <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
                                 Cancel
                             </Button>
@@ -148,7 +149,3 @@ export default function DataControls(props: DataControlsProps) {
         </Box>
     );
 }
-
-const Note = styled(Typography)`
-    ${fontBodyXs}
-`;
