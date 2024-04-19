@@ -32,7 +32,7 @@ export default function App() {
     const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const { selectedPoints } = useSelectionBox(canvas);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
 
     // playback state
@@ -234,7 +234,10 @@ export default function App() {
                             trackHighlightLength={trackHighlightLength}
                             setTrackHighlightLength={setTrackHighlightLength}
                             // This currently removes the tracks visually, but the cells are still selected.  Is this intentional?
-                            clearTracks={() => canvas?.removeAllTracks()}
+                            clearTracks={() => {
+                                setSelectedPoints(undefined);
+                                return canvas?.removeAllTracks();
+                            }}
                         />
                     </Box>
                     <Divider />
