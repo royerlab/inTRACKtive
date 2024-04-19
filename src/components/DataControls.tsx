@@ -61,7 +61,7 @@ export default function DataControls(props: DataControlsProps) {
         >
             {/* TODO: make this do something */}
             <ButtonIcon
-                sdsIcon="infoCircle"
+                icon="InfoCircle"
                 sdsSize="large"
                 sdsType="secondary"
                 onClick={() => {
@@ -70,7 +70,7 @@ export default function DataControls(props: DataControlsProps) {
             />
 
             <ButtonIcon
-                sdsIcon="share"
+                icon="Share"
                 sdsSize="large"
                 sdsType="secondary"
                 disabled={!props.validTrackManager}
@@ -95,7 +95,7 @@ export default function DataControls(props: DataControlsProps) {
                 </Alert>
             </Snackbar>
 
-            <ButtonIcon sdsIcon="globeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+            <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
             <Popover
                 open={Boolean(urlPopoverAnchor)}
                 anchorEl={urlPopoverAnchor}
