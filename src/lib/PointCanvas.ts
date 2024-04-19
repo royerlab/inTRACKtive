@@ -163,15 +163,20 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
+    addTrack(
+        trackID: number,
+        positions: Float32Array,
+        ids: Int32Array,
+        minTime: number,
+        maxTime: number,
+    ): Track | null {
         if (this.tracks.has(trackID)) {
             // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        track.material.showtrack = this.showTracks;
-        track.material.showhighlight = this.showTrackHighlights;
+        track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
         this.tracks.set(trackID, track);
         this.scene.add(track);
         return track;
@@ -179,7 +184,7 @@ export class PointCanvas {
 
     updateAllTrackHighlights(minTime: number, maxTime: number) {
         for (const track of this.tracks.values()) {
-            track.updateHighlightLine(minTime, maxTime, this.showTracks, this.showTrackHighlights);
+            track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
         }
     }
 
@@ -203,6 +208,7 @@ export class PointCanvas {
 
     dispose() {
         this.renderer.dispose();
+        this.removeAllTracks();
         this.points.geometry.dispose();
         if (Array.isArray(this.points.material)) {
             for (const material of this.points.material) {

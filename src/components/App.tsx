@@ -163,8 +163,7 @@ export default function App() {
                     if (adding.has(l) || canvas.tracks.has(l)) continue;
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    const newTrack = canvas.addTrack(l, pos, ids);
-                    newTrack?.updateHighlightLine(minTime, maxTime);
+                    canvas.addTrack(l, pos, ids, minTime, maxTime);
                     setNumCells((numCells) => numCells + 1);
                 }
             }

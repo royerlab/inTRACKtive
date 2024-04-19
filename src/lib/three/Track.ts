@@ -47,11 +47,11 @@ export class Track extends Mesh {
         return track;
     }
 
-    updateHighlightLine(minTime: number, maxTime: number, showTrack?: boolean, showHighlight?: boolean) {
+    updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
+        this.material.showtrack = showTrack;
+        this.material.showhighlight = showHighlight;
         this.material.minTime = minTime;
         this.material.maxTime = maxTime;
-        if (showTrack !== undefined) this.material.showtrack = showTrack;
-        if (showHighlight !== undefined) this.material.showhighlight = showHighlight;
         this.material.needsUpdate = true;
     }
 
