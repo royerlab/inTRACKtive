@@ -6,6 +6,7 @@ import {
     Float32BufferAttribute,
     FogExp2,
     Group,
+    Matrix3,
     Mesh,
     MeshBasicMaterial,
     PerspectiveCamera,
@@ -191,13 +192,16 @@ export class PointCanvas {
     };
 
     pointerUp = (event: MouseEvent) => {
-        if (!event.shiftKey) {
+        if (!event.shiftKey || !this.cursor.visible) {
             return;
         }
         // return list of points inside cursor sphere
-        const radius =
-            ((this.cursor.children[1] as Mesh).geometry as SphereGeometry).parameters.radius * this.cursor.scale.x;
-        console.log("radius:", radius);
+        const radius = ((this.cursor.children[1] as Mesh).geometry as SphereGeometry).parameters.radius;
+        const normalMatrix = new Matrix3();
+        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
+        normalMatrix.invert();
+        console.log(this.cursor);
+        console.log("matrix", normalMatrix);
         const center = this.cursor.position;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -207,7 +211,9 @@ export class PointCanvas {
             const x = positions.getX(i);
             const y = positions.getY(i);
             const z = positions.getZ(i);
-            if (center.distanceTo(new Vector3(x, y, z)) < radius) {
+            const vecToCenter = new Vector3(x, y, z).sub(center);
+            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
+            if (scaledVecToCenter.length() < radius) {
                 selected.push(i);
             }
         }
