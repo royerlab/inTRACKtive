@@ -24,6 +24,7 @@ export class Track extends Mesh {
             trackwidth: 0.3,
             highlightwidth: 2.0,
             showtrack: true,
+            showhighlight: true,
             transparent: true,
             opacity: 0.5,
         });
@@ -46,7 +47,9 @@ export class Track extends Mesh {
         return track;
     }
 
-    updateHighlightLine(minTime: number, maxTime: number) {
+    updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
+        this.material.showtrack = showTrack;
+        this.material.showhighlight = showHighlight;
         this.material.minTime = minTime;
         this.material.maxTime = maxTime;
         this.material.needsUpdate = true;

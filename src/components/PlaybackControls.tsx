@@ -32,6 +32,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 valueLabelDisplay="on"
                 onChange={(_, value) => props.setCurTime(value as number)}
                 value={props.curTime}
+                sx={{ alignSelf: "flex-end" }}
             />
             {/* TODO: add control button groups - perhaps a separate component */}
             <ButtonIcon
