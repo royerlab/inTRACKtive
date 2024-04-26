@@ -181,15 +181,8 @@ export default function App() {
 
     useEffect(() => {
         const pointsID = canvas?.points.id || -1;
-        // if the points are deselected, reset the point brightness
-        if ((!selectedPoints || !selectedPoints.has(pointsID)) && backgroundPointBrightness !== 1) {
-            setBackgroundPointBrightness(1);
-            // set state is async, so we return here and it will retrigger this useEffect on the next cycle
-            return;
-        }
-        // When backgroundPointBrightness changes, update the point colors
         canvas?.fadeBackgroundPoints(backgroundPointBrightness, selectedPoints?.get(pointsID) || []);
-    }, [backgroundPointBrightness, selectedPoints]);
+    }, [backgroundPointBrightness, canvas, selectedPoints]);
 
     // TODO: maybe can be done without useEffect?
     // could be a prop into the Scene component
@@ -253,6 +246,7 @@ export default function App() {
                             clearTracks={() => {
                                 canvas?.removeAllTracks();
                                 setNumCells(0);
+                                setBackgroundPointBrightness(1);
                             }}
                             numCells={numCells}
                             backgroundPointBrightness={backgroundPointBrightness}
