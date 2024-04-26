@@ -38,6 +38,7 @@ export default function App() {
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
+    const [backgroundPointBrightness, setBackgroundPointBrightness] = useState(1);
 
     // playback state
     const [autoRotate, setAutoRotate] = useState(false);
@@ -171,11 +172,24 @@ export default function App() {
 
         const selected = selectedPoints.get(pointsID) || [];
         canvas?.highlightPoints(selected);
+        setBackgroundPointBrightness(0.8);
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
         Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
+
+    useEffect(() => {
+        const pointsID = canvas?.points.id || -1;
+        // if the points are deselected, reset the point brightness
+        if ((!selectedPoints || !selectedPoints.has(pointsID)) && backgroundPointBrightness !== 1) {
+            setBackgroundPointBrightness(1);
+            // set state is async, so we return here and it will retrigger this useEffect on the next cycle
+            return;
+        }
+        // When backgroundPointBrightness changes, update the point colors
+        canvas?.fadeBackgroundPoints(backgroundPointBrightness, selectedPoints?.get(pointsID) || []);
+    }, [backgroundPointBrightness, selectedPoints]);
 
     // TODO: maybe can be done without useEffect?
     // could be a prop into the Scene component
@@ -236,12 +250,14 @@ export default function App() {
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
-                            numCells={numCells}
-                            trackManager={trackManager}
                             clearTracks={() => {
                                 canvas?.removeAllTracks();
                                 setNumCells(0);
                             }}
+                            numCells={numCells}
+                            backgroundPointBrightness={backgroundPointBrightness}
+                            trackManager={trackManager}
+                            setBackgroundPointBrightness={setBackgroundPointBrightness}
                         />
                     </Box>
                     <Divider />

@@ -112,6 +112,24 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
+    // This function changes the color of any points that are not is the selectedPoints array
+    fadeBackgroundPoints(fadePercentage: number, selectedPoints: number[]) {
+        if (!this.points.geometry.hasAttribute("color")) {
+            return;
+        }
+
+        const greenAndBlueValue = 0.8 * fadePercentage;
+        const colorAttribute = this.points.geometry.getAttribute("color");
+        const color = new Color();
+        color.setRGB(0, greenAndBlueValue, greenAndBlueValue, SRGBColorSpace);
+        for (let i = 0; i < colorAttribute.count; i++) {
+            if (!selectedPoints.includes(i)) {
+                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            }
+        }
+        colorAttribute.needsUpdate = true;
+    }
+
     resetPointColors() {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
