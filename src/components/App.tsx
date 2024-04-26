@@ -6,7 +6,6 @@ import { Box, Divider, Drawer } from "@mui/material";
 import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
-import TrackControls from "@/components/TrackControls";
 import PlaybackControls from "@/components/PlaybackControls";
 
 import useSelectionBox from "@/hooks/useSelectionBox";
@@ -14,6 +13,7 @@ import useSelectionBox from "@/hooks/useSelectionBox";
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
+import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -246,7 +246,8 @@ export default function App() {
                     </Box>
                     <Divider />
                     <Box flexGrow={4} padding="2em">
-                        <TrackControls
+                        <LeftSidebarWrapper
+                            hasTracks={!!canvas?.tracks?.size}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             showTracks={showTracks}
