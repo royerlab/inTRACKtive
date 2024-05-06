@@ -36,7 +36,7 @@ export default function App() {
     const [showTrackHighlights, setShowTrackHighlights] = useState(true);
     const [numSelectedCells, setNumSelectedCells] = useState(0);
 
-    const { selectedPoints } = useSelectionBox(canvas);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [pointBrightness, setPointBrightness] = useState(1);
 
@@ -242,6 +242,7 @@ export default function App() {
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
+                            canvas={canvas}
                             clearTracks={() => {
                                 // reset canvas state
                                 canvas?.removeAllTracks();
@@ -294,6 +295,7 @@ export default function App() {
                     loading={loading}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
+                    setSelectedPoints={setSelectedPoints}
                 />
                 <Box flexGrow={0} padding="1em">
                     <PlaybackControls

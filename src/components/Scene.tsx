@@ -3,12 +3,14 @@ import { useEffect, useRef } from "react";
 import { PointCanvas } from "@/lib/PointCanvas";
 import { LoadingIndicator } from "@czi-sds/components";
 import { Box } from "@mui/material";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 interface SceneProps {
     setCanvas: (canvas: PointCanvas) => void;
     loading: boolean;
     initialCameraPosition?: THREE.Vector3;
     initialCameraTarget?: THREE.Vector3;
+    setSelectedPoints: (points: PointsCollection) => void;
 }
 
 export default function Scene(props: SceneProps) {
@@ -23,7 +25,7 @@ export default function Scene(props: SceneProps) {
     // this requires keeping the dependency array empty
     useEffect(() => {
         // initialize the canvas
-        const canvas = new PointCanvas(renderWidth, renderHeight);
+        const canvas = new PointCanvas(renderWidth, renderHeight, props.setSelectedPoints);
         canvas.setCameraProperties(props.initialCameraPosition, props.initialCameraTarget);
 
         // store the canvas in the parent component

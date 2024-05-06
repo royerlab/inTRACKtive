@@ -45,6 +45,7 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
+    selectionMode: string = "box";
 
     showTracks = true;
     showTrackHighlights = true;
@@ -126,16 +127,37 @@ export class PointCanvas {
         this.cursorControl.addEventListener("dragging-changed", dragingChanged);
         this.scene.add(this.cursor);
         this.cursorControl.attach(this.cursor);
-
-        this.cursorControl.enabled = false;
-        this.cursorControl.visible = false;
         this.scene.add(this.cursorControl);
+
+        this.setSelectionMode("box");
 
         this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
         this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
         this.renderer.domElement.addEventListener("wheel", this.mouseWheel);
         document.addEventListener("keydown", this.keyDown);
         document.addEventListener("keyup", this.keyUp);
+    }
+
+    setSelectionMode(mode: string) {
+        console.log("setSelectionMode", mode);
+        if (mode === "box") {
+            this.cursor.visible = false;
+            this.cursorControl.visible = false;
+            this.cursorControl.enabled = false;
+            this.cursorLock = true;
+        } else {
+            this.cursor.visible = true;
+            if (mode === "spherical-cursor") {
+                this.cursorControl.visible = false;
+                this.cursorControl.enabled = false;
+                this.cursorLock = false;
+            } else if (mode === "sphere") {
+                this.cursorControl.visible = true;
+                this.cursorControl.enabled = true;
+                this.cursorLock = true;
+            }
+        }
+        this.selectionMode = mode;
     }
 
     keyDown = (event: KeyboardEvent) => {
@@ -177,6 +199,7 @@ export class PointCanvas {
     mouseWheel = (event: WheelEvent) => {
         if (event.ctrlKey) {
             console.log("ctrlKey", event);
+            event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
         }
     };
