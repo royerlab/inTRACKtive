@@ -6,8 +6,8 @@ import { InputSlider } from "@czi-sds/components";
 
 interface CellControlsProps {
     clearTracks: () => void;
-    numCells?: number;
     backgroundPointBrightness: number;
+    numSelectedCells?: number;
     trackManager: TrackManager | null;
     setBackgroundPointBrightness: (value: number) => void;
 }
@@ -23,7 +23,7 @@ export default function CellControls(props: CellControlsProps) {
                     </SmallCapsButton>
                 </Box>
                 <FontS>
-                    <strong>{props.numCells ?? 0}</strong> cells selected
+                    <strong>{props.numSelectedCells ?? 0}</strong> cells selected
                 </FontS>
             </Stack>
             <label htmlFor="points-brightness-slider">
@@ -32,7 +32,7 @@ export default function CellControls(props: CellControlsProps) {
             <InputSlider
                 id="points-brightness-slider"
                 aria-labelledby="input-slider-points-brightness-slider"
-                disabled={!props.numCells}
+                disabled={!props.numSelectedCells}
                 min={0}
                 max={100}
                 valueLabelDisplay="on"
