@@ -112,7 +112,7 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    // This function changes the color of any points that are not in the selectedPoints array.
+    // This function changes the color of the points according to the point brightness slider.
     // The fadePercentage should be in [0, 1].
     fadePoints(fadePercentage: number) {
         if (!this.points.geometry.hasAttribute("color")) {
