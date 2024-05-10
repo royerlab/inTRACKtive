@@ -6,10 +6,10 @@ import { InputSlider } from "@czi-sds/components";
 
 interface CellControlsProps {
     clearTracks: () => void;
-    backgroundPointBrightness: number;
+    pointBrightness: number;
     numSelectedCells?: number;
     trackManager: TrackManager | null;
-    setBackgroundPointBrightness: (value: number) => void;
+    setPointBrightness: (value: number) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -27,7 +27,7 @@ export default function CellControls(props: CellControlsProps) {
                 </FontS>
             </Stack>
             <label htmlFor="points-brightness-slider">
-                <ControlLabel id="input-slider-points-brightness-slider">Background Point Brightness</ControlLabel>
+                <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
             </label>
             <InputSlider
                 id="points-brightness-slider"
@@ -38,9 +38,9 @@ export default function CellControls(props: CellControlsProps) {
                 valueLabelDisplay="on"
                 valueLabelFormat={(value) => `${Math.floor(value)}%`}
                 onChange={(_, value) => {
-                    props.setBackgroundPointBrightness((value as number) * 0.01);
+                    props.setPointBrightness((value as number) * 0.01);
                 }}
-                value={props.backgroundPointBrightness * 100}
+                value={props.pointBrightness * 100}
             />
         </Stack>
     );

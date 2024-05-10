@@ -114,7 +114,7 @@ export class PointCanvas {
 
     // This function changes the color of any points that are not in the selectedPoints array.
     // The fadePercentage should be in [0, 1].
-    fadeBackgroundPoints(fadePercentage: number, selectedPoints: number[]) {
+    fadePoints(fadePercentage: number) {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
@@ -124,19 +124,19 @@ export class PointCanvas {
         const color = new Color();
         color.setRGB(0, greenAndBlueValue, greenAndBlueValue, SRGBColorSpace);
         for (let i = 0; i < colorAttribute.count; i++) {
-            if (!selectedPoints.includes(i)) {
-                colorAttribute.setXYZ(i, color.r, color.g, color.b);
-            }
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
         colorAttribute.needsUpdate = true;
     }
 
-    resetPointColors() {
+    // The fadePercentage should be in [0, 1]. This argument is optional and it does not need to be
+    // initialized by initPointsGeometry or reset when clearing tracks.
+    resetPointColors(fadePercentage: number = 1.0) {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.setRGB(0.0, 0.8 * fadePercentage, 0.8 * fadePercentage, SRGBColorSpace);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
