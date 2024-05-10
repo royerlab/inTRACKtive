@@ -6,7 +6,6 @@ import { Box, Divider, Drawer } from "@mui/material";
 import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
-import TrackControls from "@/components/TrackControls";
 import PlaybackControls from "@/components/PlaybackControls";
 
 import useSelectionBox from "@/hooks/useSelectionBox";
@@ -14,6 +13,7 @@ import useSelectionBox from "@/hooks/useSelectionBox";
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
+import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -34,7 +34,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [showTracks, setShowTracks] = useState(true);
     const [showTrackHighlights, setShowTrackHighlights] = useState(true);
-    const [numCells, setNumCells] = useState(0);
+    const [numSelectedCells, setNumSelectedCells] = useState(0);
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
@@ -164,7 +164,7 @@ export default function App() {
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
                     canvas.addTrack(l, pos, ids, minTime, maxTime);
-                    setNumCells((numCells) => numCells + 1);
+                    setNumSelectedCells((numSelectedCells) => numSelectedCells + 1);
                 }
             }
         };
@@ -236,17 +236,18 @@ export default function App() {
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
-                            numCells={numCells}
+                            numSelectedCells={numSelectedCells}
                             trackManager={trackManager}
                             clearTracks={() => {
                                 canvas?.removeAllTracks();
-                                setNumCells(0);
+                                setNumSelectedCells(0);
                             }}
                         />
                     </Box>
                     <Divider />
                     <Box flexGrow={4} padding="2em">
-                        <TrackControls
+                        <LeftSidebarWrapper
+                            hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             showTracks={showTracks}

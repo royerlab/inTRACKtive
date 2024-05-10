@@ -4,7 +4,7 @@ import { TrackManager } from "@/lib/TrackManager";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
 interface CellControlsProps {
-    numCells?: number;
+    numSelectedCells?: number;
     trackManager: TrackManager | null;
     clearTracks: () => void;
 }
@@ -20,7 +20,7 @@ export default function CellControls(props: CellControlsProps) {
                     </SmallCapsButton>
                 </Box>
                 <FontS>
-                    <strong>{props.numCells ?? 0}</strong> cells selected
+                    <strong>{props.numSelectedCells ?? 0}</strong> cells selected
                 </FontS>
             </Stack>
         </Stack>
