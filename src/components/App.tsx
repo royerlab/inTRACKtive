@@ -34,7 +34,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [showTracks, setShowTracks] = useState(true);
     const [showTrackHighlights, setShowTrackHighlights] = useState(true);
-    const [numCells, setNumCells] = useState(0);
+    const [numSelectedCells, setNumSelectedCells] = useState(0);
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
@@ -164,7 +164,7 @@ export default function App() {
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
                     canvas.addTrack(l, pos, ids, minTime, maxTime);
-                    setNumCells((numCells) => numCells + 1);
+                    setNumSelectedCells((numSelectedCells) => numSelectedCells + 1);
                 }
             }
         };
@@ -236,18 +236,18 @@ export default function App() {
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
-                            numCells={numCells}
+                            numSelectedCells={numSelectedCells}
                             trackManager={trackManager}
                             clearTracks={() => {
                                 canvas?.removeAllTracks();
-                                setNumCells(0);
+                                setNumSelectedCells(0);
                             }}
                         />
                     </Box>
                     <Divider />
                     <Box flexGrow={4} padding="2em">
                         <LeftSidebarWrapper
-                            hasTracks={!!canvas?.tracks?.size}
+                            hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             showTracks={showTracks}
