@@ -38,6 +38,7 @@ export default function App() {
 
     const { selectedPoints } = useSelectionBox(canvas);
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
+    const [pointBrightness, setPointBrightness] = useState(1);
 
     // playback state
     const [autoRotate, setAutoRotate] = useState(false);
@@ -113,7 +114,7 @@ export default function App() {
                 setTimeout(() => setLoading(false), 250);
                 setLoading(false);
                 canvas.setPointsPositions(data);
-                canvas.resetPointColors();
+                canvas.resetPointColors(pointBrightness);
             };
             getPoints(canvas, curTime);
         } else {
@@ -171,11 +172,16 @@ export default function App() {
 
         const selected = selectedPoints.get(pointsID) || [];
         canvas?.highlightPoints(selected);
+        setPointBrightness(0.8);
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
         Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
+
+    useEffect(() => {
+        canvas?.fadePoints(pointBrightness);
+    }, [pointBrightness]);
 
     // TODO: maybe can be done without useEffect?
     // could be a prop into the Scene component
@@ -236,12 +242,17 @@ export default function App() {
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
+                            clearTracks={() => {
+                                // reset canvas state
+                                canvas?.removeAllTracks();
+                                // reset component state
+                                setNumSelectedCells(0);
+                                setPointBrightness(1);
+                            }}
                             numSelectedCells={numSelectedCells}
                             trackManager={trackManager}
-                            clearTracks={() => {
-                                canvas?.removeAllTracks();
-                                setNumSelectedCells(0);
-                            }}
+                            pointBrightness={pointBrightness}
+                            setPointBrightness={setPointBrightness}
                         />
                     </Box>
                     <Divider />
