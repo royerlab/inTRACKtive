@@ -58,7 +58,7 @@ export class PointCanvas {
 
     pointer = new Vector2(0, 0);
     cursor = new Group();
-    cursorLock = false;
+    cursorLock = true;
     cursorControl: TransformControls;
 
     constructor(width: number, height: number, setSelectedPoints: (points: PointsCollection) => void) {
@@ -150,7 +150,7 @@ export class PointCanvas {
             if (mode === "spherical-cursor") {
                 this.cursorControl.visible = false;
                 this.cursorControl.enabled = false;
-                this.cursorLock = false;
+                this.cursorLock = true;
             } else if (mode === "sphere") {
                 this.cursorControl.visible = true;
                 this.cursorControl.enabled = true;
@@ -165,7 +165,7 @@ export class PointCanvas {
             this.controls.enabled = false;
         }
         if (event.key === " ") {
-            this.cursorLock = true;
+            this.cursorLock = false;
         }
     };
 
@@ -174,7 +174,7 @@ export class PointCanvas {
             this.controls.enabled = true;
         }
         if (event.key === " ") {
-            this.cursorLock = false;
+            this.cursorLock = true;
         }
         if (event.key === "Escape") {
             this.cursorControl.enabled = !this.cursorControl.enabled;

@@ -11,6 +11,7 @@ interface LeftSidebarWrapperProps {
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
+    selectionMode: string;
 }
 
 export default function LeftSidebarWrapper({
@@ -22,6 +23,7 @@ export default function LeftSidebarWrapper({
     showTrackHighlights,
     setShowTrackHighlights,
     setTrackHighlightLength,
+    selectionMode,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -36,7 +38,7 @@ export default function LeftSidebarWrapper({
                     setTrackHighlightLength={setTrackHighlightLength}
                 />
             ) : (
-                <ControlInstructions />
+                <ControlInstructions selectionMode={selectionMode} />
             )}
         </>
     );

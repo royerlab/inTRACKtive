@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { Box, Stack } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
@@ -9,15 +7,16 @@ import { PointCanvas } from "@/lib/PointCanvas";
 
 interface CellControlsProps {
     canvas: PointCanvas | null;
-    clearTracks: () => void;
     numSelectedCells?: number;
+    setNumSelectedCells: (value: number) => void;
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
+    selectionMode: string;
+    setSelectionMode: (value: string) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
-    const [selectionMode, setSelectionMode] = useState("box");
     const buttonDefinition: SingleButtonDefinition[] = [
         { icon: "Cube", tooltipText: "Box", value: "box" },
         { icon: "Starburst", tooltipText: "Spherical cursor", value: "spherical-cursor" },
@@ -28,7 +27,15 @@ export default function CellControls(props: CellControlsProps) {
         <Stack spacing="1em">
             <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
                 <ControlLabel>Selected Cells</ControlLabel>
-                <SmallCapsButton disabled={!props.trackManager} onClick={props.clearTracks}>
+                <SmallCapsButton
+                    disabled={!props.trackManager}
+                    onClick={() => {
+                        props.canvas?.removeAllTracks();
+                        // reset component state
+                        props.setNumSelectedCells(0);
+                        props.setPointBrightness(1);
+                    }}
+                >
                     Clear
                 </SmallCapsButton>
             </Box>
@@ -44,9 +51,9 @@ export default function CellControls(props: CellControlsProps) {
                     buttonDefinition={buttonDefinition}
                     onChange={(_e, v) => {
                         props.canvas?.setSelectionMode(v);
-                        setSelectionMode(v);
+                        props.setSelectionMode(v);
                     }}
-                    value={selectionMode}
+                    value={props.selectionMode}
                 />
             </Box>
             <label htmlFor="points-brightness-slider">

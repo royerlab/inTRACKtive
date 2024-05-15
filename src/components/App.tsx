@@ -37,6 +37,7 @@ export default function App() {
     const [numSelectedCells, setNumSelectedCells] = useState(0);
 
     const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
+    const [selectionMode, setSelectionMode] = useState("box");
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [pointBrightness, setPointBrightness] = useState(1);
 
@@ -243,17 +244,13 @@ export default function App() {
                     <Box flexGrow={0} padding="2em">
                         <CellControls
                             canvas={canvas}
-                            clearTracks={() => {
-                                // reset canvas state
-                                canvas?.removeAllTracks();
-                                // reset component state
-                                setNumSelectedCells(0);
-                                setPointBrightness(1);
-                            }}
                             numSelectedCells={numSelectedCells}
+                            setNumSelectedCells={setNumSelectedCells}
                             trackManager={trackManager}
                             pointBrightness={pointBrightness}
                             setPointBrightness={setPointBrightness}
+                            selectionMode={selectionMode}
+                            setSelectionMode={setSelectionMode}
                         />
                     </Box>
                     <Divider />
@@ -267,6 +264,7 @@ export default function App() {
                             showTrackHighlights={showTrackHighlights}
                             setShowTrackHighlights={setShowTrackHighlights}
                             setTrackHighlightLength={setTrackHighlightLength}
+                            selectionMode={selectionMode}
                         />
                     </Box>
                     <Divider />
