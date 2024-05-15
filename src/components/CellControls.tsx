@@ -25,10 +25,22 @@ export default function CellControls(props: CellControlsProps) {
     ];
 
     return (
-        <Stack spacing={"2em"}>
-            <Box display="flex" flexDirection="column">
+        <Stack spacing="1em">
+            <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <ControlLabel>Selected Cells</ControlLabel>
+                <SmallCapsButton disabled={!props.trackManager} onClick={props.clearTracks}>
+                    Clear
+                </SmallCapsButton>
+            </Box>
+            <FontS>
+                <strong>{props.numSelectedCells ?? 0}</strong> cells selected
+            </FontS>
+            <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
+            </label>
+            <Box display="flex" flexDirection="row" justifyContent="space-around">
                 <SegmentedControl
+                    id="selection-mode-control"
                     buttonDefinition={buttonDefinition}
                     onChange={(_e, v) => {
                         props.canvas?.setSelectionMode(v);
@@ -37,17 +49,6 @@ export default function CellControls(props: CellControlsProps) {
                     value={selectionMode}
                 />
             </Box>
-            <Stack>
-                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
-                    <ControlLabel>Selected Cells</ControlLabel>
-                    <SmallCapsButton disabled={!props.trackManager} onClick={props.clearTracks}>
-                        Clear
-                    </SmallCapsButton>
-                </Box>
-                <FontS>
-                    <strong>{props.numSelectedCells ?? 0}</strong> cells selected
-                </FontS>
-            </Stack>
             <label htmlFor="points-brightness-slider">
                 <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
             </label>
