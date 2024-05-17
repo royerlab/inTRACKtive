@@ -93,8 +93,8 @@ export default function App() {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
-        const loadingTimer = setTimeout(() => setLoading(true), 100);
+        // show a loading indicator if the fetch takes longer than 25ms (avoid flicker)
+        const loadingTimer = setTimeout(() => setLoading(true), 25);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -110,16 +110,15 @@ export default function App() {
                     return;
                 }
 
-                // clearTimeout(loadingTimer);
-                setTimeout(() => setLoading(false), 250);
+                // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
+                clearTimeout(loadingTimer);
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors(pointBrightness);
             };
             getPoints(canvas, curTime);
         } else {
-            // clearTimeout(loadingTimer);
-            setTimeout(() => setLoading(false), 250);
+            clearTimeout(loadingTimer);
             setLoading(false);
             console.debug("IGNORE FETCH points at time %d", curTime);
         }
@@ -195,7 +194,7 @@ export default function App() {
     // TODO: this is basic and may drop frames
     useEffect(() => {
         if (playing) {
-            const frameDelay = 1000 / 8; // 1000 / fps
+            const frameDelay = 1000 / 16; // 1000 / fps
             const interval = setInterval(() => {
                 setCurTime((curTime + 1) % numTimes);
             }, frameDelay);
