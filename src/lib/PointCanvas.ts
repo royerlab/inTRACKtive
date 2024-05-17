@@ -88,6 +88,12 @@ export class PointCanvas {
         this.controls.autoRotateSpeed = 1;
     }
 
+    static shallowCopy(other: PointCanvas): PointCanvas {
+        const newCanvas = { ...other };
+        Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
+        return newCanvas as PointCanvas;
+    }
+
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
     animate = () => {

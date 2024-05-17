@@ -30,18 +30,17 @@ export default function App() {
     // data state
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
     const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
-    const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const [loading, setLoading] = useState(false);
-    const [showTracks, setShowTracks] = useState(true);
-    const [showTrackHighlights, setShowTrackHighlights] = useState(true);
-    const [numSelectedCells, setNumSelectedCells] = useState(0);
 
-    const { selectedPoints } = useSelectionBox(canvas);
+    // all this state is kind of duplicated
+    const [canvas, setCanvas] = useState<PointCanvas | null>(null);
+    const numTracksLoaded = canvas?.tracks.size || 0;
     const [trackHighlightLength, setTrackHighlightLength] = useState(11);
     const [pointBrightness, setPointBrightness] = useState(1);
 
+    const { selectedPoints } = useSelectionBox(canvas);
+
     // playback state
-    const [autoRotate, setAutoRotate] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [curTime, setCurTime] = useState(initialViewerState.curTime);
     const [numTimes, setNumTimes] = useState(0);
@@ -136,16 +135,6 @@ export default function App() {
     }, [trackManager, curTime]);
 
     useEffect(() => {
-        if (!canvas) return;
-        // update the track highlights
-        canvas.showTracks = showTracks;
-        canvas.showTrackHighlights = showTrackHighlights;
-        const minTime = curTime - trackHighlightLength / 2;
-        const maxTime = curTime + trackHighlightLength / 2;
-        canvas.updateAllTrackHighlights(minTime, maxTime);
-    }, [curTime, trackHighlightLength, showTracks, showTrackHighlights]);
-
-    useEffect(() => {
         const pointsID = canvas?.points.id || -1;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
         // keep track of which tracks we are adding to avoid duplicate fetching
@@ -165,7 +154,10 @@ export default function App() {
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
                     canvas.addTrack(l, pos, ids, minTime, maxTime);
-                    setNumSelectedCells((numSelectedCells) => numSelectedCells + 1);
+                    setCanvas((prev: PointCanvas | null) => {
+                        if (!prev) return prev;
+                        return PointCanvas.shallowCopy(prev);
+                    });
                 }
             }
         };
@@ -178,18 +170,6 @@ export default function App() {
         Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
-
-    useEffect(() => {
-        canvas?.fadePoints(pointBrightness);
-    }, [pointBrightness]);
-
-    // TODO: maybe can be done without useEffect?
-    // could be a prop into the Scene component
-    useEffect(() => {
-        if (canvas) {
-            canvas.controls.autoRotate = autoRotate;
-        }
-    }, [autoRotate]);
 
     // playback time points
     // TODO: this is basic and may drop frames
@@ -204,6 +184,16 @@ export default function App() {
             };
         }
     }, [numTimes, curTime, playing]);
+
+    useEffect(() => {
+        const minTime = curTime - trackHighlightLength / 2;
+        const maxTime = curTime + trackHighlightLength / 2;
+        canvas?.updateAllTrackHighlights(minTime, maxTime);
+    }, [canvas, curTime, trackHighlightLength]);
+
+    useEffect(() => {
+        canvas?.fadePoints(pointBrightness);
+    }, [canvas, pointBrightness]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -246,10 +236,13 @@ export default function App() {
                                 // reset canvas state
                                 canvas?.removeAllTracks();
                                 // reset component state
-                                setNumSelectedCells(0);
+                                setCanvas((prev: PointCanvas | null) => {
+                                    if (!prev) return prev;
+                                    return PointCanvas.shallowCopy(prev);
+                                });
                                 setPointBrightness(1);
                             }}
-                            numSelectedCells={numSelectedCells}
+                            numSelectedCells={canvas ? canvas.tracks.size : 0}
                             trackManager={trackManager}
                             pointBrightness={pointBrightness}
                             setPointBrightness={setPointBrightness}
@@ -258,13 +251,27 @@ export default function App() {
                     <Divider />
                     <Box flexGrow={4} padding="2em">
                         <LeftSidebarWrapper
-                            hasTracks={numSelectedCells > 0}
+                            hasTracks={numTracksLoaded > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
-                            showTracks={showTracks}
-                            setShowTracks={setShowTracks}
-                            showTrackHighlights={showTrackHighlights}
-                            setShowTrackHighlights={setShowTrackHighlights}
+                            showTracks={canvas ? canvas.showTracks : true}
+                            setShowTracks={(show: boolean) => {
+                                setCanvas((prev: PointCanvas | null) => {
+                                    if (!prev) return prev;
+                                    const newCanvas = PointCanvas.shallowCopy(prev);
+                                    newCanvas.showTracks = show;
+                                    return newCanvas;
+                                });
+                            }}
+                            showTrackHighlights={canvas ? canvas.showTrackHighlights : true}
+                            setShowTrackHighlights={(show: boolean) => {
+                                setCanvas((prev: PointCanvas | null) => {
+                                    if (!prev) return prev;
+                                    const newCanvas = PointCanvas.shallowCopy(prev);
+                                    newCanvas.showTrackHighlights = show;
+                                    return newCanvas;
+                                });
+                            }}
                             setTrackHighlightLength={setTrackHighlightLength}
                         />
                     </Box>
@@ -298,11 +305,18 @@ export default function App() {
                 <Box flexGrow={0} padding="1em">
                     <PlaybackControls
                         enabled={true}
-                        autoRotate={autoRotate}
+                        autoRotate={canvas ? canvas.controls.autoRotate : false}
                         playing={playing}
                         curTime={curTime}
                         numTimes={numTimes}
-                        setAutoRotate={setAutoRotate}
+                        setAutoRotate={(autoRotate: boolean) => {
+                            setCanvas((prev: PointCanvas | null) => {
+                                if (!prev) return prev;
+                                const newCanvas = PointCanvas.shallowCopy(prev);
+                                newCanvas.controls.autoRotate = autoRotate;
+                                return newCanvas;
+                            });
+                        }}
                         setPlaying={setPlaying}
                         setCurTime={setCurTime}
                     />
