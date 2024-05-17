@@ -23,11 +23,11 @@ export const ColorMap = () => {
         <Box
             sx={{
                 position: "absolute",
-                bottom: "3.75rem",
+                bottom: "5.0rem",
                 right: "0.5rem",
                 width: "2.5rem",
                 height: "6.5rem",
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
+                backgroundColor: "rgba(255, 255, 255, 0.6)",
                 zIndex: 100,
                 borderRadius: "var(--sds-corner-m)",
                 display: "flex",
