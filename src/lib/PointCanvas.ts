@@ -37,6 +37,9 @@ export class PointCanvas {
 
     showTracks = true;
     showTrackHighlights = true;
+    minTime: number = -6;
+    maxTime: number = 5;
+    pointBrightness = 1.0;
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
@@ -137,12 +140,13 @@ export class PointCanvas {
 
     // The fadePercentage should be in [0, 1]. This argument is optional and it does not need to be
     // initialized by initPointsGeometry or reset when clearing tracks.
-    resetPointColors(fadePercentage: number = 1.0) {
+    resetPointColors() {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8 * fadePercentage, 0.8 * fadePercentage, SRGBColorSpace);
+        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
@@ -188,28 +192,22 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(
-        trackID: number,
-        positions: Float32Array,
-        ids: Int32Array,
-        minTime: number,
-        maxTime: number,
-    ): Track | null {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
         if (this.tracks.has(trackID)) {
             // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+        track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         this.tracks.set(trackID, track);
         this.scene.add(track);
         return track;
     }
 
-    updateAllTrackHighlights(minTime: number, maxTime: number) {
+    updateAllTrackHighlights() {
         for (const track of this.tracks.values()) {
-            track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+            track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         }
     }
 

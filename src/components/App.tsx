@@ -31,19 +31,19 @@ export default function App() {
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
     const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
     const [loading, setLoading] = useState(false);
+    const numTimes = trackManager?.points.shape[0] || 0;
 
     // all this state is kind of duplicated
     const [canvas, setCanvas] = useState<PointCanvas | null>(null);
     const numTracksLoaded = canvas?.tracks.size || 0;
-    const [trackHighlightLength, setTrackHighlightLength] = useState(11);
-    const [pointBrightness, setPointBrightness] = useState(1);
+    const trackHighlightLength = canvas ? canvas.maxTime - canvas.minTime : 11;
+    console.log("track highlight length: %d", trackHighlightLength, canvas?.minTime, canvas?.maxTime);
 
     const { selectedPoints } = useSelectionBox(canvas);
 
     // playback state
     const [playing, setPlaying] = useState(false);
     const [curTime, setCurTime] = useState(initialViewerState.curTime);
-    const [numTimes, setNumTimes] = useState(0);
 
     // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -76,7 +76,6 @@ export default function App() {
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
             setTrackManager(tm);
-            setNumTimes(tm?.points.shape[0] || numTimes);
             // Defend against the case when a curTime valid for previous data
             // is no longer valid.
             setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || numTimes - 1));
@@ -113,7 +112,7 @@ export default function App() {
                 setTimeout(() => setLoading(false), 250);
                 setLoading(false);
                 canvas.setPointsPositions(data);
-                canvas.resetPointColors(pointBrightness);
+                canvas.resetPointColors();
             };
             getPoints(canvas, curTime);
         } else {
@@ -143,8 +142,6 @@ export default function App() {
         // this fetches the entire lineage for each track
         const fetchAndAddTrack = async (pointID: number) => {
             if (!canvas || !trackManager) return;
-            const minTime = curTime - trackHighlightLength / 2;
-            const maxTime = curTime + trackHighlightLength / 2;
             const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
@@ -153,7 +150,7 @@ export default function App() {
                     if (adding.has(l) || canvas.tracks.has(l)) continue;
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    canvas.addTrack(l, pos, ids, minTime, maxTime);
+                    canvas.addTrack(l, pos, ids);
                     setCanvas((prev: PointCanvas | null) => {
                         if (!prev) return prev;
                         return PointCanvas.shallowCopy(prev);
@@ -164,7 +161,12 @@ export default function App() {
 
         const selected = selectedPoints.get(pointsID) || [];
         canvas?.highlightPoints(selected);
-        setPointBrightness(0.8);
+        setCanvas((prev: PointCanvas | null) => {
+            if (!prev) return prev;
+            const newCanvas = PointCanvas.shallowCopy(prev);
+            newCanvas.pointBrightness = 0.8;
+            return newCanvas;
+        });
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
         Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
@@ -183,17 +185,20 @@ export default function App() {
                 clearInterval(interval);
             };
         }
-    }, [numTimes, curTime, playing]);
+    }, [curTime, playing]);
 
     useEffect(() => {
+        if (!canvas) return;
         const minTime = curTime - trackHighlightLength / 2;
         const maxTime = curTime + trackHighlightLength / 2;
-        canvas?.updateAllTrackHighlights(minTime, maxTime);
-    }, [canvas, curTime, trackHighlightLength]);
+        canvas.minTime = minTime;
+        canvas.maxTime = maxTime;
+        canvas.updateAllTrackHighlights();
+    }, [canvas, curTime]);
 
     useEffect(() => {
-        canvas?.fadePoints(pointBrightness);
-    }, [canvas, pointBrightness]);
+        canvas?.resetPointColors();
+    }, [canvas]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -233,19 +238,25 @@ export default function App() {
                     <Box flexGrow={0} padding="2em">
                         <CellControls
                             clearTracks={() => {
-                                // reset canvas state
-                                canvas?.removeAllTracks();
-                                // reset component state
                                 setCanvas((prev: PointCanvas | null) => {
                                     if (!prev) return prev;
-                                    return PointCanvas.shallowCopy(prev);
+                                    const newCanvas = PointCanvas.shallowCopy(prev);
+                                    newCanvas.removeAllTracks();
+                                    newCanvas.pointBrightness = 1;
+                                    return newCanvas;
                                 });
-                                setPointBrightness(1);
                             }}
                             numSelectedCells={canvas ? canvas.tracks.size : 0}
                             trackManager={trackManager}
-                            pointBrightness={pointBrightness}
-                            setPointBrightness={setPointBrightness}
+                            pointBrightness={canvas?.pointBrightness || 1}
+                            setPointBrightness={(brightness: number) => {
+                                setCanvas((prev: PointCanvas | null) => {
+                                    if (!prev) return prev;
+                                    const newCanvas = PointCanvas.shallowCopy(prev);
+                                    newCanvas.pointBrightness = brightness;
+                                    return newCanvas;
+                                });
+                            }}
                         />
                     </Box>
                     <Divider />
@@ -272,7 +283,15 @@ export default function App() {
                                     return newCanvas;
                                 });
                             }}
-                            setTrackHighlightLength={setTrackHighlightLength}
+                            setTrackHighlightLength={(length: number) => {
+                                setCanvas((prev: PointCanvas | null) => {
+                                    if (!prev) return prev;
+                                    const newCanvas = PointCanvas.shallowCopy(prev);
+                                    newCanvas.minTime = curTime - length / 2;
+                                    newCanvas.maxTime = curTime + length / 2;
+                                    return newCanvas;
+                                });
+                            }}
                         />
                     </Box>
                     <Divider />
