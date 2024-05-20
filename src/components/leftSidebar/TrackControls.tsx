@@ -57,9 +57,9 @@ export default function TrackControls(props: TrackControlsProps) {
                 valueLabelDisplay="on"
                 valueLabelFormat={(value) => `${Math.round(value)} frames`}
                 onChange={(_, value) => {
-                    props.setTrackHighlightLength(value as number);
+                    props.setTrackHighlightLength(2 * (value as number));
                 }}
-                value={props.trackHighlightLength}
+                value={props.trackHighlightLength / 2}
             />
         </Stack>
     );

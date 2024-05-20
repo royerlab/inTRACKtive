@@ -5,6 +5,7 @@ import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { PointCanvas } from "@/lib/PointCanvas";
 
 export default function useSelectionBox(canvas: PointCanvas | null) {
+    const [initialized, setInitialized] = useState(false);
     const [selecting, setSelecting] = useState(false);
     const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
 
@@ -16,6 +17,8 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             console.debug("canvas is undefined - deferring useSelectionBox setup");
             return;
         }
+        if (initialized) return;
+        setInitialized(true);
         console.log("useSelectionBox setup: %s", canvas);
         // Point selection
         selectionHelper.current = new SelectionHelper(canvas.renderer, "selectBox");
@@ -27,7 +30,7 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             const sBox = selectionBox.current;
             const sHelper = selectionHelper.current;
             pointerUp = () => {
-                console.log("pointerUp: %s", sHelper.enabled);
+                console.debug("SelectionBox pointerUp: %s", sHelper.enabled);
                 if (sHelper.enabled) {
                     // Mouse to normalized render/canvas coords from:
                     // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
@@ -63,7 +66,7 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
         }
         const keyDown = (event: KeyboardEvent) => {
-            console.log("keyDown: %s", event.key);
+            console.debug("SelectionBox keyDown: %s", event.key);
             if (event.repeat) {
                 return;
             } // ignore repeats (key held down)
@@ -72,7 +75,7 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             }
         };
         const keyUp = (event: KeyboardEvent) => {
-            console.log("keyUp: %s", event.key);
+            console.debug("SelectionBox keyUp: %s", event.key);
             if (event.key === "Shift") {
                 setSelecting(false);
             }
@@ -83,12 +86,9 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
         document.addEventListener("keydown", keyDown);
         document.addEventListener("keyup", keyUp);
 
-        return () => {
-            selectionHelper.current?.dispose();
-            canvas.renderer.domElement.removeEventListener("pointerup", pointerUp);
-            document.removeEventListener("keydown", keyDown);
-            document.removeEventListener("keyup", keyUp);
-        };
+        // we actually *don't* want to remove the event listeners here because this gets called when
+        // the canvas is re-rendered, and we want to keep the event listeners active
+        // TODO: this could be cleaned up in a selection refactor
     }, [canvas]);
 
     useEffect(() => {

@@ -91,8 +91,8 @@ export class PointCanvas {
         this.controls.autoRotateSpeed = 1;
     }
 
-    static shallowCopy(other: PointCanvas): PointCanvas {
-        const newCanvas = { ...other };
+    shallowCopy(): PointCanvas {
+        const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
     }
