@@ -246,9 +246,9 @@ export default function App() {
                                     return newCanvas;
                                 });
                             }}
-                            numSelectedCells={canvas ? canvas.tracks.size : 0}
+                            numSelectedCells={canvas?.tracks.size ?? 0}
                             trackManager={trackManager}
-                            pointBrightness={canvas?.pointBrightness || 1}
+                            pointBrightness={canvas?.pointBrightness ?? 1}
                             setPointBrightness={(brightness: number) => {
                                 setCanvas((prev: PointCanvas | null) => {
                                     if (!prev) return prev;
