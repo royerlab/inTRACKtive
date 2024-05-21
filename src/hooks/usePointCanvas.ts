@@ -95,6 +95,8 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
+            newCanvas.pointBrightness = 1.0;
+            newCanvas.resetPointColors();
             break;
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
