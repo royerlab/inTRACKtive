@@ -1,22 +1,28 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
+    CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
-    SET_MIN_MAX_TIME = "SET_MIN_MAX_TIME",
+    MIN_MAX_TIME = "MIN_MAX_TIME",
 }
 
 interface AutoRotate {
     type: ActionType.AUTO_ROTATE;
     autoRotate: boolean;
+}
+
+interface CurTime {
+    type: ActionType.CUR_TIME;
+    curTime: number;
 }
 
 interface HighlightPoints {
@@ -47,8 +53,8 @@ interface ShowTrackHighlights {
     showTrackHighlights: boolean;
 }
 
-interface SetMinMaxTime {
-    type: ActionType.SET_MIN_MAX_TIME;
+interface MinMaxTime {
+    type: ActionType.MIN_MAX_TIME;
     minTime: number;
     maxTime: number;
 }
@@ -56,47 +62,58 @@ interface SetMinMaxTime {
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
+    | CurTime
     | HighlightPoints
     | PointBrightness
     | Refresh
     | RemoveAllTracks
     | ShowTracks
     | ShowTrackHighlights
-    | SetMinMaxTime;
+    | MinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
+    const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
-            return canvas.shallowCopy();
+            break;
+        case ActionType.CUR_TIME: {
+            newCanvas.curTime = action.curTime;
+            newCanvas.minTime += action.curTime - canvas.curTime;
+            newCanvas.maxTime += action.curTime - canvas.curTime;
+            newCanvas.updateAllTrackHighlights();
+            break;
+        }
         case ActionType.AUTO_ROTATE:
-            canvas.controls.autoRotate = action.autoRotate;
-            return canvas.shallowCopy();
+            newCanvas.controls.autoRotate = action.autoRotate;
+            break;
         case ActionType.HIGHLIGHT_POINTS:
-            canvas.highlightPoints(action.points);
-            return canvas.shallowCopy();
+            newCanvas.highlightPoints(action.points);
+            break;
         case ActionType.POINT_BRIGHTNESS:
-            canvas.pointBrightness = action.brightness;
-            canvas.resetPointColors();
-            return canvas.shallowCopy();
+            newCanvas.pointBrightness = action.brightness;
+            newCanvas.resetPointColors();
+            break;
         case ActionType.REMOVE_ALL_TRACKS:
-            canvas.removeAllTracks();
-            return canvas.shallowCopy();
+            newCanvas.removeAllTracks();
+            break;
         case ActionType.SHOW_TRACKS:
-            canvas.showTracks = action.showTracks;
-            canvas.updateAllTrackHighlights();
-            return canvas.shallowCopy();
+            newCanvas.showTracks = action.showTracks;
+            newCanvas.updateAllTrackHighlights();
+            break;
         case ActionType.SHOW_TRACK_HIGHLIGHTS:
-            canvas.showTrackHighlights = action.showTrackHighlights;
-            canvas.updateAllTrackHighlights();
-            return canvas.shallowCopy();
-        case ActionType.SET_MIN_MAX_TIME:
-            canvas.minTime = action.minTime;
-            canvas.maxTime = action.maxTime;
-            canvas.updateAllTrackHighlights();
-            return canvas.shallowCopy();
+            newCanvas.showTrackHighlights = action.showTrackHighlights;
+            newCanvas.updateAllTrackHighlights();
+            break;
+        case ActionType.MIN_MAX_TIME:
+            newCanvas.minTime = action.minTime;
+            newCanvas.maxTime = action.maxTime;
+            newCanvas.updateAllTrackHighlights();
+            break;
         default:
+            console.warn("usePointCanvas reducer - unknown action type: %s", action);
             return canvas;
     }
+    return newCanvas;
 }
 
 function createPointCanvas(initialViewerState: ViewerState): PointCanvas {

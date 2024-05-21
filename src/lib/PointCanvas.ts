@@ -37,6 +37,7 @@ export class PointCanvas {
 
     showTracks = true;
     showTrackHighlights = true;
+    curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;

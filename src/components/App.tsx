@@ -42,15 +42,14 @@ export default function App() {
 
     const { selectedPoints } = useSelectionBox(canvas);
 
-    // playback state is all handled in React
+    // playback is handled in React
     const [playing, setPlaying] = useState(false);
-    const [curTime, setCurTime] = useState(initialViewerState.curTime);
 
     // Manage shareable state than can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         if (canvas === null) return;
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(dataUrl, curTime, canvas.camera.position, canvas.controls.target);
+        const state = new ViewerState(dataUrl, canvas.curTime, canvas.camera.position, canvas.controls.target);
         const url = window.location.toString() + "#" + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
@@ -59,7 +58,7 @@ export default function App() {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
-        setCurTime(state.curTime);
+        dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
         canvas?.setCameraProperties(state.cameraPosition, state.cameraTarget);
     };
     // update the state when the hash changes, but only register the listener once
@@ -79,7 +78,10 @@ export default function App() {
             setTrackManager(tm);
             // Defend against the case when a curTime valid for previous data
             // is no longer valid.
-            setCurTime(Math.min(curTime, tm?.points.shape[0] - 1 || numTimes - 1));
+            dispatchCanvas({
+                type: ActionType.CUR_TIME,
+                curTime: Math.min(canvas.curTime, tm?.points.shape[0] - 1 || numTimes - 1),
+            });
         });
     }, [dataUrl]);
 
@@ -115,12 +117,12 @@ export default function App() {
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
-            getPoints(canvas, curTime);
+            getPoints(canvas, canvas.curTime);
         } else {
             // clearTimeout(loadingTimer);
             setTimeout(() => setLoading(false), 250);
             setLoading(false);
-            console.debug("IGNORE FETCH points at time %d", curTime);
+            console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
         // stop playback if there is no data
@@ -132,7 +134,7 @@ export default function App() {
             clearTimeout(loadingTimer);
             ignore = true;
         };
-    }, [trackManager, curTime]);
+    }, [trackManager, canvas.curTime]);
 
     useEffect(() => {
         const pointsID = canvas?.points.id || -1;
@@ -164,7 +166,7 @@ export default function App() {
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint || 0;
-        Promise.all(selected.map((p: number) => curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
@@ -174,22 +176,13 @@ export default function App() {
         if (playing) {
             const frameDelay = 1000 / 8; // 1000 / fps
             const interval = setInterval(() => {
-                setCurTime((curTime + 1) % numTimes);
+                dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
             }, frameDelay);
             return () => {
                 clearInterval(interval);
             };
         }
-    }, [curTime, playing]);
-
-    useEffect(() => {
-        if (!canvas) return;
-        dispatchCanvas({
-            type: ActionType.SET_MIN_MAX_TIME,
-            minTime: curTime - trackHighlightLength / 2,
-            maxTime: curTime + trackHighlightLength / 2,
-        });
-    }, [curTime]);
+    }, [canvas.curTime, playing]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -255,9 +248,9 @@ export default function App() {
                             }}
                             setTrackHighlightLength={(length: number) => {
                                 dispatchCanvas({
-                                    type: ActionType.SET_MIN_MAX_TIME,
-                                    minTime: curTime - length / 2,
-                                    maxTime: curTime + length / 2,
+                                    type: ActionType.MIN_MAX_TIME,
+                                    minTime: canvas.curTime - length / 2,
+                                    maxTime: canvas.curTime + length / 2,
                                 });
                             }}
                         />
@@ -294,13 +287,15 @@ export default function App() {
                         enabled={true}
                         autoRotate={canvas ? canvas.controls.autoRotate : false}
                         playing={playing}
-                        curTime={curTime}
+                        curTime={canvas.curTime}
                         numTimes={numTimes}
                         setAutoRotate={(autoRotate: boolean) => {
                             dispatchCanvas({ type: ActionType.AUTO_ROTATE, autoRotate });
                         }}
                         setPlaying={setPlaying}
-                        setCurTime={setCurTime}
+                        setCurTime={(curTime: number) => {
+                            dispatchCanvas({ type: ActionType.CUR_TIME, curTime });
+                        }}
                     />
                 </Box>
             </Box>
