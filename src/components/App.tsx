@@ -178,7 +178,7 @@ export default function App() {
                 clearInterval(interval);
             };
         }
-    }, [canvas.curTime, playing]);
+    }, [canvas.curTime, numTimes, playing]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
