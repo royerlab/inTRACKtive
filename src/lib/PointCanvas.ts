@@ -111,10 +111,11 @@ export class PointCanvas {
     };
 
     pointIDsAtTime(time: number): number[] {
-        return Array.from(this.tracks.values()).map((track: Track) => track.pointIDAtTime(time)).filter((id: number | null) => id !== null);
+        return Array.from(this.tracks.values()).map((track: Track) => track.pointIndexAtTime(time)).filter((id) => id !== null);
     }
 
     updateHighlightedPoints(curTime: number) {
+        console.debug("updateHighlightedPoints: ", curTime);
         const selectedPoints = this.pointIDsAtTime(curTime);
         this.highlightPoints(selectedPoints);
     }
@@ -129,6 +130,7 @@ export class PointCanvas {
     }
 
     highlightPoints(points: number[]) {
+        console.debug("highlightPoints: ", points);
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
         color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
@@ -141,10 +143,10 @@ export class PointCanvas {
     // This function changes the color of the points according to the point brightness slider.
     // The fadePercentage should be in [0, 1].
     fadePoints(fadePercentage: number) {
+        console.debug("fadePoints: ", fadePercentage);
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
-
         const greenAndBlueValue = 0.8 * fadePercentage;
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();

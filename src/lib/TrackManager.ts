@@ -124,6 +124,7 @@ export class TrackManager {
             flatPoints.set(points[i], i * 3);
         }
 
+        console.debug("fetched pointIDs: ", trackID, pointIDs);
         return [flatPoints, pointIDs];
     }
 
