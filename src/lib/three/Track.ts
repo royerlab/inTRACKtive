@@ -16,6 +16,9 @@ export class Track extends Mesh {
     type = "Track";
     declare geometry: TrackGeometry;
     declare material: TrackMaterial;
+    pointIds: Int32Array = new Int32Array(0);
+    startTime: number = 0;
+    endTime: number = 0;
 
     static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
         const geometry = new TrackGeometry();
@@ -44,7 +47,20 @@ export class Track extends Mesh {
         track.geometry.setColors(colors);
         track.geometry.setTime(time);
         track.geometry.computeBoundingSphere();
+
+        track.pointIds = pointIDs;
+        track.startTime = time[0];
+        track.endTime = time[time.length - 1];
+
         return track;
+    }
+
+    pointIDAtTime(time: number): number | null {
+        if (time < this.startTime || time > this.endTime) {
+            return null;
+        }
+        const index = time - this.startTime;
+        return this.pointIds[index];
     }
 
     updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {

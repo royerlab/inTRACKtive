@@ -115,6 +115,8 @@ export default function App() {
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors(pointBrightness);
+                // Update the highlighted points based on the time.
+                canvas?.updateHighlightedPoints(curTime);
             };
             getPoints(canvas, curTime);
         } else {

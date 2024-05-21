@@ -25,6 +25,17 @@ import { Track } from "@/lib/three/Track";
 
 type Tracks = Map<number, Track>;
 
+// Stores information about a selection of cells across all timepoints.
+class CellSelection {
+    // The track IDs and geometries of the directly selected cells.
+    trackIDs: Map<number, Track> = new Map();
+    // The track IDs and geometries of the ancestors of the selected cells.
+    ancestorIDs: Map<number, Track> = new Map();
+    // The track IDs and geometries of the descendants of the selected cells.
+    descendantIDs: Map<number, Track> = new Map();
+};
+
+
 export class PointCanvas {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -34,6 +45,8 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
+
+    selections: Array<CellSelection> = new Array();
 
     showTracks = true;
     showTrackHighlights = true;
@@ -96,6 +109,19 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    pointIDsAtTime(time: number): number[] {
+        return Array.from(this.tracks.values()).map((track: Track) => track.pointIDAtTime(time)).filter((id: number | null) => id !== null);
+    }
+
+    updateHighlightedPoints(curTime: number) {
+        const selectedPoints = this.pointIDsAtTime(curTime);
+        this.highlightPoints(selectedPoints);
+    }
+
+    addSelection(selection: CellSelection) {
+        this.selections.push(selection);
+    }
 
     setCameraProperties(position?: Vector3, target?: Vector3) {
         position && this.camera.position.set(position.x, position.y, position.z);
