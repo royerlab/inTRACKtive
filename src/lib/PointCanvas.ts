@@ -122,25 +122,6 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    // This function changes the color of the points according to the point brightness slider.
-    // The fadePercentage should be in [0, 1].
-    fadePoints(fadePercentage: number) {
-        if (!this.points.geometry.hasAttribute("color")) {
-            return;
-        }
-
-        const greenAndBlueValue = 0.8 * fadePercentage;
-        const colorAttribute = this.points.geometry.getAttribute("color");
-        const color = new Color();
-        color.setRGB(0, greenAndBlueValue, greenAndBlueValue, SRGBColorSpace);
-        for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
-    }
-
-    // The fadePercentage should be in [0, 1]. This argument is optional and it does not need to be
-    // initialized by initPointsGeometry or reset when clearing tracks.
     resetPointColors() {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
