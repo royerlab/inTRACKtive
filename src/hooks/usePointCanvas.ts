@@ -116,7 +116,6 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 function usePointCanvas(
     initialViewerState: ViewerState,
 ): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
-    const [initialized, setInitialized] = useState(false);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
@@ -125,7 +124,7 @@ function usePointCanvas(
     //   * we only want to do this once, on mount
     //   * the div is empty when this is first called, until the Scene component is rendered
     useEffect(() => {
-        if (!divRef.current || initialized) return;
+        if (!divRef.current) return;
         const div = divRef.current;
         div.insertBefore(canvas.renderer.domElement, div.firstChild);
         const handleWindowResize = () => {
@@ -136,13 +135,11 @@ function usePointCanvas(
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
-        setInitialized(true);
 
         return () => {
             window.removeEventListener("resize", handleWindowResize);
             div.removeChild(canvas.renderer.domElement);
             canvas.dispose();
-            setInitialized(false);
         };
     }, []);
 
