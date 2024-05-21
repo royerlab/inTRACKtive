@@ -17,11 +17,9 @@ test("render Scene", () => {
             cameraPosition: new THREE.Vector3(0, 0, 0),
             cameraTarget: new THREE.Vector3(0, 0, 0),
         };
+        const [_canvas, _dispatcher, ref] = usePointCanvas(initialViewerState);
 
-        const sceneDivRef = React.useRef<HTMLDivElement>(null);
-        const [_canvas, _dispatchCanvas] = usePointCanvas(sceneDivRef, initialViewerState);
-
-        return <Scene ref={sceneDivRef} loading={false} />;
+        return <Scene ref={ref} loading={false} />;
     };
 
     const { container } = render(<TestContainer />);

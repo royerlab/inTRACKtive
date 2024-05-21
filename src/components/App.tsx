@@ -36,8 +36,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
-    const sceneDivRef = useRef<HTMLDivElement>(null);
-    const [canvas, dispatchCanvas] = usePointCanvas(sceneDivRef, initialViewerState);
+    const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
     const numTracksLoaded = canvas?.tracks.size || 0;
     const trackHighlightLength = canvas ? canvas.maxTime - canvas.minTime : 11;
 

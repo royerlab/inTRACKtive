@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { ViewerState } from "@/lib/ViewerState";
@@ -9,7 +9,6 @@ enum ActionType {
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
-    SET_UP = "SET_UP",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SET_MIN_MAX_TIME = "SET_MIN_MAX_TIME",
@@ -38,13 +37,6 @@ interface RemoveAllTracks {
     type: ActionType.REMOVE_ALL_TRACKS;
 }
 
-interface SetUp {
-    type: ActionType.SET_UP;
-    div: HTMLDivElement;
-    cameraPosition: THREE.Vector3;
-    cameraTarget: THREE.Vector3;
-}
-
 interface ShowTracks {
     type: ActionType.SHOW_TRACKS;
     showTracks: boolean;
@@ -68,18 +60,12 @@ type PointCanvasAction =
     | PointBrightness
     | Refresh
     | RemoveAllTracks
-    | SetUp
     | ShowTracks
     | ShowTrackHighlights
     | SetMinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
-        case ActionType.SET_UP:
-            if (!action.div) return canvas;
-            insertCanvasInDiv(canvas, action.div);
-            canvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
-            return canvas.shallowCopy();
         case ActionType.REFRESH:
             return canvas.shallowCopy();
         case ActionType.AUTO_ROTATE:
@@ -89,7 +75,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             canvas.highlightPoints(action.points);
             return canvas.shallowCopy();
         case ActionType.POINT_BRIGHTNESS:
-            console.log("fading points");
             canvas.pointBrightness = action.brightness;
             canvas.resetPointColors();
             return canvas.shallowCopy();
@@ -114,25 +99,13 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     }
 }
 
-function insertCanvasInDiv(canvas: PointCanvas, div: HTMLDivElement) {
-    // if the canvas is already in the div, don't do anything
-    if (canvas.renderer.domElement.parentElement === div) return;
+function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
+    // create the canvas with some default dimensions
+    // these will be overridden when the canvas is inserted into a div
+    const canvas = new PointCanvas(800, 600);
 
-    div.insertBefore(canvas.renderer.domElement, div.firstChild);
-    const handleWindowResize = () => {
-        if (!div) return;
-        const renderWidth = div.clientWidth;
-        const renderHeight = div.clientHeight;
-        canvas.setSize(renderWidth, renderHeight);
-    };
-    window.addEventListener("resize", handleWindowResize);
-    handleWindowResize();
-}
-
-function createPointCanvas(divRef: React.RefObject<HTMLDivElement>): PointCanvas {
-    const renderWidth = divRef.current?.clientWidth || 800;
-    const renderHeight = divRef.current?.clientHeight || 600;
-    const canvas = new PointCanvas(renderWidth, renderHeight);
+    // restore canvas from initial viewer state
+    canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 
     // start animating - this keeps the scene rendering when controls change, etc.
     canvas.animate();
@@ -140,28 +113,40 @@ function createPointCanvas(divRef: React.RefObject<HTMLDivElement>): PointCanvas
     return canvas;
 }
 
-let initialized = false;
-
 function usePointCanvas(
-    divRef: React.RefObject<HTMLDivElement>,
     initialViewerState: ViewerState,
-): [PointCanvas, React.Dispatch<PointCanvasAction>] {
-    const [state, dispatcher] = useReducer(reducer, divRef, createPointCanvas);
+): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
+    const [initialized, setInitialized] = useState(false);
+    const divRef = useRef<HTMLDivElement>(null);
+    const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
-    // set up the canvas on mount
-    // we need the effect here because the divRef may be null until after the component mounts
+    // set up the canvas when the div is available
+    // this is an effect because:
+    //   * we only want to do this once, on mount
+    //   * the div is empty when this is first called, until the Scene component is rendered
     useEffect(() => {
         if (!divRef.current || initialized) return;
-        dispatcher({
-            type: ActionType.SET_UP,
-            div: divRef.current,
-            cameraPosition: initialViewerState.cameraPosition,
-            cameraTarget: initialViewerState.cameraTarget,
-        });
-        initialized = true;
-    }, [divRef]);
+        const div = divRef.current;
+        div.insertBefore(canvas.renderer.domElement, div.firstChild);
+        const handleWindowResize = () => {
+            if (!div) return;
+            const renderWidth = div.clientWidth;
+            const renderHeight = div.clientHeight;
+            canvas.setSize(renderWidth, renderHeight);
+        };
+        window.addEventListener("resize", handleWindowResize);
+        handleWindowResize();
+        setInitialized(true);
 
-    return [state, dispatcher];
+        return () => {
+            window.removeEventListener("resize", handleWindowResize);
+            div.removeChild(canvas.renderer.domElement);
+            canvas.dispose();
+            setInitialized(false);
+        };
+    }, []);
+
+    return [canvas, dispatchCanvas, divRef];
 }
 
 export { usePointCanvas, ActionType };
