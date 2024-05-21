@@ -5,6 +5,7 @@ import React from "react";
 import { render } from "@testing-library/react";
 
 import { usePointCanvas } from "../src/hooks/usePointCanvas";
+import { PointCanvas } from "../src/lib/PointCanvas";
 import Scene from "../src/components/Scene";
 
 test("tests work", () => {
@@ -17,7 +18,9 @@ test("render Scene", () => {
             cameraPosition: new THREE.Vector3(0, 0, 0),
             cameraTarget: new THREE.Vector3(0, 0, 0),
         };
-        const [_canvas, _dispatcher, ref] = usePointCanvas(initialViewerState);
+        const [canvas, _dispatcher, ref] = usePointCanvas(initialViewerState);
+
+        expect(canvas).toBeInstanceOf(PointCanvas);
 
         return <Scene ref={ref} loading={false} />;
     };
