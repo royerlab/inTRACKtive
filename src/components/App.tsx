@@ -32,7 +32,7 @@ export default function App() {
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
-    const numTracksLoaded = canvas.tracks.size ?? 0;
+    const numTracksLoaded = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
     const { selectedPoints } = useSelectionBox(canvas);
@@ -219,7 +219,7 @@ export default function App() {
                             clearTracks={() => {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
-                            numSelectedCells={canvas.tracks.size}
+                            numSelectedCells={numTracksLoaded}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
                             setPointBrightness={(brightness: number) => {
