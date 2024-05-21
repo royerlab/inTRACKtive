@@ -149,6 +149,7 @@ export default function App() {
                     adding.add(l);
                     const [pos, ids] = await trackManager.fetchPointsForTrack(l);
                     // adding the track *in* the dispatcher creates issues with duplicate fetching
+                    // but we refresh so the selected/loaded count is updated
                     canvas.addTrack(l, pos, ids);
                     dispatchCanvas({ type: ActionType.REFRESH });
                 }
