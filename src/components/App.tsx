@@ -15,6 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
+import { TimestampOverlay } from "./TimestampOverlay";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -29,6 +30,7 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
+    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
@@ -162,7 +164,13 @@ export default function App() {
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+
+        setIsLoadingTracks(true);
+        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
+            () => {
+                setIsLoadingTracks(false);
+            },
+        );
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
@@ -274,11 +282,12 @@ export default function App() {
             >
                 <Scene
                     ref={sceneDivRef}
-                    loading={loading}
+                    loading={loading || isLoadingTracks}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />
                 <Box flexGrow={0} padding="1em">
+                    <TimestampOverlay timestamp={canvas.curTime} />
                     <PlaybackControls
                         enabled={true}
                         autoRotate={canvas.controls.autoRotate}
