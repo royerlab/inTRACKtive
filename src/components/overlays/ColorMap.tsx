@@ -34,16 +34,10 @@ export const ColorMap = () => {
                     display: "flex",
                     flexDirection: "column",
                     flexGrow: 1,
+                    width: "var(--sds-space-xxs)",
+                    background: gradient,
                 }}
-            >
-                <Box
-                    sx={{
-                        width: "var(--sds-space-xxs)",
-                        flexGrow: 1,
-                        background: gradient,
-                    }}
-                />
-            </Box>
+            />
             <Box>Past</Box>
         </Box>
     );
