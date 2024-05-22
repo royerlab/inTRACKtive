@@ -36,6 +36,12 @@ type Tracks = Map<number, Track>;
 const raycaster = new Raycaster();
 raycaster.params.Points.threshold = 1.5;
 
+export enum PointSelectionMode {
+    BOX = "BOX",
+    SPHERICAL_CURSOR = "SPHERICAL_CURSOR",
+    SPHERE = "SPHERE",
+}
+
 export class PointCanvas {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -45,16 +51,20 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     tracks: Tracks = new Map();
-    selectionMode: string = "box";
+    selectionMode: PointSelectionMode = PointSelectionMode.BOX;
 
     showTracks = true;
     showTrackHighlights = true;
+    curTime: number = 0;
+    minTime: number = -6;
+    maxTime: number = 5;
+    pointBrightness = 1.0;
+    setSelectedPoints: (points: PointsCollection) => void;
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
     private maxPointsPerTimepoint = 0;
-    private setSelectedPoints: (points: PointsCollection) => void;
 
     pointer = new Vector2(0, 0);
     cursor = new Group();
@@ -129,7 +139,7 @@ export class PointCanvas {
         this.cursorControl.attach(this.cursor);
         this.scene.add(this.cursorControl);
 
-        this.setSelectionMode("box");
+        this.setSelectionMode(PointSelectionMode.BOX);
 
         this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
         this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
@@ -138,20 +148,26 @@ export class PointCanvas {
         document.addEventListener("keyup", this.keyUp);
     }
 
-    setSelectionMode(mode: string) {
-        console.log("setSelectionMode", mode);
-        if (mode === "box") {
+    shallowCopy(): PointCanvas {
+        const newCanvas = { ...this };
+        Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
+        return newCanvas as PointCanvas;
+    }
+
+    setSelectionMode(mode: PointSelectionMode) {
+        console.debug("setSelectionMode", mode);
+        if (mode === PointSelectionMode.BOX) {
             this.cursor.visible = false;
             this.cursorControl.visible = false;
             this.cursorControl.enabled = false;
             this.cursorLock = true;
         } else {
             this.cursor.visible = true;
-            if (mode === "spherical-cursor") {
+            if (mode === PointSelectionMode.SPHERICAL_CURSOR) {
                 this.cursorControl.visible = false;
                 this.cursorControl.enabled = false;
                 this.cursorLock = true;
-            } else if (mode === "sphere") {
+            } else if (mode === PointSelectionMode.SPHERE) {
                 this.cursorControl.visible = true;
                 this.cursorControl.enabled = true;
                 this.cursorLock = true;
@@ -198,7 +214,6 @@ export class PointCanvas {
 
     mouseWheel = (event: WheelEvent) => {
         if (event.ctrlKey) {
-            console.log("ctrlKey", event);
             event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
         }
@@ -227,8 +242,6 @@ export class PointCanvas {
         const normalMatrix = new Matrix3();
         normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
         normalMatrix.invert();
-        console.log(this.cursor);
-        console.log("matrix", normalMatrix);
         const center = this.cursor.position;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -274,31 +287,13 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    // This function changes the color of the points according to the point brightness slider.
-    // The fadePercentage should be in [0, 1].
-    fadePoints(fadePercentage: number) {
-        if (!this.points.geometry.hasAttribute("color")) {
-            return;
-        }
-
-        const greenAndBlueValue = 0.8 * fadePercentage;
-        const colorAttribute = this.points.geometry.getAttribute("color");
-        const color = new Color();
-        color.setRGB(0, greenAndBlueValue, greenAndBlueValue, SRGBColorSpace);
-        for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
-    }
-
-    // The fadePercentage should be in [0, 1]. This argument is optional and it does not need to be
-    // initialized by initPointsGeometry or reset when clearing tracks.
-    resetPointColors(fadePercentage: number = 1.0) {
+    resetPointColors() {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8 * fadePercentage, 0.8 * fadePercentage, SRGBColorSpace);
+        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
@@ -344,28 +339,22 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(
-        trackID: number,
-        positions: Float32Array,
-        ids: Int32Array,
-        minTime: number,
-        maxTime: number,
-    ): Track | null {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
         if (this.tracks.has(trackID)) {
             // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+        track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         this.tracks.set(trackID, track);
         this.scene.add(track);
         return track;
     }
 
-    updateAllTrackHighlights(minTime: number, maxTime: number) {
+    updateAllTrackHighlights() {
         for (const track of this.tracks.values()) {
-            track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+            track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         }
     }
 

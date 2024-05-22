@@ -1,5 +1,7 @@
 import { Callout } from "@czi-sds/components";
 
+import { PointSelectionMode } from "@/lib/PointCanvas";
+
 interface ControlInstructionsProps {
     selectionMode: string;
 }
@@ -7,10 +9,10 @@ interface ControlInstructionsProps {
 export default function ControlInstructions(props: ControlInstructionsProps) {
     let instructionText = <></>;
     switch (props.selectionMode) {
-        case "box":
+        case PointSelectionMode.BOX:
             instructionText = <p>Hold shift + click and drag to select cells.</p>;
             break;
-        case "spherical-cursor":
+        case PointSelectionMode.SPHERICAL_CURSOR:
             instructionText = (
                 <>
                     <p>Shift-click to select cells within the sphere.</p>
@@ -23,7 +25,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
                 </>
             );
             break;
-        case "sphere":
+        case PointSelectionMode.SPHERE:
             instructionText = (
                 <>
                     <p>Shift-click to select cells within the sphere.</p>
