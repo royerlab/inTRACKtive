@@ -33,9 +33,6 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
 
-const raycaster = new Raycaster();
-raycaster.params.Points.threshold = 1.5;
-
 export enum PointSelectionMode {
     BOX = "BOX",
     SPHERICAL_CURSOR = "SPHERICAL_CURSOR",
@@ -50,6 +47,8 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
+    raycaster = new Raycaster();
+
     tracks: Tracks = new Map();
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
 
@@ -226,8 +225,8 @@ export class PointCanvas {
         const canvasElement = this.renderer.domElement.getBoundingClientRect();
         this.pointer.x = ((event.clientX - canvasElement.left) / canvasElement.width) * 2 - 1;
         this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
-        raycaster.setFromCamera(this.pointer, this.camera);
-        const intersects = raycaster.intersectObject(this.points);
+        this.raycaster.setFromCamera(this.pointer, this.camera);
+        const intersects = this.raycaster.intersectObject(this.points);
         if (intersects.length > 0) {
             this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
         }
