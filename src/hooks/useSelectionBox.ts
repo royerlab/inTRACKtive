@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { PointCanvas } from "@/lib/PointCanvas";
 
-export default function useSelectionBox(canvas: PointCanvas | null) {
+export default function useSelectionBox(canvas: PointCanvas) {
     const [selecting, setSelecting] = useState(false);
     const [selectedPoints, setSelectedPoints] = useState<PointsCollection>();
 
@@ -12,58 +12,52 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
     const selectionHelper = useRef<SelectionHelper>();
 
     useEffect(() => {
-        if (!canvas) {
-            console.debug("canvas is undefined - deferring useSelectionBox setup");
-            return;
-        }
         console.log("useSelectionBox setup: %s", canvas);
         // Point selection
         selectionHelper.current = new SelectionHelper(canvas.renderer, "selectBox");
         selectionHelper.current.enabled = false;
         selectionBox.current = new PointSelectionBox(canvas.camera, canvas.scene);
 
-        let pointerUp: () => void;
-        if (selectionBox.current && selectionHelper.current) {
-            const sBox = selectionBox.current;
-            const sHelper = selectionHelper.current;
-            pointerUp = () => {
-                console.log("pointerUp: %s", sHelper.enabled);
-                if (sHelper.enabled) {
-                    // Mouse to normalized render/canvas coords from:
-                    // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
-                    const canvasElement = canvas.renderer.domElement.getBoundingClientRect();
+        const sBox = selectionBox.current;
+        const sHelper = selectionHelper.current;
+        const pointerUp = () => {
+            console.debug("SelectionBox pointerUp: %s", sHelper.enabled);
+            if (sHelper.enabled) {
+                // Mouse to normalized render/canvas coords from:
+                // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+                const canvasElement = canvas.renderer.domElement.getBoundingClientRect();
 
-                    const topLeft = sHelper.pointTopLeft;
-                    const left = ((topLeft.x - canvasElement.left) / canvasElement.width) * 2 - 1;
-                    const top = (-(topLeft.y - canvasElement.top) / canvasElement.height) * 2 + 1;
+                const topLeft = sHelper.pointTopLeft;
+                const left = ((topLeft.x - canvasElement.left) / canvasElement.width) * 2 - 1;
+                const top = (-(topLeft.y - canvasElement.top) / canvasElement.height) * 2 + 1;
 
-                    const bottomRight = sHelper.pointBottomRight;
-                    const right = ((bottomRight.x - canvasElement.left) / canvasElement.width) * 2 - 1;
-                    const bottom = (-(bottomRight.y - canvasElement.top) / canvasElement.height) * 2 + 1;
-                    console.debug(
-                        "selectionHelper, top = %f, left = %f, bottom = %f, right = %f",
-                        top,
-                        left,
-                        bottom,
-                        right,
-                    );
+                const bottomRight = sHelper.pointBottomRight;
+                const right = ((bottomRight.x - canvasElement.left) / canvasElement.width) * 2 - 1;
+                const bottom = (-(bottomRight.y - canvasElement.top) / canvasElement.height) * 2 + 1;
+                console.debug(
+                    "selectionHelper, top = %f, left = %f, bottom = %f, right = %f",
+                    top,
+                    left,
+                    bottom,
+                    right,
+                );
 
-                    // TODO: check the z-value of these points
-                    sBox.startPoint.set(left, top, 0.5);
-                    sBox.endPoint.set(right, bottom, 0.5);
+                // TODO: check the z-value of these points
+                sBox.startPoint.set(left, top, 0.5);
+                sBox.endPoint.set(right, bottom, 0.5);
 
-                    // TODO: consider restricting selection to a specific object
-                    const selection = sBox.select();
-                    setSelectedPoints(selection);
-                    console.debug("selected points:", selection);
-                }
-            };
-            // TODO: improve the behavior when pressing/releasing the mouse and
-            // shift key in different orders
-            canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
-        }
+                // TODO: consider restricting selection to a specific object
+                const selection = sBox.select();
+                setSelectedPoints(selection);
+                console.debug("selected points:", selection);
+            }
+        };
+        // TODO: improve the behavior when pressing/releasing the mouse and
+        // shift key in different orders
+        canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
+
         const keyDown = (event: KeyboardEvent) => {
-            console.log("keyDown: %s", event.key);
+            console.debug("SelectionBox keyDown: %s", event.key);
             if (event.repeat) {
                 return;
             } // ignore repeats (key held down)
@@ -72,7 +66,7 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             }
         };
         const keyUp = (event: KeyboardEvent) => {
-            console.log("keyUp: %s", event.key);
+            console.debug("SelectionBox keyUp: %s", event.key);
             if (event.key === "Shift") {
                 setSelecting(false);
             }
@@ -89,7 +83,7 @@ export default function useSelectionBox(canvas: PointCanvas | null) {
             document.removeEventListener("keydown", keyDown);
             document.removeEventListener("keyup", keyUp);
         };
-    }, [canvas]);
+    }, []);
 
     useEffect(() => {
         if (selectionHelper.current) {
