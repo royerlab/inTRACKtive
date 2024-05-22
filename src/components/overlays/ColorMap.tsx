@@ -4,20 +4,8 @@ import "@czi-sds/components/dist/variables.css";
 import { highlightLUT } from "@/lib/three/TrackMaterial";
 
 export const ColorMap = () => {
-    const gradientBoxes = [];
-    for (let i = 0; i < 128; i++) {
-        const color = highlightLUT.getColor(i / 128);
-        gradientBoxes.push(
-            <Box
-                key={i}
-                sx={{
-                    width: "var(--sds-space-xxs)",
-                    backgroundColor: `rgb(${color.r * 255}, ${color.g * 255}, ${color.b * 255})`,
-                    flexGrow: 1,
-                }}
-            />,
-        );
-    }
+    const colors = Array.from({ length: 129 }, (_, i) => `#${highlightLUT.getColor(i / 128).getHexString()}`);
+    const gradient = `linear-gradient(to top, ${colors.join(", ")})`;
 
     return (
         <Box
@@ -48,7 +36,13 @@ export const ColorMap = () => {
                     flexGrow: 1,
                 }}
             >
-                {gradientBoxes}
+                <Box
+                    sx={{
+                        width: "var(--sds-space-xxs)",
+                        flexGrow: 1,
+                        background: gradient,
+                    }}
+                />
             </Box>
             <Box>Past</Box>
         </Box>
