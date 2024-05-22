@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import * as THREE from "three";
+import { Vector3 } from "three";
 import React from "react";
 import { render } from "@testing-library/react";
 
@@ -15,8 +15,8 @@ test("tests work", () => {
 test("render Scene", () => {
     const TestContainer = () => {
         const initialViewerState = {
-            cameraPosition: new THREE.Vector3(0, 0, 0),
-            cameraTarget: new THREE.Vector3(0, 0, 0),
+            cameraPosition: new Vector3(0, 0, 0),
+            cameraTarget: new Vector3(0, 0, 0),
         };
         const [canvas, _dispatcher, ref] = usePointCanvas(initialViewerState);
 
