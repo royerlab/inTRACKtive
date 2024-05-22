@@ -228,7 +228,7 @@ export default function App() {
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
                             }}
-                            selectionMode={canvas.selectionMode}
+                            selectionMode={canvas.selector.selectionMode}
                             setSelectionMode={(value: PointSelectionMode) => {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
@@ -240,7 +240,7 @@ export default function App() {
                             hasTracks={numTracksLoaded > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
-                            selectionMode={canvas.selectionMode}
+                            selectionMode={canvas.selector.selectionMode}
                             showTracks={canvas.showTracks}
                             setShowTracks={(show: boolean) => {
                                 dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });

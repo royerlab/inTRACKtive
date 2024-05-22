@@ -21,7 +21,7 @@ export default function useSelectionBox(canvas: PointCanvas) {
         const sBox = selectionBox.current;
         const sHelper = selectionHelper.current;
         const pointerUp = () => {
-            if (canvas.cursor.visible) {
+            if (canvas.selector.selectionMode !== PointSelectionMode.BOX) {
                 return;
             }
             console.debug("SelectionBox pointerUp: %s", sHelper.enabled);
@@ -64,13 +64,13 @@ export default function useSelectionBox(canvas: PointCanvas) {
             if (event.repeat) {
                 return;
             } // ignore repeats (key held down)
-            if (event.key === "Shift" && canvas.selectionMode == PointSelectionMode.BOX) {
+            if (event.key === "Shift" && canvas.selector.selectionMode === PointSelectionMode.BOX) {
                 setSelecting(true);
             }
         };
         const keyUp = (event: KeyboardEvent) => {
             console.debug("SelectionBox keyUp: %s", event.key);
-            if (event.key === "Shift" && canvas.selectionMode == PointSelectionMode.BOX) {
+            if (event.key === "Shift" && canvas.selector.selectionMode === PointSelectionMode.BOX) {
                 setSelecting(false);
             }
         };

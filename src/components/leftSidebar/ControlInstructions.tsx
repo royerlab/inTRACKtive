@@ -3,7 +3,7 @@ import { Callout } from "@czi-sds/components";
 import { PointSelectionMode } from "@/lib/PointCanvas";
 
 interface ControlInstructionsProps {
-    selectionMode: string;
+    selectionMode: PointSelectionMode;
 }
 
 export default function ControlInstructions(props: ControlInstructionsProps) {
@@ -15,13 +15,11 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
         case PointSelectionMode.SPHERICAL_CURSOR:
             instructionText = (
                 <>
-                    <p>Shift-click to select cells within the sphere.</p>
+                    <p>Hold Shift and a sphere will follow your cursor, centering on nearby points.</p>
+                    <p>Shift-Click to select cells within the sphere.</p>
                     <p>Additional controls:</p>
-                    <ul>
-                        <li>Space (hold): sphere follows cursor</li>
-                        <li>Ctrl+scroll: scale sphere</li>
-                        <li>s: show/hide sphere</li>
-                    </ul>
+                    <p>Ctrl+scroll: scale sphere</p>
+                    <p>s: show/hide sphere</p>
                 </>
             );
             break;
@@ -30,13 +28,11 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
                 <>
                     <p>Shift-click to select cells within the sphere.</p>
                     <p>Additional controls:</p>
-                    <ul>
-                        <li>Ctrl+scroll: scale</li>
-                        <li>w: position mode</li>
-                        <li>e: rotation mode</li>
-                        <li>r: scale mode</li>
-                        <li>s: show/hide sphere</li>
-                    </ul>
+                    <p>w: position mode</p>
+                    <p>e: rotation mode</p>
+                    <p>r: scale mode</p>
+                    <p>Ctrl+scroll: scale</p>
+                    <p>s: show/hide sphere</p>
                 </>
             );
             break;

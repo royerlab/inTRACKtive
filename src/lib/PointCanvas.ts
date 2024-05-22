@@ -5,7 +5,6 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
-    Group,
     Matrix3,
     Mesh,
     MeshBasicMaterial,
@@ -39,6 +38,150 @@ export enum PointSelectionMode {
     SPHERE = "SPHERE",
 }
 
+// this is a separate class to keep the point selection logic separate from the rendering logic in
+// the PointCanvas class this fixes some issues with callbacks and event listeners binding to
+// the original instance of the class, though we make many (shallow) copies of the PointCanvas
+// to update state in the app
+class PointSelector {
+    selectionMode: PointSelectionMode = PointSelectionMode.BOX;
+
+    cursor = new Mesh(
+        new SphereGeometry(25, 8, 8),
+        new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
+    );
+    cursorLock = true;
+    cursorControl: TransformControls;
+    pointer = new Vector2(0, 0);
+
+    constructor(canvas: PointCanvas) {
+        this.cursorControl = new TransformControls(canvas.camera, canvas.renderer.domElement);
+        this.cursorControl.size = 0.5;
+        this.cursorControl.attach(this.cursor);
+
+        canvas.scene.add(this.cursor);
+
+        const draggingChanged = (event: { value: unknown }) => {
+            canvas.controls.enabled = !event.value;
+        };
+
+        const keyDown = (event: KeyboardEvent) => {
+            switch (event.key) {
+                case "Control":
+                    canvas.controls.enabled = false;
+                    break;
+                case "Shift":
+                    this.cursorLock = false;
+                    break;
+            }
+        };
+
+        const keyUp = (event: KeyboardEvent) => {
+            console.log(event.key, this.selectionMode);
+            switch (event.key) {
+                case "Control":
+                    canvas.controls.enabled = true;
+                    break;
+                case "Shift":
+                    this.cursorLock = true;
+                    break;
+                case "s":
+                    if (this.selectionMode === PointSelectionMode.BOX) return;
+                    this.cursor.visible = !this.cursor.visible;
+                    this.cursorControl.visible = this.cursorControl.enabled && this.cursor.visible;
+                    break;
+                case "w":
+                    this.cursorControl.setMode("translate");
+                    break;
+                case "e":
+                    this.cursorControl.setMode("rotate");
+                    break;
+                case "r":
+                    this.cursorControl.setMode("scale");
+                    break;
+            }
+        };
+
+        const mouseWheel = (event: WheelEvent) => {
+            if (event.ctrlKey) {
+                event.preventDefault();
+                this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
+            }
+        };
+
+        const pointerMove = (event: MouseEvent) => {
+            if (this.cursorLock) {
+                return;
+            }
+            const canvasElement = canvas.renderer.domElement.getBoundingClientRect();
+            this.pointer.x = ((event.clientX - canvasElement.left) / canvasElement.width) * 2 - 1;
+            this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
+            canvas.raycaster.setFromCamera(this.pointer, canvas.camera);
+            const intersects = canvas.raycaster.intersectObject(canvas.points);
+            if (intersects.length > 0) {
+                this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
+            }
+        };
+
+        const pointerUp = (event: MouseEvent) => {
+            if (!event.shiftKey || !this.cursor.visible) {
+                return;
+            }
+            // return list of points inside cursor sphere
+            const radius = this.cursor.geometry.parameters.radius;
+            const normalMatrix = new Matrix3();
+            normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
+            normalMatrix.invert();
+            const center = this.cursor.position;
+            const geometry = canvas.points.geometry;
+            const positions = geometry.getAttribute("position");
+            const numPoints = positions.count;
+            const selected = [];
+            for (let i = 0; i < numPoints; i++) {
+                const x = positions.getX(i);
+                const y = positions.getY(i);
+                const z = positions.getZ(i);
+                const vecToCenter = new Vector3(x, y, z).sub(center);
+                const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
+                if (scaledVecToCenter.length() < radius) {
+                    selected.push(i);
+                }
+            }
+            const points: PointsCollection = new Map();
+            points.set(canvas.points.id, selected);
+            canvas.setSelectedPoints(points);
+            console.log("selected points:", selected);
+        };
+
+        this.cursorControl.addEventListener("dragging-changed", draggingChanged);
+        canvas.renderer.domElement.addEventListener("pointermove", pointerMove);
+        canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
+        canvas.renderer.domElement.addEventListener("wheel", mouseWheel);
+        document.addEventListener("keydown", keyDown);
+        document.addEventListener("keyup", keyUp);
+    }
+
+    setSelectionMode(mode: PointSelectionMode) {
+        this.selectionMode = mode;
+        switch (this.selectionMode) {
+            case PointSelectionMode.BOX:
+                this.cursor.visible = false;
+                this.cursorControl.detach();
+                this.cursorLock = true;
+                break;
+            case PointSelectionMode.SPHERICAL_CURSOR:
+                this.cursor.visible = true;
+                this.cursorControl.detach();
+                this.cursorLock = true;
+                break;
+            case PointSelectionMode.SPHERE:
+                this.cursor.visible = true;
+                this.cursorControl.attach(this.cursor);
+                this.cursorLock = true;
+                break;
+        }
+    }
+}
+
 export class PointCanvas {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -48,9 +191,9 @@ export class PointCanvas {
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
     raycaster = new Raycaster();
+    selector: PointSelector;
 
     tracks: Tracks = new Map();
-    selectionMode: PointSelectionMode = PointSelectionMode.BOX;
 
     showTracks = true;
     showTrackHighlights = true;
@@ -64,11 +207,6 @@ export class PointCanvas {
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
     private maxPointsPerTimepoint = 0;
-
-    pointer = new Vector2(0, 0);
-    cursor = new Group();
-    cursorLock = true;
-    cursorControl: TransformControls;
 
     constructor(width: number, height: number, setSelectedPoints: (points: PointsCollection) => void) {
         this.setSelectedPoints = setSelectedPoints;
@@ -116,35 +254,9 @@ export class PointCanvas {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
 
-        this.cursor.add(
-            new Mesh(
-                new SphereGeometry(25.2, 8, 8),
-                new MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.5 }),
-            ),
-        );
-        this.cursor.add(
-            new Mesh(
-                new SphereGeometry(25, 8, 8),
-                new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 }),
-            ),
-        );
-        this.cursorControl = new TransformControls(this.camera, this.renderer.domElement);
-        this.cursorControl.size = 0.5;
-        const dragingChanged = (event: { value: unknown }) => {
-            this.controls.enabled = !event.value;
-        };
-        this.cursorControl.addEventListener("dragging-changed", dragingChanged);
-        this.scene.add(this.cursor);
-        this.cursorControl.attach(this.cursor);
-        this.scene.add(this.cursorControl);
+        this.selector = new PointSelector(this);
 
         this.setSelectionMode(PointSelectionMode.BOX);
-
-        this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
-        this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
-        this.renderer.domElement.addEventListener("wheel", this.mouseWheel);
-        document.addEventListener("keydown", this.keyDown);
-        document.addEventListener("keyup", this.keyUp);
     }
 
     shallowCopy(): PointCanvas {
@@ -154,113 +266,8 @@ export class PointCanvas {
     }
 
     setSelectionMode(mode: PointSelectionMode) {
-        console.debug("setSelectionMode", mode);
-        if (mode === PointSelectionMode.BOX) {
-            this.cursor.visible = false;
-            this.cursorControl.visible = false;
-            this.cursorControl.enabled = false;
-            this.cursorLock = true;
-        } else {
-            this.cursor.visible = true;
-            if (mode === PointSelectionMode.SPHERICAL_CURSOR) {
-                this.cursorControl.visible = false;
-                this.cursorControl.enabled = false;
-                this.cursorLock = true;
-            } else if (mode === PointSelectionMode.SPHERE) {
-                this.cursorControl.visible = true;
-                this.cursorControl.enabled = true;
-                this.cursorLock = true;
-            }
-        }
-        this.selectionMode = mode;
+        this.selector.setSelectionMode(mode);
     }
-
-    keyDown = (event: KeyboardEvent) => {
-        if (event.key === "Control") {
-            this.controls.enabled = false;
-        }
-        if (event.key === " ") {
-            this.cursorLock = false;
-        }
-    };
-
-    keyUp = (event: KeyboardEvent) => {
-        if (event.key === "Control") {
-            this.controls.enabled = true;
-        }
-        if (event.key === " ") {
-            this.cursorLock = true;
-        }
-        if (event.key === "Escape") {
-            this.cursorControl.enabled = !this.cursorControl.enabled;
-            this.cursorControl.visible = this.cursorControl.enabled;
-            this.cursorLock = this.cursorControl.enabled;
-        }
-        if (event.key === "s") {
-            this.cursor.visible = !this.cursor.visible;
-            this.cursorControl.visible = this.cursorControl.enabled && this.cursor.visible;
-        }
-        if (event.key === "w") {
-            this.cursorControl.setMode("translate");
-        }
-        if (event.key === "e") {
-            this.cursorControl.setMode("rotate");
-        }
-        if (event.key === "r") {
-            this.cursorControl.setMode("scale");
-        }
-    };
-
-    mouseWheel = (event: WheelEvent) => {
-        if (event.ctrlKey) {
-            event.preventDefault();
-            this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
-        }
-    };
-
-    pointerMove = (event: MouseEvent) => {
-        if (this.cursorLock) {
-            return;
-        }
-        const canvasElement = this.renderer.domElement.getBoundingClientRect();
-        this.pointer.x = ((event.clientX - canvasElement.left) / canvasElement.width) * 2 - 1;
-        this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
-        this.raycaster.setFromCamera(this.pointer, this.camera);
-        const intersects = this.raycaster.intersectObject(this.points);
-        if (intersects.length > 0) {
-            this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
-        }
-    };
-
-    pointerUp = (event: MouseEvent) => {
-        if (!event.shiftKey || !this.cursor.visible) {
-            return;
-        }
-        // return list of points inside cursor sphere
-        const radius = ((this.cursor.children[1] as Mesh).geometry as SphereGeometry).parameters.radius;
-        const normalMatrix = new Matrix3();
-        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
-        normalMatrix.invert();
-        const center = this.cursor.position;
-        const geometry = this.points.geometry;
-        const positions = geometry.getAttribute("position");
-        const numPoints = positions.count;
-        const selected = [];
-        for (let i = 0; i < numPoints; i++) {
-            const x = positions.getX(i);
-            const y = positions.getY(i);
-            const z = positions.getZ(i);
-            const vecToCenter = new Vector3(x, y, z).sub(center);
-            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
-            if (scaledVecToCenter.length() < radius) {
-                selected.push(i);
-            }
-        }
-        const points: PointsCollection = new Map();
-        points.set(this.points.id, selected);
-        this.setSelectedPoints(points);
-        console.log("selected points:", selected);
-    };
 
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.

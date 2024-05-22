@@ -1,6 +1,7 @@
 import { TrackManager } from "@/lib/TrackManager";
 import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
+import { PointSelectionMode } from "@/lib/PointCanvas";
 
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
@@ -11,7 +12,7 @@ interface LeftSidebarWrapperProps {
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
-    selectionMode: string;
+    selectionMode: PointSelectionMode;
 }
 
 export default function LeftSidebarWrapper({
