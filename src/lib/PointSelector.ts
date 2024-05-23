@@ -104,37 +104,6 @@ export class PointSelector {
         }
     }
 
-    keyDown(event: KeyboardEvent) {
-        console.debug("PointSelector.keyDown", event);
-        this.selector().keyDown(event);
-    };
-
-    keyUp(event: KeyboardEvent)
-    {
-        this.selector().keyUp(event);
-    };
-
-    mouseWheel(event: WheelEvent) {
-        this.selector().mouseWheel(event);
-    };
-
-    pointerMove(event: MouseEvent) {
-        this.selector().pointerMove(event);
-    };
-
-    pointerUp(event: MouseEvent) {
-        console.debug("PointSelector.pointerUp", event);
-        this.selector().pointerUp(event);
-    };
-
-    pointerDown(event: MouseEvent) {
-        this.selector().pointerDown(event);
-    };
-
-    pointerCancel(event: MouseEvent) {
-        this.selector().pointerCancel(event);
-    };
-
     selector() : PointSelectorInterface {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
