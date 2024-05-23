@@ -56,8 +56,6 @@ export class PointSelector {
     ) {
         this.renderer = renderer;
         this.selection = new Map();
-        this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
-        this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
     }
 
     init(
