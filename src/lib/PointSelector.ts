@@ -29,8 +29,6 @@ interface PointSelectorInterface {
 
 export type SelectionChanged = (selection: PointsCollection) => void;
 
-let nextObjectId: number = 1;
-
 // this is a separate class to keep the point selection logic separate from the rendering logic in
 // the PointCanvas class this fixes some issues with callbacks and event listeners binding to
 // the original instance of the class, though we make many (shallow) copies of the PointCanvas
