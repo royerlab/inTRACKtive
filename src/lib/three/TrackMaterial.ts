@@ -23,7 +23,7 @@ import {
 } from "three";
 import { Lut } from "three/examples/jsm/Addons.js";
 
-const highlightLUT = new Lut();
+export const highlightLUT = new Lut();
 // generated using https://waldyrious.net/viridis-palette-generator/
 highlightLUT.addColorMap("plasma", [
     [0.0, 0x000004],

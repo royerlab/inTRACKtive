@@ -15,6 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
+import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -279,6 +280,7 @@ export default function App() {
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />
                 <Box flexGrow={0} padding="1em">
+                    <ColorMap />
                     <PlaybackControls
                         enabled={true}
                         autoRotate={canvas.controls.autoRotate}
