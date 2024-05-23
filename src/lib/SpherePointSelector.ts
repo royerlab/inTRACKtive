@@ -25,6 +25,7 @@ export class SpherePointSelector {
         new SphereGeometry(25, 8, 8),
         new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
     );
+    // True if this should not respond to pointer movements, false otherwise.
     cursorLock = true;
     cursorControl: TransformControls;
     pointer = new Vector2(0, 0);
@@ -54,10 +55,13 @@ export class SpherePointSelector {
 
         this.cursorControl = new TransformControls(camera, renderer.domElement);
         this.cursorControl.size = 0.5;
-        this.cursorControl.attach(this.cursor);
+        this.setVisible(false);
+        this.setControlsVisible(false);
+
         this.raycaster.params.Points.threshold = 10;
 
         this.scene.add(this.cursor);
+        this.scene.add(this.cursorControl);
 
         const draggingChanged = (event: { value: unknown }) => {
             this.controls.enabled = !event.value;
@@ -65,20 +69,39 @@ export class SpherePointSelector {
         this.cursorControl.addEventListener("dragging-changed", draggingChanged);
     }
 
+    setVisible(visible: boolean) {
+        this.cursorLock = true;
+        this.cursor.visible = visible;
+        if (!visible) {
+            this.cursorControl.detach();
+        }
+    }
+
+    setControlsVisible(visible: boolean) {
+        this.cursorControl.visible = visible;
+        if (visible) {
+            this.cursorControl.attach(this.cursor);
+        } else {
+            this.cursorControl.detach();
+        }
+    }
+
     keyDown(event: KeyboardEvent) {
+        console.debug("SpherePointSelector.keyDown: ", event);
         switch (event.key) {
             case "Control":
                 this.controls.enabled = false;
                 break;
             case "Shift":
-                // TODO: need an equivalent for this.
-                // if (this.selectionMode !== PointSelectionMode.SPHERICAL_CURSOR) return;
-                this.cursorLock = false;
+                if (this.cursor.visible && !this.cursorControl.visible) {
+                    this.cursorLock = false;
+                }
                 break;
         }
     };
 
     keyUp(event: KeyboardEvent) {
+        console.debug("SpherePointSelector.keyUp: ", event);
         switch (event.key) {
             case "Control":
                 this.controls.enabled = true;
@@ -103,6 +126,7 @@ export class SpherePointSelector {
     };
 
     mouseWheel(event: WheelEvent) {
+        console.debug("SpherePointSelector.mouseWheel: ", event);
         if (event.ctrlKey) {
             event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
@@ -124,6 +148,7 @@ export class SpherePointSelector {
     };
 
     pointerUp(event: MouseEvent) {
+        console.debug("SpherePointSelector.pointerUp: ", event);
         if (!event.shiftKey || !this.cursor.visible) {
             return;
         }
@@ -159,5 +184,7 @@ export class SpherePointSelector {
 
     dispose() {
         // TODO: remove dragging callback
+        this.scene.remove(this.cursor);
+        this.scene.remove(this.cursorControl);
     }
 };

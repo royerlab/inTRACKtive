@@ -149,23 +149,9 @@ export class PointSelector {
     setSelectionMode(mode: PointSelectionMode) {
         console.debug("PointSelector.setSelectionMode: ", mode);
         this.selectionMode = mode;
-        if (!this.sphereSelector) return;
-        switch (this.selectionMode) {
-            case PointSelectionMode.BOX:
-                this.sphereSelector.cursor.visible = false;
-                this.sphereSelector.cursorControl.detach();
-                this.sphereSelector.cursorLock = true;
-                break;
-            case PointSelectionMode.SPHERICAL_CURSOR:
-                this.sphereSelector.cursor.visible = true;
-                this.sphereSelector.cursorControl.detach();
-                this.sphereSelector.cursorLock = true;
-                break;
-            case PointSelectionMode.SPHERE:
-                this.sphereSelector.cursor.visible = true;
-                this.sphereSelector.cursorControl.attach(this.sphereSelector.cursor);
-                this.sphereSelector.cursorLock = true;
-                break;
+        if (this.sphereSelector) {
+            this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX);
+            this.sphereSelector.setControlsVisible(mode === PointSelectionMode.SPHERE);
         }
     }
 }

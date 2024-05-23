@@ -32,7 +32,26 @@ export class BoxPointSelector {
         console.debug("BoxPointSelector.pointerUp");
         this.blocked = false;
         if (!this.selecting()) return;
-        this.updateSelectedPoints();
+        // Mouse to normalized render/canvas coords from:
+        // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
+        const canvasRect = this.renderer.domElement.getBoundingClientRect();
+
+        const topLeft = this.helper.pointTopLeft;
+        const left = ((topLeft.x - canvasRect.left) / canvasRect.width) * 2 - 1;
+        const top = (-(topLeft.y - canvasRect.top) / canvasRect.height) * 2 + 1;
+
+        const bottomRight = this.helper.pointBottomRight;
+        const right = ((bottomRight.x - canvasRect.left) / canvasRect.width) * 2 - 1;
+        const bottom = (-(bottomRight.y - canvasRect.top) / canvasRect.height) * 2 + 1;
+        console.debug("updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
+
+        // TODO: check the z-value of these points
+        this.box.startPoint.set(left, top, 0.5);
+        this.box.endPoint.set(right, bottom, 0.5);
+        // TODO: consider restricting selection to a specific object
+        this.box.select();
+
+        this.setSelectedPoints(this.box.collection);
     };
 
     pointerCancel(_event: MouseEvent) {
@@ -79,29 +98,6 @@ export class BoxPointSelector {
         console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
         this.box.collection = selectedPoints;
         this.selectionChanged(selectedPoints);
-    }
-
-    updateSelectedPoints() {
-        // Mouse to normalized render/canvas coords from:
-        // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
-        const canvasRect = this.renderer.domElement.getBoundingClientRect();
-
-        const topLeft = this.helper.pointTopLeft;
-        const left = ((topLeft.x - canvasRect.left) / canvasRect.width) * 2 - 1;
-        const top = (-(topLeft.y - canvasRect.top) / canvasRect.height) * 2 + 1;
-
-        const bottomRight = this.helper.pointBottomRight;
-        const right = ((bottomRight.x - canvasRect.left) / canvasRect.width) * 2 - 1;
-        const bottom = (-(bottomRight.y - canvasRect.top) / canvasRect.height) * 2 + 1;
-        console.debug("updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
-
-        // TODO: check the z-value of these points
-        this.box.startPoint.set(left, top, 0.5);
-        this.box.endPoint.set(right, bottom, 0.5);
-        // TODO: consider restricting selection to a specific object
-        this.box.select();
-
-        this.setSelectedPoints(this.box.collection);
     }
 
     dispose() {
