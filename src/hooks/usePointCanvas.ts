@@ -134,7 +134,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
 function createPointCanvas(initialViewerState: ViewerState) : PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
-    // the setSelectedPoints callback is used to notify the parent component of selected points
     const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
@@ -178,8 +177,8 @@ function usePointCanvas(
         handleWindowResize();
 
         // TODO: understand why we need to this on mount rather than on construction.
-        // I think it's because the HTML canvas changes on mount.
-        // Will it also change on resize?
+        // I think it's because the HTML canvas changes on mount in a way that
+        // the event listeners are on the wrong object.
         canvas.selector.init(canvas.scene, canvas.renderer, canvas.camera, canvas.controls, canvas.points);
 
         return () => {
