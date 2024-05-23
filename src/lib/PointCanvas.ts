@@ -8,7 +8,6 @@ import {
     PerspectiveCamera,
     Points,
     PointsMaterial,
-    Raycaster,
     Scene,
     SRGBColorSpace,
     TextureLoader,
@@ -36,7 +35,6 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
-    raycaster = new Raycaster();
     selector: PointSelector;
 
     tracks: Tracks = new Map();
@@ -108,7 +106,6 @@ export class PointCanvas {
         );
 
         this.setSelectionMode(PointSelectionMode.BOX);
-        this.raycaster.params.Points.threshold = 10;
     }
 
     shallowCopy(): PointCanvas {

@@ -55,6 +55,7 @@ export class SpherePointSelector {
         this.cursorControl = new TransformControls(camera, renderer.domElement);
         this.cursorControl.size = 0.5;
         this.cursorControl.attach(this.cursor);
+        this.raycaster.params.Points.threshold = 10;
 
         this.scene.add(this.cursor);
 
@@ -70,6 +71,8 @@ export class SpherePointSelector {
                 this.controls.enabled = false;
                 break;
             case "Shift":
+                // TODO: need an equivalent for this.
+                // if (this.selectionMode !== PointSelectionMode.SPHERICAL_CURSOR) return;
                 this.cursorLock = false;
                 break;
         }
