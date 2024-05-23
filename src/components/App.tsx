@@ -15,7 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
-import { TimestampOverlay } from "./TimestampOverlay";
+import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
