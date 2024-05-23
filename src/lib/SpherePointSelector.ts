@@ -53,12 +53,13 @@ export class SpherePointSelector {
         this.points = points; 
         this.selectionChanged = selectionChanged;
 
+        // Value of 10 arbitrarily chosen for a decent experience,
+        // compared to 1 which can be sluggish.
+        this.raycaster.params.Points.threshold = 10;
+
         this.cursorControl = new TransformControls(camera, renderer.domElement);
         this.cursorControl.size = 0.5;
-        this.setVisible(false);
-        this.setControlsVisible(false);
-
-        this.raycaster.params.Points.threshold = 10;
+        this.setVisible(false, false);
 
         this.scene.add(this.cursor);
         this.scene.add(this.cursorControl);
@@ -67,25 +68,26 @@ export class SpherePointSelector {
         this.cursorControl.addEventListener("dragging-changed", this.draggingChanged);
     }
 
-    draggingChanged(event: {value: unknown}) {
-        this.controls.enabled = !event.value;
+    dispose() {
+        this.cursorControl.removeEventListener("dragging-changed", this.draggingChanged);
+        this.cursorControl.dispose();
+        this.scene.remove(this.cursor);
+        this.scene.remove(this.cursorControl);
     }
 
-    setVisible(visible: boolean) {
+    setVisible(visible: boolean, controlsVisible: boolean) {
         this.cursorLock = true;
         this.cursor.visible = visible;
-        if (!visible) {
-            this.cursorControl.detach();
-        }
-    }
-
-    setControlsVisible(visible: boolean) {
         this.cursorControl.visible = visible;
-        if (visible) {
+        if (controlsVisible) {
             this.cursorControl.attach(this.cursor);
         } else {
             this.cursorControl.detach();
         }
+    }
+
+    draggingChanged(event: {value: unknown}) {
+        this.controls.enabled = !event.value;
     }
 
     keyDown(event: KeyboardEvent) {
@@ -95,7 +97,7 @@ export class SpherePointSelector {
                 this.controls.enabled = false;
                 break;
             case "Shift":
-                if (this.cursor.visible && !this.cursorControl.visible) {
+                if (this.cursor.visible && !this.cursorControl.object) {
                     this.cursorLock = false;
                 }
                 break;
@@ -113,7 +115,7 @@ export class SpherePointSelector {
                 break;
             case "s":
                 this.cursor.visible = !this.cursor.visible;
-                this.cursorControl.visible = this.cursorControl.enabled && this.cursor.visible;
+                this.cursorControl.visible = !!this.cursorControl.object && this.cursor.visible;
                 break;
             case "w":
                 this.cursorControl.setMode("translate");
@@ -184,9 +186,4 @@ export class SpherePointSelector {
 
     pointerCancel(_event: MouseEvent) {}
 
-    dispose() {
-        this.cursorControl.removeEventListener("dragging-changed", this.draggingChanged);
-        this.scene.remove(this.cursor);
-        this.scene.remove(this.cursorControl);
-    }
 };

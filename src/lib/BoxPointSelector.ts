@@ -24,9 +24,27 @@ export class BoxPointSelector {
         this.selectionChanged = selectionChanged;
     }
 
-    mouseWheel(_event: WheelEvent) {}
+    dispose() {
+        this.helper.dispose();
+    }
 
-    pointerMove(_event: MouseEvent) {}
+    selecting(): boolean {
+        return this.helper.enabled;
+    }
+
+    setSelecting(selecting: boolean) {
+        console.debug("BoxPointSelector.setSelecting: ", selecting);
+        if (!this.blocked) {
+            this.helper.enabled = selecting;
+            this.controls.enabled = !selecting;
+        }
+    }
+
+    setSelectedPoints(selectedPoints: PointsCollection) {
+        console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
+        this.box.collection = selectedPoints;
+        this.selectionChanged(selectedPoints);
+    }
 
     pointerUp(_event: MouseEvent) {
         console.debug("BoxPointSelector.pointerUp");
@@ -82,25 +100,7 @@ export class BoxPointSelector {
         }
     };
 
-    selecting(): boolean {
-        return this.helper.enabled;
-    }
+    mouseWheel(_event: WheelEvent) {}
 
-    setSelecting(selecting: boolean) {
-        console.debug("BoxPointSelector.setSelecting: ", selecting);
-        if (!this.blocked) {
-            this.helper.enabled = selecting;
-            this.controls.enabled = !selecting;
-        }
-    }
-
-    setSelectedPoints(selectedPoints: PointsCollection) {
-        console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
-        this.box.collection = selectedPoints;
-        this.selectionChanged(selectedPoints);
-    }
-
-    dispose() {
-        this.helper.dispose();
-    }
+    pointerMove(_event: MouseEvent) {}
 }
