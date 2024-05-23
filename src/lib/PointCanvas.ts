@@ -59,6 +59,7 @@ class PointSelector {
         this.cursorControl.attach(this.cursor);
 
         canvas.scene.add(this.cursor);
+        canvas.scene.add(this.cursorControl);
 
         const draggingChanged = (event: { value: unknown }) => {
             canvas.controls.enabled = !event.value;
@@ -70,6 +71,7 @@ class PointSelector {
                     canvas.controls.enabled = false;
                     break;
                 case "Shift":
+                    if (this.selectionMode !== PointSelectionMode.SPHERICAL_CURSOR) return;
                     this.cursorLock = false;
                     break;
             }
