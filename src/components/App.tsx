@@ -15,6 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
+import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
@@ -32,6 +33,7 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
+    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
@@ -44,7 +46,7 @@ export default function App() {
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isLoadingPoints, setIsLoadingPoints] = useState(false);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -95,7 +97,7 @@ export default function App() {
     // update the points when the array or timepoint changes
     useEffect(() => {
         // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setLoading(true), playbackIntervalMs);
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -113,14 +115,14 @@ export default function App() {
 
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
-                setLoading(false);
+                setIsLoadingPoints(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
             getPoints(canvas, canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
-            setLoading(false);
+            setIsLoadingPoints(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
@@ -166,7 +168,13 @@ export default function App() {
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
+
+        setIsLoadingTracks(true);
+        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
+            () => {
+                setIsLoadingTracks(false);
+            },
+        );
         // TODO: cancel the fetch if the selection changes?
     }, [selectedPoints]);
 
@@ -282,11 +290,12 @@ export default function App() {
             >
                 <Scene
                     ref={sceneDivRef}
-                    loading={loading}
+                    isLoading={isLoadingPoints || isLoadingTracks}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />
                 <Box flexGrow={0} padding="1em">
+                    <TimestampOverlay timestamp={canvas.curTime} />
                     <ColorMap />
                     <PlaybackControls
                         enabled={true}
