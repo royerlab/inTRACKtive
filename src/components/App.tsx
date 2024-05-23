@@ -23,6 +23,8 @@ console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 clearUrlHash();
 
 const drawerWidth = 256;
+const playbackFPS = 16;
+const playbackIntervalMs = 1000 / playbackFPS;
 
 export default function App() {
     // TrackManager handles data fetching
@@ -90,8 +92,8 @@ export default function App() {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
-        const loadingTimer = setTimeout(() => setLoading(true), 100);
+        // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
+        const loadingTimeout = setTimeout(() => setLoading(true), playbackIntervalMs);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -107,16 +109,15 @@ export default function App() {
                     return;
                 }
 
-                // clearTimeout(loadingTimer);
-                setTimeout(() => setLoading(false), 250);
+                // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
+                clearTimeout(loadingTimeout);
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
             getPoints(canvas, canvas.curTime);
         } else {
-            // clearTimeout(loadingTimer);
-            setTimeout(() => setLoading(false), 250);
+            clearTimeout(loadingTimeout);
             setLoading(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
@@ -127,7 +128,7 @@ export default function App() {
         }
 
         return () => {
-            clearTimeout(loadingTimer);
+            clearTimeout(loadingTimeout);
             ignore = true;
         };
     }, [trackManager, canvas.curTime]);
@@ -171,10 +172,9 @@ export default function App() {
     // TODO: this is basic and may drop frames
     useEffect(() => {
         if (playing) {
-            const frameDelay = 1000 / 8; // 1000 / fps
             const interval = setInterval(() => {
                 dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
-            }, frameDelay);
+            }, playbackIntervalMs);
             return () => {
                 clearInterval(interval);
             };
