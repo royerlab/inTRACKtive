@@ -179,9 +179,8 @@ function usePointCanvas(
 
         // TODO: understand why we need to this on mount rather than on construction.
         // I think it's because the HTML canvas changes on mount.
-        // It may also change on resize?
+        // Will it also change on resize?
         canvas.selector.init(canvas.scene, canvas.renderer, canvas.camera, canvas.controls, canvas.points);
-        canvas.selector.addEventListeners();
 
         return () => {
             window.removeEventListener("resize", handleWindowResize);

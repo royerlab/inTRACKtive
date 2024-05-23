@@ -71,6 +71,16 @@ export class PointSelector {
         if (this.sphereSelector) this.sphereSelector.dispose();
         this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
         this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
+
+        this.htmlCanvas().addEventListener("pointermove", this);
+        this.htmlCanvas().addEventListener("pointerup", this);
+        this.htmlCanvas().addEventListener("pointerdown", this);
+        this.htmlCanvas().addEventListener("pointercancel", this);
+        this.htmlCanvas().addEventListener("wheel", this);
+        // Key listeners are added to the document because we don't want the
+        // canvas to have to be selected prior to listening for them
+        document.addEventListener("keydown", this);
+        document.addEventListener("keyup", this);
     }
 
     dispose() {
@@ -111,19 +121,6 @@ export class PointSelector {
         if (this.sphereSelector) {
             this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX, mode === PointSelectionMode.SPHERE);
         }
-    }
-
-    addEventListeners() {
-        // handle event
-        this.htmlCanvas().addEventListener("pointermove", this);
-        this.htmlCanvas().addEventListener("pointerup", this);
-        this.htmlCanvas().addEventListener("pointerdown", this);
-        this.htmlCanvas().addEventListener("pointercancel", this);
-        this.htmlCanvas().addEventListener("wheel", this);
-        // Key listeners are added to the document because we don't want the
-        // canvas to have to be selected prior to listening for them
-        document.addEventListener("keydown", this);
-        document.addEventListener("keyup", this);
     }
 
     handleEvent(event: Event) {
