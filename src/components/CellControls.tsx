@@ -2,7 +2,7 @@ import { Box, Stack } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
-import { PointSelectionMode } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager } from "@/lib/TrackManager";
 
 interface CellControlsProps {

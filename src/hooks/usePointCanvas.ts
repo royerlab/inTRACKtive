@@ -8,6 +8,7 @@ enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
+    SET_SELECTED_POINTS = "SET_SELECTED_POINTS",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
@@ -30,6 +31,11 @@ interface CurTime {
 interface HighlightPoints {
     type: ActionType.HIGHLIGHT_POINTS;
     points: number[];
+}
+
+interface SetSelectedPoints {
+    type: ActionType.SET_SELECTED_POINTS;
+    selection: PointsCollection;
 }
 
 interface PointBrightness {
@@ -71,6 +77,7 @@ type PointCanvasAction =
     | AutoRotate
     | CurTime
     | HighlightPoints
+    | SetSelectedPoints
     | PointBrightness
     | Refresh
     | RemoveAllTracks
@@ -96,6 +103,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.HIGHLIGHT_POINTS:
             newCanvas.highlightPoints(action.points);
+            break;
+        case ActionType.SET_SELECTED_POINTS:
+            // TODO: replace with refresh if we do not need to do anything.
+            //newCanvas.setSelectedPoints(action.selection);
             break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
@@ -129,17 +140,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     return newCanvas;
 }
 
-function createPointCanvas({
-    initialViewerState,
-    setSelectedPoints,
-}: {
-    initialViewerState: ViewerState;
-    setSelectedPoints?: (points: PointsCollection) => void;
-}): PointCanvas {
+function createPointCanvas(initialViewerState: ViewerState) : PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
-    // the setSelectedPoints callback is used to notify the parent component of selected points
-    const canvas = new PointCanvas(800, 600, setSelectedPoints ?? ((_points: PointsCollection) => {}));
+    const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
     canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
@@ -152,10 +156,14 @@ function createPointCanvas({
 
 function usePointCanvas(
     initialViewerState: ViewerState,
-    setSelectedPoints?: (points: PointsCollection) => void,
 ): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
     const divRef = useRef<HTMLDivElement>(null);
-    const [canvas, dispatchCanvas] = useReducer(reducer, { initialViewerState, setSelectedPoints }, createPointCanvas);
+    const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
+
+    // When the selection changes internally due to the user interacting with the canvas,
+    // we need to trigger a react re-render.
+    // TODO: we could just set this on mount since selector never changes.
+    canvas.selector.selectionChanged = () => {dispatchCanvas({type: ActionType.REFRESH});};
 
     // set up the canvas when the div is available
     // this is an effect because:
