@@ -1,14 +1,14 @@
 import { useEffect, useReducer, useRef } from "react";
 
-import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
-import { PointsCollection } from "@/lib/PointSelectionBox";
+import { PointCanvas } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
-    SET_SELECTED_POINTS = "SET_SELECTED_POINTS",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
@@ -31,11 +31,6 @@ interface CurTime {
 interface HighlightPoints {
     type: ActionType.HIGHLIGHT_POINTS;
     points: number[];
-}
-
-interface SetSelectedPoints {
-    type: ActionType.SET_SELECTED_POINTS;
-    selection: PointsCollection;
 }
 
 interface PointBrightness {
@@ -77,7 +72,6 @@ type PointCanvasAction =
     | AutoRotate
     | CurTime
     | HighlightPoints
-    | SetSelectedPoints
     | PointBrightness
     | Refresh
     | RemoveAllTracks
@@ -87,6 +81,7 @@ type PointCanvasAction =
     | MinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
+    console.debug("usePointCanvas.reducer: ", action);
     const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
@@ -103,10 +98,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.HIGHLIGHT_POINTS:
             newCanvas.highlightPoints(action.points);
-            break;
-        case ActionType.SET_SELECTED_POINTS:
-            // TODO: replace with refresh if we do not need to do anything.
-            //newCanvas.setSelectedPoints(action.selection);
             break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
@@ -163,7 +154,10 @@ function usePointCanvas(
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
     // TODO: we could just set this on mount since selector never changes.
-    canvas.selector.selectionChanged = () => {dispatchCanvas({type: ActionType.REFRESH});};
+    canvas.selector.setCallback((_selection: PointsCollection) => {
+        console.debug("selectionChanged: refresh");
+        dispatchCanvas({type: ActionType.REFRESH});
+    });
 
     // set up the canvas when the div is available
     // this is an effect because:
@@ -181,6 +175,9 @@ function usePointCanvas(
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
+
+        // TODO: understand why we need to this on mount rather than on construction.
+        canvas.selector.addEventListeners();
 
         return () => {
             window.removeEventListener("resize", handleWindowResize);

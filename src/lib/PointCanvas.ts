@@ -237,6 +237,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();
         this.points.geometry.dispose();
