@@ -257,8 +257,9 @@ export class PointCanvas {
         this.controls.autoRotateSpeed = 1;
 
         this.selector = new PointSelector(this);
-
         this.setSelectionMode(PointSelectionMode.BOX);
+
+        this.raycaster.params.Points.threshold = 10;
     }
 
     shallowCopy(): PointCanvas {
