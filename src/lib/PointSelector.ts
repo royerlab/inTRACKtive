@@ -35,8 +35,8 @@ export type SelectionChanged = (selection: PointsCollection) => void;
 // to update state in the app
 export class PointSelector {
     renderer: WebGLRenderer;
-    boxSelector: BoxPointSelector;
-    sphereSelector: SpherePointSelector;
+    boxSelector: BoxPointSelector | null = null;
+    sphereSelector: SpherePointSelector | null = null;
 
     // Current selection mode.
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
@@ -60,6 +60,19 @@ export class PointSelector {
         this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
     }
 
+    init(
+        scene: Scene,
+        renderer: WebGLRenderer,
+        camera: PerspectiveCamera,
+        controls: OrbitControls,
+        points: Points,
+    ) {
+        if (this.boxSelector) this.boxSelector.dispose();
+        if (this.sphereSelector) this.sphereSelector.dispose();
+        this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
+        this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
+    }
+
     htmlCanvas() : HTMLCanvasElement {
         return this.renderer.domElement as HTMLCanvasElement;
     }
@@ -78,33 +91,34 @@ export class PointSelector {
     }
 
     handleEvent(event: Event) {
-        // console.debug("PointSelector.handleEvent: ", event, this.selectionMode);
+        const selector = this.selector();
+        if (!selector) return;
         switch (event.type) {
             case "pointermove":
-                this.selector().pointerMove(event as MouseEvent);
+                selector.pointerMove(event as MouseEvent);
                 break;
             case "pointerup":
-                this.selector().pointerUp(event as MouseEvent);
+                selector.pointerUp(event as MouseEvent);
                 break
             case "pointerdown":
-                this.selector().pointerDown(event as MouseEvent);
+                selector.pointerDown(event as MouseEvent);
                 break;
             case "pointercancel":
-                this.selector().pointerCancel(event as MouseEvent);
+                selector.pointerCancel(event as MouseEvent);
                 break;
             case "wheel":
-                this.selector().mouseWheel(event as WheelEvent);
+                selector.mouseWheel(event as WheelEvent);
                 break;
             case "keydown":
-                this.selector().keyDown(event as KeyboardEvent);
+                selector.keyDown(event as KeyboardEvent);
                 break;
             case "keyup":
-                this.selector().keyUp(event as KeyboardEvent);
+                selector.keyUp(event as KeyboardEvent);
                 break;
         }
     }
 
-    selector() : PointSelectorInterface {
+    selector() : PointSelectorInterface | null {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
 
@@ -120,8 +134,8 @@ export class PointSelector {
         document.removeEventListener("keydown", this);
         document.removeEventListener("keyup", this);
  
-        this.boxSelector.dispose();
-        this.sphereSelector.dispose();
+        if (this.boxSelector) this.boxSelector.dispose();
+        if (this.sphereSelector) this.sphereSelector.dispose();
     }
 
     setSelectedPoints(selection: PointsCollection) {
@@ -135,6 +149,7 @@ export class PointSelector {
     setSelectionMode(mode: PointSelectionMode) {
         console.debug("PointSelector.setSelectionMode: ", mode);
         this.selectionMode = mode;
+        if (!this.sphereSelector) return;
         switch (this.selectionMode) {
             case PointSelectionMode.BOX:
                 this.sphereSelector.cursor.visible = false;

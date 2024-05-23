@@ -36,15 +36,17 @@ export class BoxPointSelector {
     };
 
     pointerCancel(_event: MouseEvent) {
+        console.debug("BoxPointSelector.pointerCancel");
         this.blocked = false;
     };
 
     pointerDown(_event: MouseEvent) {
+        console.debug("BoxPointSelector.pointerDown");
         this.blocked = true;
     };
 
     keyDown(event: KeyboardEvent) {
-        console.debug("BoxPointSelector.keyDown: %s", event.key);
+        console.debug("BoxPointSelector.keyDown: ", event.key);
         // ignore repeats (key held down)
         if (event.repeat) {
             return;
@@ -66,18 +68,15 @@ export class BoxPointSelector {
     }
 
     setSelecting(selecting: boolean) {
+        console.debug("BoxPointSelector.setSelecting: ", selecting);
         if (!this.blocked) {
             this.helper.enabled = selecting;
             this.controls.enabled = !selecting;
         }
     }
 
-    selectedPoints(): PointsCollection {
-        return this.box.collection;
-    }
-
     setSelectedPoints(selectedPoints: PointsCollection) {
-        console.debug("setSelectedPoints: ", selectedPoints);
+        console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
         this.box.collection = selectedPoints;
         this.selectionChanged(selectedPoints);
     }
