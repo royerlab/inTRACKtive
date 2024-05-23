@@ -154,10 +154,10 @@ function usePointCanvas(
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
     // TODO: we could just set this on mount since selector never changes.
-    canvas.selector.setCallback((_selection: PointsCollection) => {
+    canvas.selector.selectionChangedCallback = (_selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
         dispatchCanvas({type: ActionType.REFRESH});
-    });
+    };
 
     // set up the canvas when the div is available
     // this is an effect because:
@@ -177,6 +177,8 @@ function usePointCanvas(
         handleWindowResize();
 
         // TODO: understand why we need to this on mount rather than on construction.
+        // I think it's because the HTML canvas changes on mount.
+        // It may also change on resize?
         canvas.selector.addEventListeners();
 
         return () => {

@@ -8,7 +8,7 @@ import { SelectionChanged } from "@/lib/PointSelector";
 
 // Selection with a rectangle.
 export class BoxPointSelector {
-    canvas: HTMLCanvasElement;
+    renderer: WebGLRenderer;
     controls: OrbitControls;
     box: PointSelectionBox;
     helper: SelectionHelper;
@@ -16,8 +16,8 @@ export class BoxPointSelector {
     blocked: boolean = false;
 
     constructor(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls, selectionChanged: SelectionChanged) {
+        this.renderer = renderer;
         this.controls = controls;
-        this.canvas = renderer.domElement;
         this.helper = new SelectionHelper(renderer, "selectBox");
         this.helper.enabled = false;
         this.box = new PointSelectionBox(camera, scene);
@@ -85,7 +85,7 @@ export class BoxPointSelector {
     updateSelectedPoints() {
         // Mouse to normalized render/canvas coords from:
         // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
-        const canvasRect = this.canvas.getBoundingClientRect();
+        const canvasRect = this.renderer.domElement.getBoundingClientRect();
 
         const topLeft = this.helper.pointTopLeft;
         const left = ((topLeft.x - canvasRect.left) / canvasRect.width) * 2 - 1;
