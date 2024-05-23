@@ -38,14 +38,10 @@ export class PointSelector {
     boxSelector: BoxPointSelector | null = null;
     sphereSelector: SpherePointSelector | null = null;
 
-    // Current selection mode.
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
-
-    // Current selection.
     selection: PointsCollection = new Map();
-
-    // Selection change callback.
-    selectionChangedCallback: SelectionChanged | null = null;
+    // To optionally notify external observers about changes to the current selection.
+    selectionChanged: SelectionChanged | null = null;
 
     constructor(renderer: WebGLRenderer) {
         // TODO: constructor is not really needed except it means that renderer is non-null.
@@ -104,8 +100,8 @@ export class PointSelector {
     setSelectedPoints(selection: PointsCollection) {
         console.debug("PointSelector.setSelectedPoints:", selection);
         this.selection = selection;
-        if (this.selectionChangedCallback !== null) {
-            this.selectionChangedCallback(selection);
+        if (this.selectionChanged) {
+            this.selectionChanged(selection);
         }
     }
 

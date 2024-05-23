@@ -155,7 +155,7 @@ function usePointCanvas(
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
     // TODO: we could just set this on mount since selector never changes.
-    canvas.selector.selectionChangedCallback = (_selection: PointsCollection) => {
+    canvas.selector.selectionChanged = (_selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
         dispatchCanvas({type: ActionType.REFRESH});
     };
