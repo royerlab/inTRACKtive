@@ -41,7 +41,7 @@ export default function App() {
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isLoadingPoints, setIsLoadingPoints] = useState(false);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -92,7 +92,7 @@ export default function App() {
     // update the points when the array or timepoint changes
     useEffect(() => {
         // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
-        const loadingTimer = setTimeout(() => setLoading(true), 100);
+        const loadingTimer = setTimeout(() => setIsLoadingPoints(true), 100);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -109,16 +109,16 @@ export default function App() {
                 }
 
                 // clearTimeout(loadingTimer);
-                setTimeout(() => setLoading(false), 250);
-                setLoading(false);
+                setTimeout(() => setIsLoadingPoints(false), 250);
+                setIsLoadingPoints(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
             getPoints(canvas, canvas.curTime);
         } else {
             // clearTimeout(loadingTimer);
-            setTimeout(() => setLoading(false), 250);
-            setLoading(false);
+            setTimeout(() => setIsLoadingPoints(false), 250);
+            setIsLoadingPoints(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
@@ -282,7 +282,7 @@ export default function App() {
             >
                 <Scene
                     ref={sceneDivRef}
-                    loading={loading || isLoadingTracks}
+                    isLoading={isLoadingPoints || isLoadingTracks}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />
