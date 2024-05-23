@@ -4,13 +4,13 @@ import { LoadingIndicator } from "@czi-sds/components";
 import { Box } from "@mui/material";
 
 interface SceneProps {
-    loading: boolean;
+    isLoading: boolean;
     initialCameraPosition?: THREE.Vector3;
     initialCameraTarget?: THREE.Vector3;
 }
 
 const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<HTMLDivElement>) {
-    const loading = props.loading ? "visible" : "hidden";
+    const isLoading = props.isLoading ? "visible" : "hidden";
     return (
         <Box
             ref={ref}
@@ -23,7 +23,7 @@ const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<
                 overflow: "hidden",
             }}
         >
-            <Box sx={{ margin: "-5% auto", visibility: loading, zIndex: 1000, opacity: "70%" }}>
+            <Box sx={{ margin: "-5% auto", visibility: isLoading, zIndex: 1000, opacity: "70%" }}>
                 <LoadingIndicator sdsStyle="tag" />
             </Box>
         </Box>
