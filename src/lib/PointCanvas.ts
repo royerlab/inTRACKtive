@@ -8,6 +8,7 @@ import {
     PerspectiveCamera,
     Points,
     PointsMaterial,
+    Raycaster,
     Scene,
     SRGBColorSpace,
     TextureLoader,
@@ -27,7 +28,6 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
 
-
 export class PointCanvas {
     scene: Scene;
     renderer: WebGLRenderer;
@@ -36,6 +36,7 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
+    raycaster = new Raycaster();
     selector: PointSelector;
 
     tracks: Tracks = new Map();
@@ -107,6 +108,7 @@ export class PointCanvas {
         );
 
         this.setSelectionMode(PointSelectionMode.BOX);
+        this.raycaster.params.Points.threshold = 10;
     }
 
     shallowCopy(): PointCanvas {

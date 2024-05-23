@@ -1,9 +1,9 @@
 import { useEffect, useReducer, useRef } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
-import { PointsCollection } from "@/lib/PointSelectionBox";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
@@ -134,6 +134,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
 function createPointCanvas(initialViewerState: ViewerState) : PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
+    // the setSelectedPoints callback is used to notify the parent component of selected points
     const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
