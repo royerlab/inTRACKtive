@@ -13,7 +13,7 @@ import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas } from "@/lib/PointCanvas";
+import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { ColorMap } from "./overlays/ColorMap";
 
@@ -38,7 +38,9 @@ export default function App() {
     const numTracksLoaded = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
-    const { selectedPoints } = useSelectionBox(canvas);
+    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
+    // TODO: this is a bit of a hack because the canvas is created before the setSelectedPoints callback is available
+    canvas.setSelectedPoints = setSelectedPoints;
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
@@ -227,6 +229,10 @@ export default function App() {
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
                             }}
+                            selectionMode={canvas.selector.selectionMode}
+                            setSelectionMode={(value: PointSelectionMode) => {
+                                dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
+                            }}
                         />
                     </Box>
                     <Divider />
@@ -235,6 +241,7 @@ export default function App() {
                             hasTracks={numTracksLoaded > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
+                            selectionMode={canvas.selector.selectionMode}
                             showTracks={canvas.showTracks}
                             setShowTracks={(show: boolean) => {
                                 dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });

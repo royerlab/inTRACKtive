@@ -2,7 +2,7 @@ import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { useEffect, useRef, useState } from "react";
 
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
-import { PointCanvas } from "@/lib/PointCanvas";
+import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
 
 export default function useSelectionBox(canvas: PointCanvas) {
     const [selecting, setSelecting] = useState(false);
@@ -21,6 +21,9 @@ export default function useSelectionBox(canvas: PointCanvas) {
         const sBox = selectionBox.current;
         const sHelper = selectionHelper.current;
         const pointerUp = () => {
+            if (canvas.selector.selectionMode !== PointSelectionMode.BOX) {
+                return;
+            }
             console.debug("SelectionBox pointerUp: %s", sHelper.enabled);
             if (sHelper.enabled) {
                 // Mouse to normalized render/canvas coords from:
@@ -61,13 +64,13 @@ export default function useSelectionBox(canvas: PointCanvas) {
             if (event.repeat) {
                 return;
             } // ignore repeats (key held down)
-            if (event.key === "Shift") {
+            if (event.key === "Shift" && canvas.selector.selectionMode === PointSelectionMode.BOX) {
                 setSelecting(true);
             }
         };
         const keyUp = (event: KeyboardEvent) => {
             console.debug("SelectionBox keyUp: %s", event.key);
-            if (event.key === "Shift") {
+            if (event.key === "Shift" && canvas.selector.selectionMode === PointSelectionMode.BOX) {
                 setSelecting(false);
             }
         };
