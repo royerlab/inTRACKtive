@@ -185,5 +185,4 @@ export class SpherePointSelector {
     pointerDown(_event: MouseEvent) {}
 
     pointerCancel(_event: MouseEvent) {}
-
 };
