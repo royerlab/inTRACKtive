@@ -63,10 +63,12 @@ export class SpherePointSelector {
         this.scene.add(this.cursor);
         this.scene.add(this.cursorControl);
 
-        const draggingChanged = (event: { value: unknown }) => {
-            this.controls.enabled = !event.value;
-        };
-        this.cursorControl.addEventListener("dragging-changed", draggingChanged);
+        this.draggingChanged = this.draggingChanged.bind(this);
+        this.cursorControl.addEventListener("dragging-changed", this.draggingChanged);
+    }
+
+    draggingChanged(event: {value: unknown}) {
+        this.controls.enabled = !event.value;
     }
 
     setVisible(visible: boolean) {
@@ -183,7 +185,7 @@ export class SpherePointSelector {
     pointerCancel(_event: MouseEvent) {}
 
     dispose() {
-        // TODO: remove dragging callback
+        this.cursorControl.removeEventListener("dragging-changed", this.draggingChanged);
         this.scene.remove(this.cursor);
         this.scene.remove(this.cursorControl);
     }
