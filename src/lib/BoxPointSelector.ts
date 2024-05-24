@@ -6,13 +6,16 @@ import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
 
-// Selection with a rectangle.
+// Selection with a 2D rectangle to make a 3D frustum.
 export class BoxPointSelector {
     renderer: WebGLRenderer;
     controls: OrbitControls;
     box: PointSelectionBox;
     helper: SelectionHelper;
     selectionChanged: SelectionChanged;
+    // True if this should not perform selection, false otherwise.
+    // Used for blocking selections when pointer is held down before
+    // entering the canvas.
     blocked: boolean = false;
 
     constructor(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls, selectionChanged: SelectionChanged) {

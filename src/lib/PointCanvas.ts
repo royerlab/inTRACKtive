@@ -97,7 +97,7 @@ export class PointCanvas {
         this.controls.autoRotateSpeed = 1;
 
         // Set up selection
-        this.selector = new PointSelector(this.renderer);
+        this.selector = new PointSelector();
         this.setSelectionMode(PointSelectionMode.BOX);
     }
 

@@ -19,7 +19,7 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
 
-// Selecting with a sphere.
+// Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
     cursor = new Mesh(
         new SphereGeometry(25, 8, 8),

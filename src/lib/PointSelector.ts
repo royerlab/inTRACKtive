@@ -34,7 +34,7 @@ export type SelectionChanged = (selection: PointsCollection) => void;
 // the original instance of the class, though we make many (shallow) copies of the PointCanvas
 // to update state in the app
 export class PointSelector {
-    renderer: WebGLRenderer;
+    canvas: HTMLCanvasElement | null = null;
     boxSelector: BoxPointSelector | null = null;
     sphereSelector: SpherePointSelector | null = null;
 
@@ -43,11 +43,6 @@ export class PointSelector {
     // To optionally notify external observers about changes to the current selection.
     selectionChanged: SelectionChanged | null = null;
 
-    constructor(renderer: WebGLRenderer) {
-        // TODO: constructor is not really needed except it means that renderer is non-null.
-        this.renderer = renderer;
-    }
-
     init(
         scene: Scene,
         renderer: WebGLRenderer,
@@ -55,21 +50,19 @@ export class PointSelector {
         controls: OrbitControls,
         points: Points,
     ) {
-        if (this.boxSelector) {
-            this.boxSelector.dispose();
-        }
-        if (this.sphereSelector) {
-            this.sphereSelector.dispose();
-        }
         this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
         this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
 
-        this.renderer = renderer;
-        this.renderer.domElement.addEventListener("pointermove", this);
-        this.renderer.domElement.addEventListener("pointerup", this);
-        this.renderer.domElement.addEventListener("pointerdown", this);
-        this.renderer.domElement.addEventListener("pointercancel", this);
-        this.renderer.domElement.addEventListener("wheel", this);
+        this.canvas = renderer.domElement;
+        if (this.canvas) {
+            this.canvas.addEventListener("pointermove", this);
+            this.canvas.addEventListener("pointerup", this);
+            this.canvas.addEventListener("pointerdown", this);
+            this.canvas.addEventListener("pointercancel", this);
+            this.canvas.addEventListener("wheel", this);
+        } else {
+            console.error("PointSelector.init: ", this.canvas);
+        }
         // Key listeners are added to the document because we don't want the
         // canvas to have to be selected prior to listening for them
         document.addEventListener("keydown", this);
@@ -77,11 +70,13 @@ export class PointSelector {
     }
 
     dispose() {
-        this.renderer.domElement.removeEventListener("pointermove", this);
-        this.renderer.domElement.removeEventListener("pointerup", this);
-        this.renderer.domElement.removeEventListener("pointerdown", this);
-        this.renderer.domElement.removeEventListener("pointercancel", this);
-        this.renderer.domElement.removeEventListener("wheel", this);
+        if (this.canvas) {
+            this.canvas.removeEventListener("pointermove", this);
+            this.canvas.removeEventListener("pointerup", this);
+            this.canvas.removeEventListener("pointerdown", this);
+            this.canvas.removeEventListener("pointercancel", this);
+            this.canvas.removeEventListener("wheel", this);
+        }
         document.removeEventListener("keydown", this);
         document.removeEventListener("keyup", this);
  
