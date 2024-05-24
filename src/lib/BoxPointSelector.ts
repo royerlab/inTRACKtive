@@ -5,7 +5,6 @@ import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
-
 // Selection with a 2D rectangle to make a 3D frustum.
 export class BoxPointSelector {
     renderer: WebGLRenderer;
@@ -18,7 +17,13 @@ export class BoxPointSelector {
     // entering the canvas.
     blocked: boolean = false;
 
-    constructor(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls, selectionChanged: SelectionChanged) {
+    constructor(
+        scene: Scene,
+        renderer: WebGLRenderer,
+        camera: PerspectiveCamera,
+        controls: OrbitControls,
+        selectionChanged: SelectionChanged,
+    ) {
         this.renderer = renderer;
         this.controls = controls;
         this.helper = new SelectionHelper(renderer, "selectBox");
@@ -73,17 +78,17 @@ export class BoxPointSelector {
         this.box.select();
 
         this.setSelectedPoints(this.box.collection);
-    };
+    }
 
     pointerCancel(_event: MouseEvent) {
         console.debug("BoxPointSelector.pointerCancel");
         this.blocked = false;
-    };
+    }
 
     pointerDown(_event: MouseEvent) {
         console.debug("BoxPointSelector.pointerDown");
         this.blocked = true;
-    };
+    }
 
     keyDown(event: KeyboardEvent) {
         console.debug("BoxPointSelector.keyDown: ", event.key);
@@ -94,14 +99,14 @@ export class BoxPointSelector {
         if (event.key === "Shift") {
             this.setSelecting(true);
         }
-    };
+    }
 
     keyUp(event: KeyboardEvent) {
         console.debug("BoxPointSelector.keyUp: %s", event.key);
         if (event.key === "Shift") {
             this.setSelecting(false);
         }
-    };
+    }
 
     mouseWheel(_event: WheelEvent) {}
 

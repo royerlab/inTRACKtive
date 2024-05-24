@@ -131,7 +131,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     return newCanvas;
 }
 
-function createPointCanvas(initialViewerState: ViewerState) : PointCanvas {
+function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
     const canvas = new PointCanvas(800, 600);
@@ -155,7 +155,7 @@ function usePointCanvas(
     // we need to trigger a react re-render.
     canvas.selector.selectionChanged = (_selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
-        dispatchCanvas({type: ActionType.REFRESH});
+        dispatchCanvas({ type: ActionType.REFRESH });
     };
 
     // set up the canvas when the div is available

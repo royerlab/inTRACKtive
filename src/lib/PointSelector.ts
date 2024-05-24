@@ -1,9 +1,4 @@
-import {
-    PerspectiveCamera,
-    Points,
-    Scene,
-    WebGLRenderer,
-} from "three";
+import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import { PointsCollection } from "@/lib/PointSelectionBox";
@@ -17,15 +12,15 @@ export enum PointSelectionMode {
 }
 
 interface PointSelectorInterface {
-    keyDown(event: KeyboardEvent) : void;
-    keyUp(event: KeyboardEvent) : void;
-    mouseWheel(event: WheelEvent) : void;
-    pointerMove(event: MouseEvent) : void;
-    pointerUp(event: MouseEvent) : void;
-    pointerDown(event: MouseEvent) : void;
-    pointerCancel(event: MouseEvent) : void;
-    dispose() : void;
-};
+    keyDown(event: KeyboardEvent): void;
+    keyUp(event: KeyboardEvent): void;
+    mouseWheel(event: WheelEvent): void;
+    pointerMove(event: MouseEvent): void;
+    pointerUp(event: MouseEvent): void;
+    pointerDown(event: MouseEvent): void;
+    pointerCancel(event: MouseEvent): void;
+    dispose(): void;
+}
 
 export type SelectionChanged = (selection: PointsCollection) => void;
 
@@ -43,15 +38,16 @@ export class PointSelector {
     // To optionally notify external observers about changes to the current selection.
     selectionChanged: SelectionChanged | null = null;
 
-    init(
-        scene: Scene,
-        renderer: WebGLRenderer,
-        camera: PerspectiveCamera,
-        controls: OrbitControls,
-        points: Points,
-    ) {
+    init(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls, points: Points) {
         this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
-        this.sphereSelector = new SpherePointSelector(scene, renderer, camera, controls, points, this.setSelectedPoints.bind(this));
+        this.sphereSelector = new SpherePointSelector(
+            scene,
+            renderer,
+            camera,
+            controls,
+            points,
+            this.setSelectedPoints.bind(this),
+        );
 
         this.canvas = renderer.domElement;
         if (this.canvas) {
@@ -79,7 +75,7 @@ export class PointSelector {
         }
         document.removeEventListener("keydown", this);
         document.removeEventListener("keyup", this);
- 
+
         if (this.boxSelector) {
             this.boxSelector.dispose();
         }
@@ -88,7 +84,7 @@ export class PointSelector {
         }
     }
 
-    selector() : PointSelectorInterface | null {
+    selector(): PointSelectorInterface | null {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
 
@@ -117,7 +113,7 @@ export class PointSelector {
                 break;
             case "pointerup":
                 selector.pointerUp(event as MouseEvent);
-                break
+                break;
             case "pointerdown":
                 selector.pointerDown(event as MouseEvent);
                 break;

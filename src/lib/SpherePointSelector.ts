@@ -18,7 +18,6 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 
 import { SelectionChanged } from "@/lib/PointSelector";
 
-
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
     cursor = new Mesh(
@@ -50,7 +49,7 @@ export class SpherePointSelector {
         this.renderer = renderer;
         this.camera = camera;
         this.controls = controls;
-        this.points = points; 
+        this.points = points;
         this.selectionChanged = selectionChanged;
 
         // Value of 10 arbitrarily chosen for a decent experience,
@@ -86,7 +85,7 @@ export class SpherePointSelector {
         }
     }
 
-    draggingChanged(event: {value: unknown}) {
+    draggingChanged(event: { value: unknown }) {
         this.controls.enabled = !event.value;
     }
 
@@ -102,7 +101,7 @@ export class SpherePointSelector {
                 }
                 break;
         }
-    };
+    }
 
     keyUp(event: KeyboardEvent) {
         console.debug("SpherePointSelector.keyUp: ", event);
@@ -127,7 +126,7 @@ export class SpherePointSelector {
                 this.cursorControl.setMode("scale");
                 break;
         }
-    };
+    }
 
     mouseWheel(event: WheelEvent) {
         console.debug("SpherePointSelector.mouseWheel: ", event);
@@ -135,7 +134,7 @@ export class SpherePointSelector {
             event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
         }
-    };
+    }
 
     pointerMove(event: MouseEvent) {
         if (this.cursorLock) {
@@ -149,7 +148,7 @@ export class SpherePointSelector {
         if (intersects.length > 0) {
             this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
         }
-    };
+    }
 
     pointerUp(event: MouseEvent) {
         console.debug("SpherePointSelector.pointerUp: ", event);
@@ -180,9 +179,9 @@ export class SpherePointSelector {
         points.set(this.points.id, selected);
         console.log("selected points:", selected);
         this.selectionChanged(points);
-    };
+    }
 
     pointerDown(_event: MouseEvent) {}
 
     pointerCancel(_event: MouseEvent) {}
-};
+}
