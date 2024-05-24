@@ -1,6 +1,6 @@
-# f8m8
+# Fate Tracker
 
-f8m8 ("Fate Mate") is an application for vizualizing cell tracking data in the
+Fate Tracker (name WIP) is an application for vizualizing cell tracking data in the
 browser. It is built on [React](https://react.dev/) and
 [Three.js](https://threejs.org/). This project was built to explore light-sheet
 imaging data from [Zebrahub](https://zebrahub.ds.czbiohub.org/), processed with
@@ -16,4 +16,6 @@ Cell tracking data comprises:
    ancestors (parents) and descendents (children) of a given track (cell).
 
 In both code and documentation, "tracks" ends up being overloaded to mean both
-individual tracks, as well as full track lineage. Sorry!
+individual tracklets, as well as full track lineage. Likewise "cell" may refer to a point (a cell at
+one point in time) or a tracklet (a cell for its lifespan, not including splitting or merging).
+Sorry!

@@ -45,7 +45,7 @@ script, columns in the CSV file should be ordered as follows:
 ## points
 
 The `points` array is a dense, ragged array of 32-bit floats with shape `(n_timepoints,
-max_points_per_timepoint)`. So each row is a timepoint, and within that row are point coordinates as
+3 * max_points_per_timepoint)`. So each row is a timepoint, and within that row are point coordinates as
 `[x0, y0, z0, x1, y1, z1, ...]`. Rows with fewer points are padded at the end with `-9999.9`. Each
 point is then given a unique ID calculated by `t * max_points_per_timepoint + n` where `t` is the
 timepoint (row in the `points` array), and `n` is the index of the point within the timepoint. That
@@ -77,6 +77,8 @@ This is run for each track returned from the initial `points_to_tracks` query.
 
 ## tracks_to_points
 
-This is just a transpose of the `points_to_tracks` array.
+This is just a transpose of the `points_to_tracks` array, but it also contains the point locations.
+This redundancy is an optimization so each point location does not have to be re-fetched from the
+`points` array.
 
 This is the *last* query run when points are selected, and is run for each track in the lineage.
