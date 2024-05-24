@@ -148,6 +148,7 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 function usePointCanvas(
     initialViewerState: ViewerState,
 ): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
+    console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
@@ -163,6 +164,7 @@ function usePointCanvas(
     //   * we only want to do this once, on mount
     //   * the div is empty when this is first called, until the Scene component is rendered
     useEffect(() => {
+        console.debug("usePointCanvas: effect-mount");
         if (!divRef.current) return;
         const div = divRef.current;
         div.insertBefore(canvas.renderer.domElement, div.firstChild);
@@ -175,15 +177,10 @@ function usePointCanvas(
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
 
-        // TODO: understand why we need to this on mount rather than on construction.
-        // I think it's because the HTML canvas changes on mount in a way that
-        // the event listeners are on the wrong object.
-        canvas.selector.init(canvas.scene, canvas.renderer, canvas.camera, canvas.controls, canvas.points);
-
         return () => {
+            console.debug("usePointCanvas: effect-mount cleanup");
             window.removeEventListener("resize", handleWindowResize);
             div.removeChild(canvas.renderer.domElement);
-            canvas.dispose();
         };
     }, []);
 

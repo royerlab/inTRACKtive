@@ -29,16 +29,22 @@ export type SelectionChanged = (selection: PointsCollection) => void;
 // the original instance of the class, though we make many (shallow) copies of the PointCanvas
 // to update state in the app
 export class PointSelector {
-    canvas: HTMLCanvasElement | null = null;
-    boxSelector: BoxPointSelector | null = null;
-    sphereSelector: SpherePointSelector | null = null;
+    canvas: HTMLCanvasElement;
+    boxSelector: BoxPointSelector;
+    sphereSelector: SpherePointSelector;
 
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
     selection: PointsCollection = new Map();
     // To optionally notify external observers about changes to the current selection.
     selectionChanged: SelectionChanged | null = null;
 
-    init(scene: Scene, renderer: WebGLRenderer, camera: PerspectiveCamera, controls: OrbitControls, points: Points) {
+    constructor(
+        scene: Scene,
+        renderer: WebGLRenderer,
+        camera: PerspectiveCamera,
+        controls: OrbitControls,
+        points: Points,
+    ) {
         this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
         this.sphereSelector = new SpherePointSelector(
             scene,
@@ -50,15 +56,11 @@ export class PointSelector {
         );
 
         this.canvas = renderer.domElement;
-        if (this.canvas) {
-            this.canvas.addEventListener("pointermove", this);
-            this.canvas.addEventListener("pointerup", this);
-            this.canvas.addEventListener("pointerdown", this);
-            this.canvas.addEventListener("pointercancel", this);
-            this.canvas.addEventListener("wheel", this);
-        } else {
-            console.error("PointSelector.init: ", this.canvas);
-        }
+        this.canvas.addEventListener("pointermove", this);
+        this.canvas.addEventListener("pointerup", this);
+        this.canvas.addEventListener("pointerdown", this);
+        this.canvas.addEventListener("pointercancel", this);
+        this.canvas.addEventListener("wheel", this);
         // Key listeners are added to the document because we don't want the
         // canvas to have to be selected prior to listening for them
         document.addEventListener("keydown", this);
@@ -66,25 +68,19 @@ export class PointSelector {
     }
 
     dispose() {
-        if (this.canvas) {
-            this.canvas.removeEventListener("pointermove", this);
-            this.canvas.removeEventListener("pointerup", this);
-            this.canvas.removeEventListener("pointerdown", this);
-            this.canvas.removeEventListener("pointercancel", this);
-            this.canvas.removeEventListener("wheel", this);
-        }
+        this.canvas.removeEventListener("pointermove", this);
+        this.canvas.removeEventListener("pointerup", this);
+        this.canvas.removeEventListener("pointerdown", this);
+        this.canvas.removeEventListener("pointercancel", this);
+        this.canvas.removeEventListener("wheel", this);
         document.removeEventListener("keydown", this);
         document.removeEventListener("keyup", this);
 
-        if (this.boxSelector) {
-            this.boxSelector.dispose();
-        }
-        if (this.sphereSelector) {
-            this.sphereSelector.dispose();
-        }
+        this.boxSelector.dispose();
+        this.sphereSelector.dispose();
     }
 
-    selector(): PointSelectorInterface | null {
+    selector(): PointSelectorInterface {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
 
@@ -99,14 +95,11 @@ export class PointSelector {
     setSelectionMode(mode: PointSelectionMode) {
         console.debug("PointSelector.setSelectionMode: ", mode);
         this.selectionMode = mode;
-        if (this.sphereSelector) {
-            this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX, mode === PointSelectionMode.SPHERE);
-        }
+        this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX, mode === PointSelectionMode.SPHERE);
     }
 
     handleEvent(event: Event) {
         const selector = this.selector();
-        if (!selector) return;
         switch (event.type) {
             case "pointermove":
                 selector.pointerMove(event as MouseEvent);
