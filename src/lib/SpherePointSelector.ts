@@ -20,22 +20,22 @@ import { SelectionChanged } from "@/lib/PointSelector";
 
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
-    cursor = new Mesh(
+    readonly cursor = new Mesh(
         new SphereGeometry(25, 8, 8),
         new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
     );
+    readonly raycaster = new Raycaster();
+    readonly scene: Scene;
+    readonly renderer: WebGLRenderer;
+    readonly camera: PerspectiveCamera;
+    readonly controls: OrbitControls;
+    readonly points: Points;
+    readonly selectionChanged: SelectionChanged;
+
     // True if this should not respond to pointer movements, false otherwise.
     cursorLock = true;
     cursorControl: TransformControls;
     pointer = new Vector2(0, 0);
-    raycaster = new Raycaster();
-
-    scene: Scene;
-    renderer: WebGLRenderer;
-    camera: PerspectiveCamera;
-    controls: OrbitControls;
-    points: Points;
-    selectionChanged: SelectionChanged;
 
     constructor(
         scene: Scene,

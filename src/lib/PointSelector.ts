@@ -29,14 +29,14 @@ export type SelectionChanged = (selection: PointsCollection) => void;
 // the original instance of the class, though we make many (shallow) copies of the PointCanvas
 // to update state in the app
 export class PointSelector {
-    canvas: HTMLCanvasElement;
-    boxSelector: BoxPointSelector;
-    sphereSelector: SpherePointSelector;
+    readonly canvas: HTMLCanvasElement;
+    readonly boxSelector: BoxPointSelector;
+    readonly sphereSelector: SpherePointSelector;
 
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
     selection: PointsCollection = new Map();
     // To optionally notify external observers about changes to the current selection.
-    selectionChanged: SelectionChanged | null = null;
+    selectionChanged: SelectionChanged = (_selection: PointsCollection) => {};
 
     constructor(
         scene: Scene,
@@ -87,9 +87,7 @@ export class PointSelector {
     setSelectedPoints(selection: PointsCollection) {
         console.debug("PointSelector.setSelectedPoints:", selection);
         this.selection = selection;
-        if (this.selectionChanged) {
-            this.selectionChanged(selection);
-        }
+        this.selectionChanged(selection);
     }
 
     setSelectionMode(mode: PointSelectionMode) {
