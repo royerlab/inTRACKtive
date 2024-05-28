@@ -30,12 +30,12 @@ export class SpherePointSelector {
     readonly camera: PerspectiveCamera;
     readonly controls: OrbitControls;
     readonly points: Points;
+    readonly cursorControl: TransformControls;
     readonly selectionChanged: SelectionChanged;
+    readonly pointer = new Vector2(0, 0);
 
     // True if this should not respond to pointer movements, false otherwise.
     cursorLock = true;
-    cursorControl: TransformControls;
-    pointer = new Vector2(0, 0);
 
     constructor(
         scene: Scene,
