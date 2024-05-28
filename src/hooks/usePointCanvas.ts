@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointsCollection } from "@/lib/PointSelectionBox";
@@ -154,10 +154,10 @@ function usePointCanvas(
 
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
-    canvas.selector.selectionChanged = (_selection: PointsCollection) => {
+    canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
         dispatchCanvas({ type: ActionType.REFRESH });
-    };
+    }, []);
 
     // set up the canvas when the div is available
     // this is an effect because:
