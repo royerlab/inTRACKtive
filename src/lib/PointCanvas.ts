@@ -28,16 +28,16 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 type Tracks = Map<number, Track>;
 
 export class PointCanvas {
-    scene: Scene;
-    renderer: WebGLRenderer;
-    camera: PerspectiveCamera;
-    points: Points;
-    composer: EffectComposer;
-    controls: OrbitControls;
-    bloomPass: UnrealBloomPass;
-    selector: PointSelector;
+    readonly scene: Scene;
+    readonly renderer: WebGLRenderer;
+    readonly camera: PerspectiveCamera;
+    readonly points: Points;
+    readonly composer: EffectComposer;
+    readonly controls: OrbitControls;
+    readonly bloomPass: UnrealBloomPass;
+    readonly selector: PointSelector;
 
-    tracks: Tracks = new Map();
+    readonly tracks: Tracks = new Map();
 
     showTracks = true;
     showTrackHighlights = true;
