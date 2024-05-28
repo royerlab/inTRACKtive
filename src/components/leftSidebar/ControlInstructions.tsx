@@ -1,6 +1,6 @@
 import { Callout } from "@czi-sds/components";
 
-import { PointSelectionMode } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 
 interface ControlInstructionsProps {
     selectionMode: PointSelectionMode;

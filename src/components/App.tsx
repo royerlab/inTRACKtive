@@ -8,12 +8,12 @@ import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import PlaybackControls from "@/components/PlaybackControls";
 
-import useSelectionBox from "@/hooks/useSelectionBox";
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
+import { PointCanvas } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
@@ -39,10 +39,6 @@ export default function App() {
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
     const numTracksLoaded = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
-
-    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
-    // TODO: this is a bit of a hack because the canvas is created before the setSelectedPoints callback is available
-    canvas.setSelectedPoints = setSelectedPoints;
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
@@ -90,12 +86,14 @@ export default function App() {
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
     useEffect(() => {
+        console.debug("effect-trackmanager");
         if (!trackManager || !canvas) return;
         canvas.initPointsGeometry(trackManager.maxPointsPerTimepoint);
     }, [trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
+        console.debug("effect-curTime");
         // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
         const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
         let ignore = false;
@@ -138,7 +136,9 @@ export default function App() {
     }, [trackManager, canvas.curTime]);
 
     useEffect(() => {
+        console.debug("effect-selection");
         const pointsID = canvas.points.id;
+        const selectedPoints = canvas.selectedPoints;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();
@@ -176,11 +176,12 @@ export default function App() {
             },
         );
         // TODO: cancel the fetch if the selection changes?
-    }, [selectedPoints]);
+    }, [canvas.selectedPoints]);
 
     // playback time points
     // TODO: this is basic and may drop frames
     useEffect(() => {
+        console.debug("effect-playback");
         if (playing) {
             const interval = setInterval(() => {
                 dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });

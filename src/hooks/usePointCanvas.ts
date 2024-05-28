@@ -1,7 +1,8 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
-import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
+import { PointCanvas } from "@/lib/PointCanvas";
 import { PointsCollection } from "@/lib/PointSelectionBox";
+import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
@@ -80,6 +81,7 @@ type PointCanvasAction =
     | MinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
+    console.debug("usePointCanvas.reducer: ", action);
     const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
@@ -129,17 +131,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     return newCanvas;
 }
 
-function createPointCanvas({
-    initialViewerState,
-    setSelectedPoints,
-}: {
-    initialViewerState: ViewerState;
-    setSelectedPoints?: (points: PointsCollection) => void;
-}): PointCanvas {
+function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
-    // the setSelectedPoints callback is used to notify the parent component of selected points
-    const canvas = new PointCanvas(800, 600, setSelectedPoints ?? ((_points: PointsCollection) => {}));
+    const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
     canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
@@ -152,16 +147,24 @@ function createPointCanvas({
 
 function usePointCanvas(
     initialViewerState: ViewerState,
-    setSelectedPoints?: (points: PointsCollection) => void,
 ): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
+    console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
-    const [canvas, dispatchCanvas] = useReducer(reducer, { initialViewerState, setSelectedPoints }, createPointCanvas);
+    const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
+
+    // When the selection changes internally due to the user interacting with the canvas,
+    // we need to trigger a react re-render.
+    canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
+        console.debug("selectionChanged: refresh");
+        dispatchCanvas({ type: ActionType.REFRESH });
+    }, []);
 
     // set up the canvas when the div is available
     // this is an effect because:
     //   * we only want to do this once, on mount
     //   * the div is empty when this is first called, until the Scene component is rendered
     useEffect(() => {
+        console.debug("usePointCanvas: effect-mount");
         if (!divRef.current) return;
         const div = divRef.current;
         div.insertBefore(canvas.renderer.domElement, div.firstChild);
@@ -175,9 +178,9 @@ function usePointCanvas(
         handleWindowResize();
 
         return () => {
+            console.debug("usePointCanvas: effect-mount cleanup");
             window.removeEventListener("resize", handleWindowResize);
             div.removeChild(canvas.renderer.domElement);
-            canvas.dispose();
         };
     }, []);
 

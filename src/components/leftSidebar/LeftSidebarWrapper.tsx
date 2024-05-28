@@ -1,7 +1,7 @@
 import { TrackManager } from "@/lib/TrackManager";
 import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
-import { PointSelectionMode } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
