@@ -12,7 +12,6 @@ import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
@@ -94,21 +93,24 @@ export default function App() {
     // TODO: do this in the above useEffect
     useEffect(() => {
         console.debug("effect-trackmanager");
-        if (!trackManager || !canvas) return;
-        canvas.initPointsGeometry(trackManager.maxPointsPerTimepoint);
-    }, [trackManager]);
+        if (!trackManager) return;
+        dispatchCanvas({
+            type: ActionType.INIT_POINTS_GEOMETRY,
+            maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+        });
+    }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
         console.debug("effect-curTime");
         // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs / 2);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (trackManager && !ignore) {
-            const getPoints = async (canvas: PointCanvas, time: number) => {
+            const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
                 console.debug("got %d points for time %d", data.length / 3, time);
@@ -121,10 +123,9 @@ export default function App() {
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                canvas.setPointsPositions(data);
-                canvas.resetPointColors();
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
             };
-            getPoints(canvas, canvas.curTime);
+            getPoints(canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
             setIsLoadingPoints(false);
@@ -140,7 +141,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [trackManager, canvas.curTime]);
+    }, [canvas.curTime, dispatchCanvas, trackManager]);
 
     useEffect(() => {
         console.debug("effect-selection");

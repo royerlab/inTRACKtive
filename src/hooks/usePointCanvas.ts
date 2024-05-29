@@ -12,7 +12,9 @@ enum ActionType {
     CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
+    INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
+    POINTS_POSITIONS = "POINTS_POSITIONS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -43,9 +45,19 @@ interface HighlightPoints {
     points: number[];
 }
 
+interface InitPointsGeometry {
+    type: ActionType.INIT_POINTS_GEOMETRY;
+    maxPointsPerTimepoint: number;
+}
+
 interface PointBrightness {
     type: ActionType.POINT_BRIGHTNESS;
     brightness: number;
+}
+
+interface PointsPositions {
+    type: ActionType.POINTS_POSITIONS;
+    positions: Float32Array;
 }
 
 interface Refresh {
@@ -89,7 +101,9 @@ type PointCanvasAction =
     | CameraProperties
     | CurTime
     | HighlightPoints
+    | InitPointsGeometry
     | PointBrightness
+    | PointsPositions
     | Refresh
     | RemoveAllTracks
     | SelectionMode
@@ -124,8 +138,15 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.HIGHLIGHT_POINTS:
             newCanvas.highlightPoints(action.points);
             break;
+        case ActionType.INIT_POINTS_GEOMETRY:
+            newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
+            newCanvas.resetPointColors();
+            break;
+        case ActionType.POINTS_POSITIONS:
+            newCanvas.setPointsPositions(action.positions);
             newCanvas.resetPointColors();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
