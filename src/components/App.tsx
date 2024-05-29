@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@/css/app.css";
 
 import { Box, Divider, Drawer } from "@mui/material";
@@ -52,20 +52,25 @@ export default function App() {
         navigator.clipboard.writeText(url);
     };
 
-    const setStateFromHash = () => {
+    const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
-        canvas.setCameraProperties(state.cameraPosition, state.cameraTarget);
-    };
+        dispatchCanvas({
+            type: ActionType.CAMERA_PROPERTIES,
+            cameraPosition: state.cameraPosition,
+            cameraTarget: state.cameraTarget,
+        });
+    }, [dispatchCanvas]);
+
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
         window.addEventListener("hashchange", setStateFromHash);
         return () => {
             window.removeEventListener("hashchange", setStateFromHash);
         };
-    }, []);
+    }, [setStateFromHash]);
 
     // update the array when the dataUrl changes
     useEffect(() => {

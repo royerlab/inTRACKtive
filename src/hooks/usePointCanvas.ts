@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from "react";
+
+import { Vector3 } from "three";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointsCollection } from "@/lib/PointSelectionBox";
@@ -7,6 +9,7 @@ import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
+    CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
@@ -22,6 +25,12 @@ enum ActionType {
 interface AutoRotate {
     type: ActionType.AUTO_ROTATE;
     autoRotate: boolean;
+}
+
+interface CameraProperties {
+    type: ActionType.CAMERA_PROPERTIES;
+    cameraPosition: Vector3;
+    cameraTarget: Vector3;
 }
 
 interface CurTime {
@@ -77,6 +86,7 @@ interface MinMaxTime {
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
+    | CameraProperties
     | CurTime
     | HighlightPoints
     | PointBrightness
@@ -93,6 +103,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
+            break;
+        case ActionType.CAMERA_PROPERTIES:
+            newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
         case ActionType.CUR_TIME: {
             newCanvas.curTime = action.curTime;
@@ -158,7 +171,7 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 
 function usePointCanvas(
     initialViewerState: ViewerState,
-): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
+): [PointCanvas, Dispatch<PointCanvasAction>, RefObject<HTMLDivElement>] {
     console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
