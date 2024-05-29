@@ -15,6 +15,7 @@ enum ActionType {
     SELECTION_MODE = "SELECTION_MODE",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
+    SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
 }
 
@@ -61,6 +62,12 @@ interface ShowTrackHighlights {
     showTrackHighlights: boolean;
 }
 
+interface Size {
+    type: ActionType.SIZE;
+    width: number;
+    height: number;
+}
+
 interface MinMaxTime {
     type: ActionType.MIN_MAX_TIME;
     minTime: number;
@@ -78,6 +85,7 @@ type PointCanvasAction =
     | SelectionMode
     | ShowTracks
     | ShowTrackHighlights
+    | Size
     | MinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
@@ -118,6 +126,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.SHOW_TRACK_HIGHLIGHTS:
             newCanvas.showTrackHighlights = action.showTrackHighlights;
             newCanvas.updateAllTrackHighlights();
+            break;
+        case ActionType.SIZE:
+            newCanvas.setSize(action.width, action.height);
             break;
         case ActionType.MIN_MAX_TIME:
             newCanvas.minTime = action.minTime;
@@ -172,7 +183,7 @@ function usePointCanvas(
             if (!div) return;
             const renderWidth = div.clientWidth;
             const renderHeight = div.clientHeight;
-            canvas.setSize(renderWidth, renderHeight);
+            dispatchCanvas({ type: ActionType.SIZE, width: renderWidth, height: renderHeight });
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
@@ -182,7 +193,7 @@ function usePointCanvas(
             window.removeEventListener("resize", handleWindowResize);
             div.removeChild(canvas.renderer.domElement);
         };
-    }, []);
+    }, [canvas.renderer.domElement]);
 
     return [canvas, dispatchCanvas, divRef];
 }
