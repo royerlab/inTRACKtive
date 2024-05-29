@@ -183,7 +183,7 @@ export default function App() {
                 setIsLoadingTracks(false);
             },
         );
-        // TODO: cancel the fetch if the selection changes?
+        // TODO: add missing dependencies
     }, [canvas.selectedPoints]);
 
     // playback time points
