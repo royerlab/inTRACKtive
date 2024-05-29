@@ -107,6 +107,10 @@ export class PointCanvas {
         return newCanvas as PointCanvas;
     }
 
+    // Maps from the three.js Points.id to an array of indices within
+    // the points array at the current time point.
+    // TODO: this can get out of sync when the time point is changed after
+    // a selection is made.
     get selectedPoints(): PointsCollection {
         return this.selector.selection;
     }
