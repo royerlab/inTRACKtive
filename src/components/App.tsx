@@ -83,10 +83,12 @@ export default function App() {
             // is no longer valid.
             dispatchCanvas({
                 type: ActionType.CUR_TIME,
-                curTime: Math.min(canvas.curTime, (tm?.numTimes ?? numTimes) - 1),
+                curTime: (c: number) => {
+                    return Math.min(c, (tm?.numTimes ?? numTimes) - 1);
+                },
             });
         });
-    }, [dataUrl]);
+    }, [dispatchCanvas, dataUrl, numTimes]);
 
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
@@ -189,13 +191,18 @@ export default function App() {
         console.debug("effect-playback");
         if (playing) {
             const interval = setInterval(() => {
-                dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
+                dispatchCanvas({
+                    type: ActionType.CUR_TIME,
+                    curTime: (c: number) => {
+                        return (c + 1) % numTimes;
+                    },
+                });
             }, playbackIntervalMs);
             return () => {
                 clearInterval(interval);
             };
         }
-    }, [canvas.curTime, numTimes, playing]);
+    }, [dispatchCanvas, numTimes, playing]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>

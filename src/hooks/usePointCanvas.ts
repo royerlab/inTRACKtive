@@ -35,7 +35,7 @@ interface CameraProperties {
 
 interface CurTime {
     type: ActionType.CUR_TIME;
-    curTime: number;
+    curTime: number | ((curTime: number) => number);
 }
 
 interface HighlightPoints {
@@ -108,6 +108,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
         case ActionType.CUR_TIME: {
+            // if curTime is a function, call it with the current time
+            if (typeof action.curTime === "function") {
+                action.curTime = action.curTime(canvas.curTime);
+            }
             newCanvas.curTime = action.curTime;
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
