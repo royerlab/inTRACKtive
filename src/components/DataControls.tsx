@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
 
@@ -13,41 +13,53 @@ interface DataControlsProps {
     validTrackManager: boolean;
 }
 
-export default function DataControls(props: DataControlsProps) {
+export default function DataControls({
+    dataUrl,
+    initialDataUrl,
+    setDataUrl,
+    copyShareableUrlToClipboard,
+    validTrackManager,
+}: DataControlsProps) {
     const [copyUrlSnackBarOpen, setCopyUrlSnackBarOpen] = useState(false);
     const [urlPopoverAnchor, setUrlPopoverAnchor] = useState<HTMLButtonElement | null>(null);
 
-    const copyShareableUrlToClipBoard = () => {
-        props.copyShareableUrlToClipboard();
+    const copyShareableUrlToClipBoard = useCallback(() => {
+        copyShareableUrlToClipboard();
         setCopyUrlSnackBarOpen(true);
-    };
+    }, [copyShareableUrlToClipboard]);
 
-    const handleShareableUrlSnackBarClose = () => {
+    const handleShareableUrlSnackBarClose = useCallback(() => {
         setCopyUrlSnackBarOpen(false);
-    };
+    }, [setCopyUrlSnackBarOpen]);
 
-    const showUrlPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setUrlPopoverAnchor(event.currentTarget);
-    };
+    const showUrlPopover = useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            setUrlPopoverAnchor(event.currentTarget);
+        },
+        [setUrlPopoverAnchor],
+    );
 
-    const handleUrlPopoverClose = () => {
+    const handleUrlPopoverClose = useCallback(() => {
         setUrlPopoverAnchor(null);
-    };
+    }, [setUrlPopoverAnchor]);
 
-    const handleDataUrlSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
-        if (urlInput) {
-            props.setDataUrl(urlInput.value);
-        }
-    };
+    const handleDataUrlSubmit = useCallback(
+        (event: React.FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
+            if (urlInput) {
+                setDataUrl(urlInput.value);
+            }
+        },
+        [setDataUrl],
+    );
 
     // only close the popover if the URL gives a valid track manager
     useEffect(() => {
-        if (props.validTrackManager && urlPopoverAnchor) {
+        if (validTrackManager) {
             setUrlPopoverAnchor(null);
         }
-    }, [props.validTrackManager]);
+    }, [validTrackManager]);
 
     return (
         <Box
@@ -74,7 +86,7 @@ export default function DataControls(props: DataControlsProps) {
                 icon="Share"
                 sdsSize="large"
                 sdsType="secondary"
-                disabled={!props.validTrackManager}
+                disabled={!validTrackManager}
                 onClick={copyShareableUrlToClipBoard}
             />
             <Snackbar
@@ -98,7 +110,7 @@ export default function DataControls(props: DataControlsProps) {
 
             <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
             <Popover
-                open={Boolean(urlPopoverAnchor)}
+                open={!!urlPopoverAnchor}
                 anchorEl={urlPopoverAnchor}
                 onClose={handleUrlPopoverClose}
                 anchorOrigin={{
@@ -127,10 +139,10 @@ export default function DataControls(props: DataControlsProps) {
                             autoFocus
                             label="Zarr URL"
                             hideLabel
-                            placeholder={props.initialDataUrl}
-                            defaultValue={props.dataUrl}
+                            placeholder={initialDataUrl}
+                            defaultValue={dataUrl}
                             fullWidth={true}
-                            intent={props.validTrackManager ? "default" : "error"}
+                            intent={validTrackManager ? "default" : "error"}
                         />
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
