@@ -125,7 +125,9 @@ export class PointCanvas {
     };
 
     pointIDsAtTime(time: number): number[] {
-        return Array.from(this.tracks.values()).map((track: Track) => track.pointIndexAtTime(time)).filter((id) => id !== null);
+        return Array.from(this.tracks.values())
+            .map((track: Track) => track.pointIndexAtTime(time))
+            .filter((id) => id !== null);
     }
 
     updateHighlightedPoints() {

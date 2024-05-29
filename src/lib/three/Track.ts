@@ -62,7 +62,7 @@ export class Track extends Mesh {
             return null;
         }
         const index = time - this.startTime;
-        return this.pointIds[index] - (time * this.maxPointsPerTimepoint);
+        return this.pointIds[index] - time * this.maxPointsPerTimepoint;
     }
 
     updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
