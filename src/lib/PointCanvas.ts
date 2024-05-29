@@ -27,7 +27,6 @@ import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
 
-
 export class PointCanvas {
     readonly scene: Scene;
     readonly renderer: WebGLRenderer;
