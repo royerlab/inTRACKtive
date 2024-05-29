@@ -22,22 +22,30 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
+import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
 
 
 export class PointCanvas {
-    scene: Scene;
-    renderer: WebGLRenderer;
-    camera: PerspectiveCamera;
-    points: Points;
-    composer: EffectComposer;
-    controls: OrbitControls;
-    bloomPass: UnrealBloomPass;
-    tracks: Tracks = new Map();
+    readonly scene: Scene;
+    readonly renderer: WebGLRenderer;
+    readonly camera: PerspectiveCamera;
+    readonly points: Points;
+    readonly composer: EffectComposer;
+    readonly controls: OrbitControls;
+    readonly bloomPass: UnrealBloomPass;
+    readonly selector: PointSelector;
+
+    readonly tracks: Tracks = new Map();
 
     showTracks = true;
     showTrackHighlights = true;
+    curTime: number = 0;
+    minTime: number = -6;
+    maxTime: number = 5;
+    pointBrightness = 1.0;
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
@@ -61,7 +69,8 @@ export class PointCanvas {
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
             blending: AdditiveBlending,
-            depthTest: false,
+            depthTest: true,
+            alphaTest: 0.1,
             transparent: true,
         });
         this.points = new Points(pointsGeometry, pointsMaterial);
@@ -87,6 +96,24 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
+
+        // Set up selection
+        this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
+        this.setSelectionMode(PointSelectionMode.BOX);
+    }
+
+    shallowCopy(): PointCanvas {
+        const newCanvas = { ...this };
+        Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
+        return newCanvas as PointCanvas;
+    }
+
+    get selectedPoints(): PointsCollection {
+        return this.selector.selection;
+    }
+
+    setSelectionMode(mode: PointSelectionMode) {
+        this.selector.setSelectionMode(mode);
     }
 
     // Use an arrow function so that each instance of the class is bound and
@@ -102,9 +129,9 @@ export class PointCanvas {
         return Array.from(this.tracks.values()).map((track: Track) => track.pointIndexAtTime(time)).filter((id) => id !== null);
     }
 
-    updateHighlightedPoints(curTime: number) {
-        console.debug("updateHighlightedPoints: ", curTime);
-        const selectedPoints = this.pointIDsAtTime(curTime);
+    updateHighlightedPoints() {
+        console.debug("updateHighlightedPoints: ", this.curTime);
+        const selectedPoints = this.pointIDsAtTime(this.curTime);
         this.highlightPoints(selectedPoints);
     }
 
@@ -124,31 +151,13 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    // This function changes the color of the points according to the point brightness slider.
-    // The fadePercentage should be in [0, 1].
-    fadePoints(fadePercentage: number) {
-        console.debug("fadePoints: ", fadePercentage);
-        if (!this.points.geometry.hasAttribute("color")) {
-            return;
-        }
-        const greenAndBlueValue = 0.8 * fadePercentage;
-        const colorAttribute = this.points.geometry.getAttribute("color");
-        const color = new Color();
-        color.setRGB(0, greenAndBlueValue, greenAndBlueValue, SRGBColorSpace);
-        for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
-        }
-        colorAttribute.needsUpdate = true;
-    }
-
-    // The fadePercentage should be in [0, 1]. This argument is optional and it does not need to be
-    // initialized by initPointsGeometry or reset when clearing tracks.
-    resetPointColors(fadePercentage: number = 1.0) {
+    resetPointColors() {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8 * fadePercentage, 0.8 * fadePercentage, SRGBColorSpace);
+        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
@@ -194,28 +203,22 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(
-        trackID: number,
-        positions: Float32Array,
-        ids: Int32Array,
-        minTime: number,
-        maxTime: number,
-    ): Track | null {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
         if (this.tracks.has(trackID)) {
             // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+        track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         this.tracks.set(trackID, track);
         this.scene.add(track);
         return track;
     }
 
-    updateAllTrackHighlights(minTime: number, maxTime: number) {
+    updateAllTrackHighlights() {
         for (const track of this.tracks.values()) {
-            track.updateAppearance(this.showTracks, this.showTrackHighlights, minTime, maxTime);
+            track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         }
     }
 
@@ -238,6 +241,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();
         this.points.geometry.dispose();

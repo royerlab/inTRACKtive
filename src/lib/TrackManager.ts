@@ -67,6 +67,7 @@ export class TrackManager {
     pointsToTracks: SparseZarrArray;
     tracksToPoints: SparseZarrArray;
     tracksToTracks: SparseZarrArray;
+    numTimes: number;
     maxPointsPerTimepoint: number;
 
     constructor(
@@ -81,6 +82,7 @@ export class TrackManager {
         this.pointsToTracks = pointsToTracks;
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
+        this.numTimes = points.shape[0];
         this.maxPointsPerTimepoint = points.shape[1] / 3;
     }
 
