@@ -168,6 +168,11 @@ export default function App() {
             const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
+                // Do not currently store parent track IDs anywhere.
+                // Could get stored in the Track object.
+                // TODO: do we want to store the selected track IDs or
+                // their descendants and ancestors.
+                // Likely want to store only the currently selected track IDs.
                 const lineage = await trackManager.fetchLineageForTrack(t);
                 for (const l of lineage) {
                     if (adding.has(l) || canvas.tracks.has(l)) continue;
