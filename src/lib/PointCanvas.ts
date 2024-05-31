@@ -50,7 +50,6 @@ export class PointCanvas {
     // In general, this is a subset of the keys of Tracks because that
     // likely contains ancestors and descendants of selected tracks.
     selectedTrackIds: Set<number> = new Set();
-    selectedTracksIdsChanged: (selection: Set<number>) => void = (_selection: Set<number>) => {};
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
@@ -111,12 +110,6 @@ export class PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
-    }
-
-    setSelectedTrackIds(trackIds: Set<number>) {
-        console.debug("PointCanvas.setSelectedTrackIds: ", trackIds);
-        this.selectedTrackIds = trackIds;
-        this.selectedTracksIdsChanged(trackIds);
     }
 
     // Converts a point index within the points shown at the current time point

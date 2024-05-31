@@ -220,12 +220,6 @@ function usePointCanvas(
         dispatchCanvas({ type: ActionType.REFRESH });
     }, []);
 
-    // When the selected track IDs change, we need to trigger a re-render.
-    canvas.selectedTracksIdsChanged = useCallback((_selection: Set<number>) => {
-        console.debug("selectedTrackIdsChanged: refresh");
-        dispatchCanvas({ type: ActionType.REFRESH });
-    }, []);
-
     // set up the canvas when the div is available
     // this is an effect because:
     //   * we only want to do this once, on mount
