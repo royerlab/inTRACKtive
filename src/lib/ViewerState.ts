@@ -20,7 +20,7 @@ export function clearUrlHash() {
 export class ViewerState {
     dataUrl = DEFAULT_ZARR_URL;
     curTime = 0;
-    selectedTrackIds: Array<number> = new Array();
+    selectedTrackIds: Array<number> = [];
     // Default position and target from interacting with ZSNS001.
     cameraPosition = new Vector3(500, 500, -1250);
     cameraTarget = new Vector3(500, 500, 250);

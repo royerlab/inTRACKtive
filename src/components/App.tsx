@@ -154,7 +154,7 @@ export default function App() {
         const pointsID = canvas.points.id;
         const selectedPoints = canvas.selectedPoints;
         const selected = selectedPoints.get(pointsID) || [];
-        
+
         dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
@@ -174,7 +174,7 @@ export default function App() {
                 type: ActionType.SET_SELECTED_TRACK_IDS,
                 selectedTrackIds: selectedTrackIds,
             });
-        }
+        };
         updateTrackIds();
     }, [trackManager, dispatchCanvas, canvas.selectedPoints]);
 
@@ -188,7 +188,7 @@ export default function App() {
         const pointsID = canvas.points.id;
         const selectedPoints = canvas.selectedPoints;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
- 
+
         setIsLoadingTracks(true);
 
         // keep track of which tracks we are adding to avoid duplicate fetching
