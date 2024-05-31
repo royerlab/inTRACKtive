@@ -19,7 +19,7 @@ import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
-console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
 const drawerWidth = 256;
