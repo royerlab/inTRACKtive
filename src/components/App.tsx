@@ -68,6 +68,10 @@ export default function App() {
             cameraPosition: state.cameraPosition,
             cameraTarget: state.cameraTarget,
         });
+        dispatchCanvas({
+            type: ActionType.SET_SELECTED_TRACK_IDS,
+            selectedTrackIds: new Set(state.selectedTrackIds),
+        });
     }, [dispatchCanvas]);
 
     // update the state when the hash changes, but only register the listener once
@@ -216,6 +220,7 @@ export default function App() {
                     dispatchCanvas({ type: ActionType.REFRESH });
                 }
             }
+ 
             setIsLoadingTracks(false);
         };
         updateTracks();
