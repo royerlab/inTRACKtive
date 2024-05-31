@@ -145,15 +145,10 @@ export class PointCanvas {
 
     // Updates the track data and geometries based on the selected track IDs state.
     async updateTracks(trackManager: TrackManager) {
-        console.debug("updateTrackIds: ", this.selectedPoints);
+        console.debug("updateTracks: ", this.selectedTrackIds);
 
         // this fetches the entire lineage for each track
         for (const trackId of this.selectedTrackIds) {
-            // Do not currently store parent track IDs anywhere.
-            // Could get stored in the Track object.
-            // TODO: do we want to store the selected track IDs or
-            // their descendants and ancestors.
-            // Likely want to store only the currently selected track IDs.
             const lineage = await trackManager.fetchLineageForTrack(trackId);
             for (const l of lineage) {
                 if (this.tracks.has(l)) continue;
@@ -161,10 +156,7 @@ export class PointCanvas {
                 // adding the track *in* the dispatcher creates issues with duplicate fetching
                 // but we refresh so the selected/loaded count is updated
                 this.addTrack(l, pos, ids);
-
-                // What is the equivalent here?
-                // Do we need anything?
-                // dispatchCanvas({ type: ActionType.REFRESH });
+                // TODO: callback for refresh.
             }
         }
     }
