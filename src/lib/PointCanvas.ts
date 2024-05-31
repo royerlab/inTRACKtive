@@ -5,15 +5,10 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
-    Matrix3,
-    Mesh,
-    MeshBasicMaterial,
     PerspectiveCamera,
     Points,
     PointsMaterial,
-    Raycaster,
     Scene,
-    SphereGeometry,
     SRGBColorSpace,
     TextureLoader,
     Vector2,
@@ -25,164 +20,10 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { TransformControls } from "three/examples/jsm/Addons.js";
 
 import { Track } from "@/lib/three/Track";
-import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
-
-export enum PointSelectionMode {
-    BOX = "BOX",
-    SPHERICAL_CURSOR = "SPHERICAL_CURSOR",
-    SPHERE = "SPHERE",
-}
-
-// this is a separate class to keep the point selection logic separate from the rendering logic in
-// the PointCanvas class this fixes some issues with callbacks and event listeners binding to
-// the original instance of the class, though we make many (shallow) copies of the PointCanvas
-// to update state in the app
-class PointSelector {
-    selectionMode: PointSelectionMode = PointSelectionMode.BOX;
-
-    cursor = new Mesh(
-        new SphereGeometry(25, 8, 8),
-        new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
-    );
-    cursorLock = true;
-    cursorControl: TransformControls;
-    pointer = new Vector2(0, 0);
-
-    constructor(canvas: PointCanvas) {
-        this.cursorControl = new TransformControls(canvas.camera, canvas.renderer.domElement);
-        this.cursorControl.size = 0.5;
-        this.cursorControl.attach(this.cursor);
-
-        canvas.scene.add(this.cursor);
-        canvas.scene.add(this.cursorControl);
-
-        const draggingChanged = (event: { value: unknown }) => {
-            canvas.controls.enabled = !event.value;
-        };
-
-        const keyDown = (event: KeyboardEvent) => {
-            switch (event.key) {
-                case "Control":
-                    canvas.controls.enabled = false;
-                    break;
-                case "Shift":
-                    if (this.selectionMode !== PointSelectionMode.SPHERICAL_CURSOR) return;
-                    this.cursorLock = false;
-                    break;
-            }
-        };
-
-        const keyUp = (event: KeyboardEvent) => {
-            console.log(event.key, this.selectionMode);
-            switch (event.key) {
-                case "Control":
-                    canvas.controls.enabled = true;
-                    break;
-                case "Shift":
-                    this.cursorLock = true;
-                    break;
-                case "s":
-                    if (this.selectionMode === PointSelectionMode.BOX) return;
-                    this.cursor.visible = !this.cursor.visible;
-                    this.cursorControl.visible = this.cursorControl.enabled && this.cursor.visible;
-                    break;
-                case "w":
-                    this.cursorControl.setMode("translate");
-                    break;
-                case "e":
-                    this.cursorControl.setMode("rotate");
-                    break;
-                case "r":
-                    this.cursorControl.setMode("scale");
-                    break;
-            }
-        };
-
-        const mouseWheel = (event: WheelEvent) => {
-            if (event.ctrlKey) {
-                event.preventDefault();
-                this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
-            }
-        };
-
-        const pointerMove = (event: MouseEvent) => {
-            if (this.cursorLock) {
-                return;
-            }
-            const canvasElement = canvas.renderer.domElement.getBoundingClientRect();
-            this.pointer.x = ((event.clientX - canvasElement.left) / canvasElement.width) * 2 - 1;
-            this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
-            canvas.raycaster.setFromCamera(this.pointer, canvas.camera);
-            const intersects = canvas.raycaster.intersectObject(canvas.points);
-            if (intersects.length > 0) {
-                this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
-            }
-        };
-
-        const pointerUp = (event: MouseEvent) => {
-            if (!event.shiftKey || !this.cursor.visible) {
-                return;
-            }
-            // return list of points inside cursor sphere
-            const radius = this.cursor.geometry.parameters.radius;
-            const normalMatrix = new Matrix3();
-            normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
-            normalMatrix.invert();
-            const center = this.cursor.position;
-            const geometry = canvas.points.geometry;
-            const positions = geometry.getAttribute("position");
-            const numPoints = positions.count;
-            const selected = [];
-            for (let i = 0; i < numPoints; i++) {
-                const x = positions.getX(i);
-                const y = positions.getY(i);
-                const z = positions.getZ(i);
-                const vecToCenter = new Vector3(x, y, z).sub(center);
-                const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
-                if (scaledVecToCenter.length() < radius) {
-                    selected.push(i);
-                }
-            }
-            const points: PointsCollection = new Map();
-            points.set(canvas.points.id, selected);
-            canvas.setSelectedPoints(points);
-            console.log("selected points:", selected);
-        };
-
-        this.cursorControl.addEventListener("dragging-changed", draggingChanged);
-        canvas.renderer.domElement.addEventListener("pointermove", pointerMove);
-        canvas.renderer.domElement.addEventListener("pointerup", pointerUp);
-        canvas.renderer.domElement.addEventListener("wheel", mouseWheel);
-        document.addEventListener("keydown", keyDown);
-        document.addEventListener("keyup", keyUp);
-    }
-
-    setSelectionMode(mode: PointSelectionMode) {
-        this.selectionMode = mode;
-        switch (this.selectionMode) {
-            case PointSelectionMode.BOX:
-                this.cursor.visible = false;
-                this.cursorControl.detach();
-                this.cursorLock = true;
-                break;
-            case PointSelectionMode.SPHERICAL_CURSOR:
-                this.cursor.visible = true;
-                this.cursorControl.detach();
-                this.cursorLock = true;
-                break;
-            case PointSelectionMode.SPHERE:
-                this.cursor.visible = true;
-                this.cursorControl.attach(this.cursor);
-                this.cursorLock = true;
-                break;
-        }
-    }
-}
 
 export class PointCanvas {
     scene: Scene;
@@ -192,9 +33,6 @@ export class PointCanvas {
     composer: EffectComposer;
     controls: OrbitControls;
     bloomPass: UnrealBloomPass;
-    raycaster = new Raycaster();
-    selector: PointSelector;
-
     tracks: Tracks = new Map();
 
     showTracks = true;
@@ -203,15 +41,13 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
-    setSelectedPoints: (points: PointsCollection) => void;
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     // private here to consolidate external access via `TrackManager` instead
     private maxPointsPerTimepoint = 0;
 
-    constructor(width: number, height: number, setSelectedPoints: (points: PointsCollection) => void) {
-        this.setSelectedPoints = setSelectedPoints;
+    constructor(width: number, height: number) {
         this.scene = new Scene();
         this.renderer = new WebGLRenderer();
 
@@ -228,8 +64,7 @@ export class PointCanvas {
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
             blending: AdditiveBlending,
-            depthTest: true,
-            alphaTest: 0.1,
+            depthTest: false,
             transparent: true,
         });
         this.points = new Points(pointsGeometry, pointsMaterial);
@@ -255,21 +90,12 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
-
-        this.selector = new PointSelector(this);
-        this.setSelectionMode(PointSelectionMode.BOX);
-
-        this.raycaster.params.Points.threshold = 10;
     }
 
     shallowCopy(): PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
-    }
-
-    setSelectionMode(mode: PointSelectionMode) {
-        this.selector.setSelectionMode(mode);
     }
 
     // Use an arrow function so that each instance of the class is bound and

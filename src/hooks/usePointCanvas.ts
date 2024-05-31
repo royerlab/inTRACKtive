@@ -1,7 +1,6 @@
 import { useEffect, useReducer, useRef } from "react";
 
-import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
-import { PointsCollection } from "@/lib/PointSelectionBox";
+import { PointCanvas } from "@/lib/PointCanvas";
 import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
@@ -11,7 +10,6 @@ enum ActionType {
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
-    SELECTION_MODE = "SELECTION_MODE",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     MIN_MAX_TIME = "MIN_MAX_TIME",
@@ -45,11 +43,6 @@ interface RemoveAllTracks {
     type: ActionType.REMOVE_ALL_TRACKS;
 }
 
-interface SelectionMode {
-    type: ActionType.SELECTION_MODE;
-    selectionMode: PointSelectionMode;
-}
-
 interface ShowTracks {
     type: ActionType.SHOW_TRACKS;
     showTracks: boolean;
@@ -74,7 +67,6 @@ type PointCanvasAction =
     | PointBrightness
     | Refresh
     | RemoveAllTracks
-    | SelectionMode
     | ShowTracks
     | ShowTrackHighlights
     | MinMaxTime;
@@ -106,9 +98,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             break;
-        case ActionType.SELECTION_MODE:
-            newCanvas.setSelectionMode(action.selectionMode);
-            break;
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
             newCanvas.updateAllTrackHighlights();
@@ -129,17 +118,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     return newCanvas;
 }
 
-function createPointCanvas({
-    initialViewerState,
-    setSelectedPoints,
-}: {
-    initialViewerState: ViewerState;
-    setSelectedPoints?: (points: PointsCollection) => void;
-}): PointCanvas {
+function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
-    // the setSelectedPoints callback is used to notify the parent component of selected points
-    const canvas = new PointCanvas(800, 600, setSelectedPoints ?? ((_points: PointsCollection) => {}));
+    const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
     canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
@@ -152,10 +134,9 @@ function createPointCanvas({
 
 function usePointCanvas(
     initialViewerState: ViewerState,
-    setSelectedPoints?: (points: PointsCollection) => void,
 ): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
     const divRef = useRef<HTMLDivElement>(null);
-    const [canvas, dispatchCanvas] = useReducer(reducer, { initialViewerState, setSelectedPoints }, createPointCanvas);
+    const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
     // set up the canvas when the div is available
     // this is an effect because:

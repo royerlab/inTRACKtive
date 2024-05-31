@@ -132,6 +132,9 @@ export class TrackManager {
     async fetchLineageForTrack(trackID: number): Promise<Int32Array> {
         const rowStartEnd = await this.tracksToTracks.getIndPtr(slice(trackID, trackID + 2));
         const lineage = await this.tracksToTracks.indices.get([slice(rowStartEnd[0], rowStartEnd[1])]);
+        // console.log("lineage: ", lineage.data);
+        console.log({ rowStartEnd });
+
         return lineage.data;
     }
 }
@@ -146,7 +149,8 @@ export async function loadTrackManager(url: string) {
         });
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
-        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", false);
+        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
+        console.log({ tracksToTracks });
         trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks);
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);

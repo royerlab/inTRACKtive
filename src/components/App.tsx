@@ -13,7 +13,7 @@ import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas, PointSelectionMode } from "@/lib/PointCanvas";
+import { PointCanvas } from "@/lib/PointCanvas";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { ColorMap } from "./overlays/ColorMap";
 
@@ -23,8 +23,6 @@ console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 clearUrlHash();
 
 const drawerWidth = 256;
-const playbackFPS = 16;
-const playbackIntervalMs = 1000 / playbackFPS;
 
 export default function App() {
     // TrackManager handles data fetching
@@ -38,9 +36,7 @@ export default function App() {
     const numTracksLoaded = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
-    const { selectedPoints, setSelectedPoints } = useSelectionBox(canvas);
-    // TODO: this is a bit of a hack because the canvas is created before the setSelectedPoints callback is available
-    canvas.setSelectedPoints = setSelectedPoints;
+    const { selectedPoints } = useSelectionBox(canvas);
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
@@ -94,8 +90,8 @@ export default function App() {
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setLoading(true), playbackIntervalMs);
+        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
+        const loadingTimer = setTimeout(() => setLoading(true), 100);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -111,15 +107,16 @@ export default function App() {
                     return;
                 }
 
-                // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
-                clearTimeout(loadingTimeout);
+                // clearTimeout(loadingTimer);
+                setTimeout(() => setLoading(false), 250);
                 setLoading(false);
                 canvas.setPointsPositions(data);
                 canvas.resetPointColors();
             };
             getPoints(canvas, canvas.curTime);
         } else {
-            clearTimeout(loadingTimeout);
+            // clearTimeout(loadingTimer);
+            setTimeout(() => setLoading(false), 250);
             setLoading(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
@@ -130,7 +127,7 @@ export default function App() {
         }
 
         return () => {
-            clearTimeout(loadingTimeout);
+            clearTimeout(loadingTimer);
             ignore = true;
         };
     }, [trackManager, canvas.curTime]);
@@ -174,9 +171,10 @@ export default function App() {
     // TODO: this is basic and may drop frames
     useEffect(() => {
         if (playing) {
+            const frameDelay = 1000 / 8; // 1000 / fps
             const interval = setInterval(() => {
                 dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
-            }, playbackIntervalMs);
+            }, frameDelay);
             return () => {
                 clearInterval(interval);
             };
@@ -229,10 +227,6 @@ export default function App() {
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
                             }}
-                            selectionMode={canvas.selector.selectionMode}
-                            setSelectionMode={(value: PointSelectionMode) => {
-                                dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
-                            }}
                         />
                     </Box>
                     <Divider />
@@ -241,7 +235,6 @@ export default function App() {
                             hasTracks={numTracksLoaded > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
-                            selectionMode={canvas.selector.selectionMode}
                             showTracks={canvas.showTracks}
                             setShowTracks={(show: boolean) => {
                                 dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
