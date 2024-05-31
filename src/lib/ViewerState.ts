@@ -32,7 +32,7 @@ export class ViewerState {
         return "#" + searchParams.toString();
     }
 
-    static fromAppState(trackManager: TrackManager | null, pointCanvas: PointCanvas) : ViewerState {
+    static fromAppState(trackManager: TrackManager | null, pointCanvas: PointCanvas): ViewerState {
         const state = new ViewerState();
         state.dataUrl = trackManager?.store ?? DEFAULT_ZARR_URL;
         state.curTime = pointCanvas.curTime;

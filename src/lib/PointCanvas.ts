@@ -50,7 +50,7 @@ export class PointCanvas {
     // In general, this is a subset of the keys of Tracks because that
     // likely contains ancestors and descendants of selected tracks.
     selectedTrackIds: Set<number> = new Set();
-    selectedTracksIdsChanged: ((selection: Set<number>) => void) = (_selection: Set<number>) => {};
+    selectedTracksIdsChanged: (selection: Set<number>) => void = (_selection: Set<number>) => {};
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
@@ -121,7 +121,7 @@ export class PointCanvas {
 
     // Converts a point index within the points shown at the current time point
     // to a unique point ID in the dataset.
-    pointIndexToPointId(index: number) : number {
+    pointIndexToPointId(index: number): number {
         return this.curTime * this.maxPointsPerTimepoint + index;
     }
 

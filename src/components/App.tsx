@@ -150,9 +150,9 @@ export default function App() {
     useEffect(() => {
         console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints, canvas.selectedTrackIds);
         if (!trackManager) return;
-        dispatchCanvas({type: ActionType.REFRESH});
+        dispatchCanvas({ type: ActionType.REFRESH });
         canvas.updateTrackIds(trackManager).then(() => {
-            dispatchCanvas({type: ActionType.REFRESH});
+            dispatchCanvas({ type: ActionType.REFRESH });
         });
     }, [trackManager, dispatchCanvas, canvas.selectedPoints]);
 
@@ -164,10 +164,10 @@ export default function App() {
         console.debug("effect-selectedTrackIds: ", trackManager, canvas.selectedTrackIds);
         if (!trackManager) return;
         setIsLoadingTracks(true);
-        dispatchCanvas({type: ActionType.REFRESH});
+        dispatchCanvas({ type: ActionType.REFRESH });
         canvas.updateTracks(trackManager).then(() => {
             setIsLoadingTracks(false);
-            dispatchCanvas({type: ActionType.REFRESH});
+            dispatchCanvas({ type: ActionType.REFRESH });
         });
     }, [trackManager, dispatchCanvas, canvas.selectedTrackIds]);
 
