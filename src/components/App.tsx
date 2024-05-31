@@ -229,7 +229,7 @@ export default function App() {
                     dispatchCanvas({ type: ActionType.REFRESH });
                 }
             }
- 
+
             setIsLoadingTracks(false);
         };
         updateTracks();
