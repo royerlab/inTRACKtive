@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@/css/app.css";
 
 import { Box, Divider, Drawer } from "@mui/material";
@@ -8,13 +8,13 @@ import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import PlaybackControls from "@/components/PlaybackControls";
 
-import useSelectionBox from "@/hooks/useSelectionBox";
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas } from "@/lib/PointCanvas";
+import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
+import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
@@ -23,6 +23,8 @@ console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
 clearUrlHash();
 
 const drawerWidth = 256;
+const playbackFPS = 16;
+const playbackIntervalMs = 1000 / playbackFPS;
 
 export default function App() {
     // TrackManager handles data fetching
@@ -30,17 +32,16 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
+    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
     const numTracksLoaded = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
-    const { selectedPoints } = useSelectionBox(canvas);
-
     // this state is pure React
     const [playing, setPlaying] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isLoadingPoints, setIsLoadingPoints] = useState(false);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -50,20 +51,25 @@ export default function App() {
         navigator.clipboard.writeText(url);
     };
 
-    const setStateFromHash = () => {
+    const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
-        canvas.setCameraProperties(state.cameraPosition, state.cameraTarget);
-    };
+        dispatchCanvas({
+            type: ActionType.CAMERA_PROPERTIES,
+            cameraPosition: state.cameraPosition,
+            cameraTarget: state.cameraTarget,
+        });
+    }, [dispatchCanvas]);
+
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
         window.addEventListener("hashchange", setStateFromHash);
         return () => {
             window.removeEventListener("hashchange", setStateFromHash);
         };
-    }, []);
+    }, [setStateFromHash]);
 
     // update the array when the dataUrl changes
     useEffect(() => {
@@ -76,28 +82,35 @@ export default function App() {
             // is no longer valid.
             dispatchCanvas({
                 type: ActionType.CUR_TIME,
-                curTime: Math.min(canvas.curTime, (tm?.numTimes ?? numTimes) - 1),
+                curTime: (c: number) => {
+                    return Math.min(c, (tm?.numTimes ?? numTimes) - 1);
+                },
             });
         });
-    }, [dataUrl]);
+    }, [dispatchCanvas, dataUrl, numTimes]);
 
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
     useEffect(() => {
-        if (!trackManager || !canvas) return;
-        canvas.initPointsGeometry(trackManager.maxPointsPerTimepoint);
-    }, [trackManager]);
+        console.debug("effect-trackmanager");
+        if (!trackManager) return;
+        dispatchCanvas({
+            type: ActionType.INIT_POINTS_GEOMETRY,
+            maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+        });
+    }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
-        // show a loading indicator if the fetch takes longer than 10ms (avoid flicker)
-        const loadingTimer = setTimeout(() => setLoading(true), 100);
+        console.debug("effect-curTime");
+        // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (trackManager && !ignore) {
-            const getPoints = async (canvas: PointCanvas, time: number) => {
+            const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
                 console.debug("got %d points for time %d", data.length / 3, time);
@@ -107,17 +120,15 @@ export default function App() {
                     return;
                 }
 
-                // clearTimeout(loadingTimer);
-                setTimeout(() => setLoading(false), 250);
-                setLoading(false);
-                canvas.setPointsPositions(data);
-                canvas.resetPointColors();
+                // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
+                clearTimeout(loadingTimeout);
+                setIsLoadingPoints(false);
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
             };
-            getPoints(canvas, canvas.curTime);
+            getPoints(canvas.curTime);
         } else {
-            // clearTimeout(loadingTimer);
-            setTimeout(() => setLoading(false), 250);
-            setLoading(false);
+            clearTimeout(loadingTimeout);
+            setIsLoadingPoints(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
@@ -127,13 +138,15 @@ export default function App() {
         }
 
         return () => {
-            clearTimeout(loadingTimer);
+            clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [trackManager, canvas.curTime]);
+    }, [canvas.curTime, dispatchCanvas, trackManager]);
 
     useEffect(() => {
+        console.debug("effect-selection");
         const pointsID = canvas.points.id;
+        const selectedPoints = canvas.selectedPoints;
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();
@@ -163,23 +176,34 @@ export default function App() {
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack));
-        // TODO: cancel the fetch if the selection changes?
-    }, [selectedPoints]);
+
+        setIsLoadingTracks(true);
+        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
+            () => {
+                setIsLoadingTracks(false);
+            },
+        );
+        // TODO: add missing dependencies
+    }, [canvas.selectedPoints]);
 
     // playback time points
     // TODO: this is basic and may drop frames
     useEffect(() => {
+        console.debug("effect-playback");
         if (playing) {
-            const frameDelay = 1000 / 8; // 1000 / fps
             const interval = setInterval(() => {
-                dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
-            }, frameDelay);
+                dispatchCanvas({
+                    type: ActionType.CUR_TIME,
+                    curTime: (c: number) => {
+                        return (c + 1) % numTimes;
+                    },
+                });
+            }, playbackIntervalMs);
             return () => {
                 clearInterval(interval);
             };
         }
-    }, [canvas.curTime, numTimes, playing]);
+    }, [dispatchCanvas, numTimes, playing]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -227,6 +251,10 @@ export default function App() {
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
                             }}
+                            selectionMode={canvas.selector.selectionMode}
+                            setSelectionMode={(value: PointSelectionMode) => {
+                                dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
+                            }}
                         />
                     </Box>
                     <Divider />
@@ -235,6 +263,7 @@ export default function App() {
                             hasTracks={numTracksLoaded > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
+                            selectionMode={canvas.selector.selectionMode}
                             showTracks={canvas.showTracks}
                             setShowTracks={(show: boolean) => {
                                 dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
@@ -275,11 +304,12 @@ export default function App() {
             >
                 <Scene
                     ref={sceneDivRef}
-                    loading={loading}
+                    isLoading={isLoadingPoints || isLoadingTracks}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />
                 <Box flexGrow={0} padding="1em">
+                    <TimestampOverlay timestamp={canvas.curTime} />
                     <ColorMap />
                     <PlaybackControls
                         enabled={true}

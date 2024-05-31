@@ -22,18 +22,22 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
+import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
+import { PointsCollection } from "@/lib/PointSelectionBox";
 
 type Tracks = Map<number, Track>;
 
 export class PointCanvas {
-    scene: Scene;
-    renderer: WebGLRenderer;
-    camera: PerspectiveCamera;
-    points: Points;
-    composer: EffectComposer;
-    controls: OrbitControls;
-    bloomPass: UnrealBloomPass;
-    tracks: Tracks = new Map();
+    readonly scene: Scene;
+    readonly renderer: WebGLRenderer;
+    readonly camera: PerspectiveCamera;
+    readonly points: Points;
+    readonly composer: EffectComposer;
+    readonly controls: OrbitControls;
+    readonly bloomPass: UnrealBloomPass;
+    readonly selector: PointSelector;
+
+    readonly tracks: Tracks = new Map();
 
     showTracks = true;
     showTrackHighlights = true;
@@ -64,7 +68,8 @@ export class PointCanvas {
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
             blending: AdditiveBlending,
-            depthTest: false,
+            depthTest: true,
+            alphaTest: 0.1,
             transparent: true,
         });
         this.points = new Points(pointsGeometry, pointsMaterial);
@@ -90,12 +95,24 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
+
+        // Set up selection
+        this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
+        this.setSelectionMode(PointSelectionMode.BOX);
     }
 
     shallowCopy(): PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
+    }
+
+    get selectedPoints(): PointsCollection {
+        return this.selector.selection;
+    }
+
+    setSelectionMode(mode: PointSelectionMode) {
+        this.selector.setSelectionMode(mode);
     }
 
     // Use an arrow function so that each instance of the class is bound and
@@ -212,6 +229,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();
         this.points.geometry.dispose();
