@@ -1,6 +1,4 @@
 import { Vector3 } from "three";
-import { TrackManager } from "@/lib/TrackManager";
-import { PointCanvas } from "@/lib/PointCanvas";
 
 export const DEFAULT_ZARR_URL =
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
@@ -30,16 +28,6 @@ export class ViewerState {
         const searchParams = new URLSearchParams();
         searchParams.append(HASH_KEY, JSON.stringify(this));
         return "#" + searchParams.toString();
-    }
-
-    static fromAppState(trackManager: TrackManager | null, pointCanvas: PointCanvas): ViewerState {
-        const state = new ViewerState();
-        state.dataUrl = trackManager?.store ?? DEFAULT_ZARR_URL;
-        state.curTime = pointCanvas.curTime;
-        state.selectedTrackIds = new Array(...pointCanvas.selectedTrackIds);
-        state.cameraPosition = pointCanvas.camera.position.clone();
-        state.cameraTarget = pointCanvas.controls.target.clone();
-        return state;
     }
 
     static fromUrlHash(urlHash: string): ViewerState {

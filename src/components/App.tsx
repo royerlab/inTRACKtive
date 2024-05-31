@@ -46,7 +46,14 @@ export default function App() {
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
-        const state = ViewerState.fromAppState(trackManager, canvas);
+        const state = new ViewerState();
+        if (trackManager) {
+            state.dataUrl = trackManager.store;
+        }
+        state.curTime = canvas.curTime;
+        state.selectedTrackIds = new Array(...canvas.selectedTrackIds);
+        state.cameraPosition = canvas.camera.position.clone();
+        state.cameraTarget = canvas.controls.target.clone();
         const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
