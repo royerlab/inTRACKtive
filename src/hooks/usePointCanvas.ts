@@ -180,13 +180,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.maxTime = action.maxTime;
             newCanvas.updateAllTrackHighlights();
             break;
-        case ActionType.ADD_SELECTED_TRACK_IDS:
+        case ActionType.ADD_SELECTED_TRACK_IDS: {
             const newSelectedTrackIds = new Set(canvas.selectedTrackIds);
             for (const trackId of action.selectedTrackIds) {
                 newSelectedTrackIds.add(trackId);
             }
             newCanvas.selectedTrackIds = newSelectedTrackIds;
             break;
+        }
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
             return canvas;
