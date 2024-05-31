@@ -78,7 +78,7 @@ export default function App() {
             cameraTarget: state.cameraTarget,
         });
         dispatchCanvas({
-            type: ActionType.SET_SELECTED_TRACK_IDS,
+            type: ActionType.ADD_SELECTED_TRACK_IDS,
             selectedTrackIds: new Set(state.selectedTrackIds),
         });
     }, [dispatchCanvas]);
@@ -191,7 +191,7 @@ export default function App() {
                 }
             }
             dispatchCanvas({
-                type: ActionType.SET_SELECTED_TRACK_IDS,
+                type: ActionType.ADD_SELECTED_TRACK_IDS,
                 selectedTrackIds: selectedTrackIds,
             });
         };
