@@ -125,42 +125,6 @@ export class PointCanvas {
         return this.curTime * this.maxPointsPerTimepoint + index;
     }
 
-    // Updates the track IDs based on the selection point indices.
-    async updateTrackIds(trackManager: TrackManager) {
-        console.debug("PointCanvas.updateTrackIds: ", this.selectedPoints);
-        const pointsID = this.points.id;
-        const selectedPoints = this.selectedPoints;
-        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-        const selectedTrackIds = new Set<number>();
-        const pointIndices = selectedPoints.get(pointsID) || [];
-        for (const pointIndex of pointIndices) {
-            const pointId = this.pointIndexToPointId(pointIndex);
-            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-            for (const trackId of trackIds) {
-                selectedTrackIds.add(trackId);
-            }
-        }
-        this.setSelectedTrackIds(selectedTrackIds);
-    }
-
-    // Updates the track data and geometries based on the selected track IDs state.
-    async updateTracks(trackManager: TrackManager) {
-        console.debug("updateTracks: ", this.selectedTrackIds);
-
-        // this fetches the entire lineage for each track
-        for (const trackId of this.selectedTrackIds) {
-            const lineage = await trackManager.fetchLineageForTrack(trackId);
-            for (const l of lineage) {
-                if (this.tracks.has(l)) continue;
-                const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                // adding the track *in* the dispatcher creates issues with duplicate fetching
-                // but we refresh so the selected/loaded count is updated
-                this.addTrack(l, pos, ids);
-                // TODO: callback for refresh.
-            }
-        }
-    }
-
     get selectedPoints(): PointsCollection {
         return this.selector.selection;
     }

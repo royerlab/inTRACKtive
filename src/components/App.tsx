@@ -148,27 +148,73 @@ export default function App() {
     // on in the react render loop, we have to do it here because this is the
     // only place that we have access to the TrackManager.
     useEffect(() => {
-        console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints, canvas.selectedTrackIds);
+        console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints);
         if (!trackManager) return;
-        dispatchCanvas({ type: ActionType.REFRESH });
-        canvas.updateTrackIds(trackManager).then(() => {
-            dispatchCanvas({ type: ActionType.REFRESH });
-        });
+
+        const pointsID = canvas.points.id;
+        const selectedPoints = canvas.selectedPoints;
+        const selected = selectedPoints.get(pointsID) || [];
+        
+        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
+        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
+
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
+
+        const updateTrackIds = async () => {
+            const selectedTrackIds = new Set<number>();
+            const pointIndices = selectedPoints.get(pointsID) || [];
+            for (const pointIndex of pointIndices) {
+                const pointId = canvas.pointIndexToPointId(pointIndex);
+                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+                for (const trackId of trackIds) {
+                    selectedTrackIds.add(trackId);
+                }
+            }
+            dispatchCanvas({
+                type: ActionType.SET_SELECTED_TRACK_IDS,
+                selectedTrackIds: selectedTrackIds,
+            });
+        }
+        updateTrackIds();
     }, [trackManager, dispatchCanvas, canvas.selectedPoints]);
 
     // This loads tracks based on the selected track IDs.
     // The new set of track IDs should be an entirely new object otherwise
     // the effect dependency will not be detected by react.
-    console.debug("App: ", canvas.selectedTrackIds);
     useEffect(() => {
         console.debug("effect-selectedTrackIds: ", trackManager, canvas.selectedTrackIds);
         if (!trackManager) return;
+
+        const pointsID = canvas.points.id;
+        const selectedPoints = canvas.selectedPoints;
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
+ 
         setIsLoadingTracks(true);
-        dispatchCanvas({ type: ActionType.REFRESH });
-        canvas.updateTracks(trackManager).then(() => {
+
+        // keep track of which tracks we are adding to avoid duplicate fetching
+        const adding = new Set<number>();
+
+        // this fetches the entire lineage for each track
+        const updateTracks = async () => {
+            console.debug("updateTracks: ", canvas.selectedTrackIds);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
+            for (const trackId of canvas.selectedTrackIds) {
+                // TODO: want to skip tracks that already been fetched and rendered
+                // in a previous effect execution.
+                const lineage = await trackManager.fetchLineageForTrack(trackId);
+                for (const relatedId of lineage) {
+                    if (adding.has(relatedId) || canvas.tracks.has(relatedId)) continue;
+                    adding.add(relatedId);
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedId);
+                    // adding the track *in* the dispatcher creates issues with duplicate fetching
+                    // but we refresh so the selected/loaded count is updated
+                    canvas.addTrack(relatedId, pos, ids);
+                    dispatchCanvas({ type: ActionType.REFRESH });
+                }
+            }
             setIsLoadingTracks(false);
-            dispatchCanvas({ type: ActionType.REFRESH });
-        });
+        };
+        updateTracks();
     }, [trackManager, dispatchCanvas, canvas.selectedTrackIds]);
 
     // playback time points

@@ -22,6 +22,7 @@ enum ActionType {
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
+    SET_SELECTED_TRACK_IDS = "SET_SELECTED_TRACK_IDS",
 }
 
 interface AutoRotate {
@@ -95,6 +96,11 @@ interface MinMaxTime {
     maxTime: number;
 }
 
+interface SetSelectedTrackIds {
+    type: ActionType.SET_SELECTED_TRACK_IDS;
+    selectedTrackIds: Set<number>;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -110,7 +116,8 @@ type PointCanvasAction =
     | ShowTracks
     | ShowTrackHighlights
     | Size
-    | MinMaxTime;
+    | MinMaxTime
+    | SetSelectedTrackIds;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -172,6 +179,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.minTime = action.minTime;
             newCanvas.maxTime = action.maxTime;
             newCanvas.updateAllTrackHighlights();
+            break;
+        case ActionType.SET_SELECTED_TRACK_IDS:
+            newCanvas.selectedTrackIds = action.selectedTrackIds;
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
