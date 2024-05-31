@@ -24,7 +24,6 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { PointsCollection } from "@/lib/PointSelectionBox";
-import { TrackManager } from "./TrackManager";
 
 type Tracks = Map<number, Track>;
 
