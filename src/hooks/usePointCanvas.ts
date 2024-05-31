@@ -198,6 +198,11 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 
     // restore canvas from initial viewer state
     canvas.curTime = initialViewerState.curTime;
+    canvas.minTime = initialViewerState.minTime;
+    canvas.maxTime = initialViewerState.maxTime;
+    canvas.pointBrightness = initialViewerState.pointBrightness;
+    canvas.showTracks = initialViewerState.showTracks;
+    canvas.showTrackHighlights = initialViewerState.showTrackHighlights;
     canvas.selectedTrackIds = new Set(initialViewerState.selectedTrackIds);
     canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 

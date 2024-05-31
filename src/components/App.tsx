@@ -51,6 +51,11 @@ export default function App() {
             state.dataUrl = trackManager.store;
         }
         state.curTime = canvas.curTime;
+        state.minTime = canvas.minTime;
+        state.maxTime = canvas.maxTime;
+        state.pointBrightness = canvas.pointBrightness;
+        state.showTracks = canvas.showTracks;
+        state.showTrackHighlights = canvas.showTrackHighlights;
         state.selectedTrackIds = new Array(...canvas.selectedTrackIds);
         state.cameraPosition = canvas.camera.position.clone();
         state.cameraTarget = canvas.controls.target.clone();
@@ -63,6 +68,10 @@ export default function App() {
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
+        dispatchCanvas({ type: ActionType.MIN_MAX_TIME, minTime: state.minTime, maxTime: state.maxTime });
+        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: state.pointBrightness });
+        dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: state.showTracks });
+        dispatchCanvas({ type: ActionType.SHOW_TRACK_HIGHLIGHTS, showTrackHighlights: state.showTrackHighlights });
         dispatchCanvas({
             type: ActionType.CAMERA_PROPERTIES,
             cameraPosition: state.cameraPosition,
