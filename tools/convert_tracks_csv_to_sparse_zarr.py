@@ -34,9 +34,17 @@ points_array = np.ones((timepoints, 3 * max_points_in_timepoint), dtype=np.float
 points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
 tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
 tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
+
+# create a map of trackIds to parent trackIds 
+direct_parent_map = {}
 for point in points:
-    track_id, t, z, y, x, parent_track_id, n = point
-    point_id = t * max_points_in_timepoint + n
+    track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
+    if direct_parent_map.get(track_id) is None:
+        direct_parent_map[track_id] = parent_track_id    
+
+for point in points:
+    track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
+    point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
@@ -45,7 +53,7 @@ for point in points:
     if parent_track_id > 0:
         tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
         tracks_to_children[parent_track_id - 1, track_id - 1] = 1
-
+    
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
 
 tracks_to_parents.setdiag(1)
@@ -55,6 +63,8 @@ tracks_to_children = tracks_to_children.tocsr()
 
 start = time.monotonic()
 iter = 0
+# More info on sparse matrix: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
+# Transitive closure: https://en.wikipedia.org/wiki/Transitive_closure
 while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
     tracks_to_parents = nxt
     iter += 1
@@ -71,6 +81,17 @@ print(f"Chased track lineage backward in {time.monotonic() - start} seconds ({it
 start = time.monotonic()
 
 tracks_to_tracks = tracks_to_parents + tracks_to_children
+tracks_to_tracks = tracks_to_tracks.tolil()
+non_zero = tracks_to_tracks.nonzero()
+
+for i in range(len(non_zero[0])):
+    track_id = non_zero[0][i] + 1
+    parent_track_id = direct_parent_map[track_id]
+
+    tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_id
+
+# scipy sparse
+# numpy where np.nonzero
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()
