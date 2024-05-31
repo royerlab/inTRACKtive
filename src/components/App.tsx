@@ -104,7 +104,7 @@ export default function App() {
     useEffect(() => {
         console.debug("effect-curTime");
         // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs / 2);
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current

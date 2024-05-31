@@ -13,16 +13,15 @@ interface DataControlsProps {
     validTrackManager: boolean;
 }
 
-export default function DataControls({
-    dataUrl,
-    initialDataUrl,
-    setDataUrl,
-    copyShareableUrlToClipboard,
-    validTrackManager,
-}: DataControlsProps) {
+export default function DataControls(props: DataControlsProps) {
     const [copyUrlSnackBarOpen, setCopyUrlSnackBarOpen] = useState(false);
     const [urlPopoverAnchor, setUrlPopoverAnchor] = useState<HTMLButtonElement | null>(null);
 
+    // assign some props to local variables to satisfy the hook dependency linter, otherwise it
+    // wants all of props to be in the dependency array, and this is nicer than destrcuturing all of
+    // the props
+
+    const copyShareableUrlToClipboard = props.copyShareableUrlToClipboard;
     const copyShareableUrlToClipBoard = useCallback(() => {
         copyShareableUrlToClipboard();
         setCopyUrlSnackBarOpen(true);
@@ -43,6 +42,7 @@ export default function DataControls({
         setUrlPopoverAnchor(null);
     }, [setUrlPopoverAnchor]);
 
+    const setDataUrl = props.setDataUrl;
     const handleDataUrlSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
@@ -55,6 +55,7 @@ export default function DataControls({
     );
 
     // only close the popover if the URL gives a valid track manager
+    const validTrackManager = props.validTrackManager;
     useEffect(() => {
         if (validTrackManager) {
             setUrlPopoverAnchor(null);
@@ -86,7 +87,7 @@ export default function DataControls({
                 icon="Share"
                 sdsSize="large"
                 sdsType="secondary"
-                disabled={!validTrackManager}
+                disabled={!props.validTrackManager}
                 onClick={copyShareableUrlToClipBoard}
             />
             <Snackbar
@@ -139,10 +140,10 @@ export default function DataControls({
                             autoFocus
                             label="Zarr URL"
                             hideLabel
-                            placeholder={initialDataUrl}
-                            defaultValue={dataUrl}
+                            placeholder={props.initialDataUrl}
+                            defaultValue={props.dataUrl}
                             fullWidth={true}
-                            intent={validTrackManager ? "default" : "error"}
+                            intent={props.validTrackManager ? "default" : "error"}
                         />
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
