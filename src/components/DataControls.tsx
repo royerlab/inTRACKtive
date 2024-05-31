@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
 
@@ -17,37 +17,50 @@ export default function DataControls(props: DataControlsProps) {
     const [copyUrlSnackBarOpen, setCopyUrlSnackBarOpen] = useState(false);
     const [urlPopoverAnchor, setUrlPopoverAnchor] = useState<HTMLButtonElement | null>(null);
 
-    const copyShareableUrlToClipBoard = () => {
-        props.copyShareableUrlToClipboard();
+    // assign some props to local variables to satisfy the hook dependency linter, otherwise it
+    // wants all of props to be in the dependency array, and this is nicer than destrcuturing all of
+    // the props
+
+    const copyShareableUrlToClipboard = props.copyShareableUrlToClipboard;
+    const copyShareableUrlToClipBoard = useCallback(() => {
+        copyShareableUrlToClipboard();
         setCopyUrlSnackBarOpen(true);
-    };
+    }, [copyShareableUrlToClipboard]);
 
-    const handleShareableUrlSnackBarClose = () => {
+    const handleShareableUrlSnackBarClose = useCallback(() => {
         setCopyUrlSnackBarOpen(false);
-    };
+    }, [setCopyUrlSnackBarOpen]);
 
-    const showUrlPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setUrlPopoverAnchor(event.currentTarget);
-    };
+    const showUrlPopover = useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            setUrlPopoverAnchor(event.currentTarget);
+        },
+        [setUrlPopoverAnchor],
+    );
 
-    const handleUrlPopoverClose = () => {
+    const handleUrlPopoverClose = useCallback(() => {
         setUrlPopoverAnchor(null);
-    };
+    }, [setUrlPopoverAnchor]);
 
-    const handleDataUrlSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
-        if (urlInput) {
-            props.setDataUrl(urlInput.value);
-        }
-    };
+    const setDataUrl = props.setDataUrl;
+    const handleDataUrlSubmit = useCallback(
+        (event: React.FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
+            if (urlInput) {
+                setDataUrl(urlInput.value);
+            }
+        },
+        [setDataUrl],
+    );
 
     // only close the popover if the URL gives a valid track manager
+    const validTrackManager = props.validTrackManager;
     useEffect(() => {
-        if (props.validTrackManager && urlPopoverAnchor) {
+        if (validTrackManager) {
             setUrlPopoverAnchor(null);
         }
-    }, [props.validTrackManager]);
+    }, [validTrackManager]);
 
     return (
         <Box
@@ -98,7 +111,7 @@ export default function DataControls(props: DataControlsProps) {
 
             <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
             <Popover
-                open={Boolean(urlPopoverAnchor)}
+                open={!!urlPopoverAnchor}
                 anchorEl={urlPopoverAnchor}
                 onClose={handleUrlPopoverClose}
                 anchorOrigin={{

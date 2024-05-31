@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@/css/app.css";
 
 import { Box, Divider, Drawer } from "@mui/material";
@@ -12,7 +12,6 @@ import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
-import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
@@ -52,20 +51,25 @@ export default function App() {
         navigator.clipboard.writeText(url);
     };
 
-    const setStateFromHash = () => {
+    const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
-        canvas.setCameraProperties(state.cameraPosition, state.cameraTarget);
-    };
+        dispatchCanvas({
+            type: ActionType.CAMERA_PROPERTIES,
+            cameraPosition: state.cameraPosition,
+            cameraTarget: state.cameraTarget,
+        });
+    }, [dispatchCanvas]);
+
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
         window.addEventListener("hashchange", setStateFromHash);
         return () => {
             window.removeEventListener("hashchange", setStateFromHash);
         };
-    }, []);
+    }, [setStateFromHash]);
 
     // update the array when the dataUrl changes
     useEffect(() => {
@@ -78,18 +82,23 @@ export default function App() {
             // is no longer valid.
             dispatchCanvas({
                 type: ActionType.CUR_TIME,
-                curTime: Math.min(canvas.curTime, (tm?.numTimes ?? numTimes) - 1),
+                curTime: (c: number) => {
+                    return Math.min(c, (tm?.numTimes ?? numTimes) - 1);
+                },
             });
         });
-    }, [dataUrl]);
+    }, [dispatchCanvas, dataUrl, numTimes]);
 
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
     useEffect(() => {
         console.debug("effect-trackmanager");
-        if (!trackManager || !canvas) return;
-        canvas.initPointsGeometry(trackManager.maxPointsPerTimepoint);
-    }, [trackManager]);
+        if (!trackManager) return;
+        dispatchCanvas({
+            type: ActionType.INIT_POINTS_GEOMETRY,
+            maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+        });
+    }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes
     useEffect(() => {
@@ -101,7 +110,7 @@ export default function App() {
         // in addition, we should debounce the input and verify the data is current
         // before rendering it
         if (trackManager && !ignore) {
-            const getPoints = async (canvas: PointCanvas, time: number) => {
+            const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
                 console.debug("got %d points for time %d", data.length / 3, time);
@@ -114,10 +123,9 @@ export default function App() {
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                canvas.setPointsPositions(data);
-                canvas.resetPointColors();
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
             };
-            getPoints(canvas, canvas.curTime);
+            getPoints(canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
             setIsLoadingPoints(false);
@@ -133,7 +141,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [trackManager, canvas.curTime]);
+    }, [canvas.curTime, dispatchCanvas, trackManager]);
 
     useEffect(() => {
         console.debug("effect-selection");
@@ -175,7 +183,7 @@ export default function App() {
                 setIsLoadingTracks(false);
             },
         );
-        // TODO: cancel the fetch if the selection changes?
+        // TODO: add missing dependencies
     }, [canvas.selectedPoints]);
 
     // playback time points
@@ -184,13 +192,18 @@ export default function App() {
         console.debug("effect-playback");
         if (playing) {
             const interval = setInterval(() => {
-                dispatchCanvas({ type: ActionType.CUR_TIME, curTime: (canvas.curTime + 1) % numTimes });
+                dispatchCanvas({
+                    type: ActionType.CUR_TIME,
+                    curTime: (c: number) => {
+                        return (c + 1) % numTimes;
+                    },
+                });
             }, playbackIntervalMs);
             return () => {
                 clearInterval(interval);
             };
         }
-    }, [canvas.curTime, numTimes, playing]);
+    }, [dispatchCanvas, numTimes, playing]);
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
