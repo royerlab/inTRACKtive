@@ -24,6 +24,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { PointsCollection } from "@/lib/PointSelectionBox";
+import { TrackManager } from "./TrackManager";
 
 type Tracks = Map<number, Track>;
 
@@ -45,6 +46,11 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
+    // The track IDs that have been selected at specific time points.
+    // In general, this is a subset of the keys of Tracks because that
+    // likely contains ancestors and descendants of selected tracks.
+    selectedTrackIds: Set<number> = new Set();
+    selectedTracksIdsChanged: ((selection: Set<number>) => void) = (_selection: Set<number>) => {};
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
@@ -105,6 +111,62 @@ export class PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
+    }
+
+    setSelectedTrackIds(trackIds: Set<number>) {
+        console.debug("PointCanvas.setSelectedTrackIds: ", trackIds);
+        this.selectedTrackIds = trackIds;
+        this.selectedTracksIdsChanged(trackIds);
+    }
+
+    // Converts a point index within the points shown at the current time point
+    // to a unique point ID in the dataset.
+    pointIndexToPointId(index: number) : number {
+        return this.curTime * this.maxPointsPerTimepoint + index;
+    }
+
+    // Updates the track IDs based on the selection point indices.
+    async updateTrackIds(trackManager: TrackManager) {
+        console.debug("PointCanvas.updateTrackIds: ", this.selectedPoints);
+        const pointsID = this.points.id;
+        const selectedPoints = this.selectedPoints;
+        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
+        const selectedTrackIds = new Set<number>();
+        const pointIndices = selectedPoints.get(pointsID) || [];
+        for (const pointIndex of pointIndices) {
+            const pointId = this.pointIndexToPointId(pointIndex);
+            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+            for (const trackId of trackIds) {
+                selectedTrackIds.add(trackId);
+            }
+        }
+        this.setSelectedTrackIds(selectedTrackIds);
+    }
+
+    // Updates the track data and geometries based on the selected track IDs state.
+    async updateTracks(trackManager: TrackManager) {
+        console.debug("updateTrackIds: ", this.selectedPoints);
+
+        // this fetches the entire lineage for each track
+        for (const trackId of this.selectedTrackIds) {
+            // Do not currently store parent track IDs anywhere.
+            // Could get stored in the Track object.
+            // TODO: do we want to store the selected track IDs or
+            // their descendants and ancestors.
+            // Likely want to store only the currently selected track IDs.
+            const lineage = await trackManager.fetchLineageForTrack(trackId);
+            for (const l of lineage) {
+                if (this.tracks.has(l)) continue;
+                const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                // adding the track *in* the dispatcher creates issues with duplicate fetching
+                // but we refresh so the selected/loaded count is updated
+                this.addTrack(l, pos, ids);
+
+                // What is the equivalent here?
+                // Do we need anything?
+                // dispatchCanvas({ type: ActionType.REFRESH });
+            }
+        }
     }
 
     get selectedPoints(): PointsCollection {

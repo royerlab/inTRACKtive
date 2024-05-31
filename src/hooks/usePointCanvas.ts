@@ -181,11 +181,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
 }
 
 function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
+    console.debug("createPointCanvas: ", initialViewerState);
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
     const canvas = new PointCanvas(800, 600);
 
     // restore canvas from initial viewer state
+    canvas.curTime = initialViewerState.curTime;
+    canvas.selectedTrackIds = new Set(initialViewerState.selectedTrackIds);
     canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
 
     // start animating - this keeps the scene rendering when controls change, etc.
@@ -197,7 +200,6 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 function usePointCanvas(
     initialViewerState: ViewerState,
 ): [PointCanvas, Dispatch<PointCanvasAction>, RefObject<HTMLDivElement>] {
-    console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
@@ -205,6 +207,12 @@ function usePointCanvas(
     // we need to trigger a react re-render.
     canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
+        dispatchCanvas({ type: ActionType.REFRESH });
+    }, []);
+
+    // When the selected track IDs change, we need to trigger a re-render.
+    canvas.selectedTracksIdsChanged = useCallback((_selection: Set<number>) => {
+        console.debug("selectedTrackIdsChanged: refresh");
         dispatchCanvas({ type: ActionType.REFRESH });
     }, []);
 

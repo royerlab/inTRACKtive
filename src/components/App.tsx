@@ -46,8 +46,8 @@ export default function App() {
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(dataUrl, canvas.curTime, canvas.camera.position, canvas.controls.target);
-        const url = window.location.toString() + "#" + state.toUrlHash();
+        const state = ViewerState.fromAppState(trackManager, canvas);
+        const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
 
@@ -143,48 +143,34 @@ export default function App() {
         };
     }, [canvas.curTime, dispatchCanvas, trackManager]);
 
+    // This fetches track IDs based on the selected points.
+    // While selectedPoints is transient state that we may not want to depend
+    // on in the react render loop, we have to do it here because this is the
+    // only place that we have access to the TrackManager.
     useEffect(() => {
-        console.debug("effect-selection");
-        const pointsID = canvas.points.id;
-        const selectedPoints = canvas.selectedPoints;
-        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-        // keep track of which tracks we are adding to avoid duplicate fetching
-        const adding = new Set<number>();
+        console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints, canvas.selectedTrackIds);
+        if (!trackManager) return;
+        canvas.updateTrackIds(trackManager).then(() => {
+            setIsLoadingTracks(false);
+            dispatchCanvas({type: ActionType.REFRESH});
+        });
+        dispatchCanvas({type: ActionType.REFRESH});
+    }, [trackManager, dispatchCanvas, canvas.selectedPoints]);
 
-        // this fetches the entire lineage for each track
-        const fetchAndAddTrack = async (pointID: number) => {
-            if (!trackManager) return;
-            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
-            for (const t of tracks) {
-                const lineage = await trackManager.fetchLineageForTrack(t);
-                for (const l of lineage) {
-                    if (adding.has(l) || canvas.tracks.has(l)) continue;
-                    adding.add(l);
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(l, pos, ids);
-                    dispatchCanvas({ type: ActionType.REFRESH });
-                }
-            }
-        };
-
-        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
-
-        const selected = selectedPoints.get(pointsID) || [];
-        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
-
-        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-
+    // This loads tracks based on the selected track IDs.
+    // The new set of track IDs should be an entirely new object otherwise
+    // the effect dependency will not be detected by react.
+    console.debug("App: ", canvas.selectedTrackIds);
+    useEffect(() => {
+        console.debug("effect-selectedTrackIds: ", trackManager, canvas.selectedTrackIds);
+        if (!trackManager) return;
         setIsLoadingTracks(true);
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
-            () => {
-                setIsLoadingTracks(false);
-            },
-        );
-        // TODO: add missing dependencies
-    }, [canvas.selectedPoints]);
+        canvas.updateTracks(trackManager).then(() => {
+            setIsLoadingTracks(false);
+            dispatchCanvas({type: ActionType.REFRESH});
+        });
+        dispatchCanvas({type: ActionType.REFRESH});
+    }, [trackManager, dispatchCanvas, canvas.selectedTrackIds]);
 
     // playback time points
     // TODO: this is basic and may drop frames
