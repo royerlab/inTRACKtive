@@ -6,8 +6,10 @@ import { PointCanvas } from "@/lib/PointCanvas";
 import { PointsCollection } from "@/lib/PointSelectionBox";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
+import { TrackManager } from "@/lib/TrackManager";
 
 enum ActionType {
+    ADD_TRACKS = "ADD_TRACKS",
     AUTO_ROTATE = "AUTO_ROTATE",
     CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
@@ -17,11 +19,21 @@ enum ActionType {
     POINTS_POSITIONS = "POINTS_POSITIONS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
+    SELECTION = "SELECTION",
     SELECTION_MODE = "SELECTION_MODE",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
+}
+
+interface AddTracks {
+    type: ActionType.ADD_TRACKS;
+    trackManager: TrackManager;
+    pointId: number;
+    adding: Set<number>;
+    // callback to dispatch a refresh action from our async fetching
+    dispatcher: React.Dispatch<PointCanvasAction>;
 }
 
 interface AutoRotate {
@@ -68,6 +80,11 @@ interface RemoveAllTracks {
     type: ActionType.REMOVE_ALL_TRACKS;
 }
 
+interface Selection {
+    type: ActionType.SELECTION;
+    selection: PointsCollection;
+}
+
 interface SelectionMode {
     type: ActionType.SELECTION_MODE;
     selectionMode: PointSelectionMode;
@@ -97,6 +114,7 @@ interface MinMaxTime {
 
 // setting up a tagged union for the actions
 type PointCanvasAction =
+    | AddTracks
     | AutoRotate
     | CameraProperties
     | CurTime
@@ -106,6 +124,7 @@ type PointCanvasAction =
     | PointsPositions
     | Refresh
     | RemoveAllTracks
+    | Selection
     | SelectionMode
     | ShowTracks
     | ShowTrackHighlights
@@ -118,6 +137,25 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
+        case ActionType.ADD_TRACKS: {
+            const { trackManager, pointId, adding, dispatcher } = action;
+            const fetchAndAddTrack = async (p: number) => {
+                const tracks = await trackManager.fetchTrackIDsForPoint(p);
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                for (const t of tracks) {
+                    const lineage = await trackManager.fetchLineageForTrack(t);
+                    for (const l of lineage) {
+                        if (adding.has(l) || canvas.tracks.has(l)) continue;
+                        adding.add(l);
+                        const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                        canvas.addTrack(l, pos, ids);
+                        dispatcher({ type: ActionType.REFRESH });
+                    }
+                }
+            };
+            fetchAndAddTrack(canvas.curTime * trackManager.maxPointsPerTimepoint + pointId);
+            break;
+        }
         case ActionType.CAMERA_PROPERTIES:
             newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
@@ -153,6 +191,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.removeAllTracks();
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
+            break;
+        case ActionType.SELECTION:
+            newCanvas.selector.selection = action.selection;
             break;
         case ActionType.SELECTION_MODE:
             newCanvas.setSelectionMode(action.selectionMode);
@@ -203,9 +244,9 @@ function usePointCanvas(
 
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
-    canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
+    canvas.selector.selectionChanged = useCallback((selection: PointsCollection) => {
         console.debug("selectionChanged: refresh");
-        dispatchCanvas({ type: ActionType.REFRESH });
+        dispatchCanvas({ type: ActionType.SELECTION, selection: selection });
     }, []);
 
     // set up the canvas when the div is available

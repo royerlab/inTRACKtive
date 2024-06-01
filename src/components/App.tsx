@@ -147,44 +147,30 @@ export default function App() {
         console.debug("effect-selection");
         const pointsID = canvas.points.id;
         const selectedPoints = canvas.selectedPoints;
-        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-        // keep track of which tracks we are adding to avoid duplicate fetching
-        const adding = new Set<number>();
-
-        // this fetches the entire lineage for each track
-        const fetchAndAddTrack = async (pointID: number) => {
-            if (!trackManager) return;
-            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
-            for (const t of tracks) {
-                const lineage = await trackManager.fetchLineageForTrack(t);
-                for (const l of lineage) {
-                    if (adding.has(l) || canvas.tracks.has(l)) continue;
-                    adding.add(l);
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(l, pos, ids);
-                    dispatchCanvas({ type: ActionType.REFRESH });
-                }
-            }
-        };
+        if (!trackManager || !selectedPoints || !selectedPoints.has(pointsID)) {
+            setIsLoadingTracks(false);
+            return;
+        }
 
         dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
-
         const selected = selectedPoints.get(pointsID) || [];
         dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
-        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-
+        // keep track of which tracks we are adding to avoid duplicate fetching
+        const adding = new Set<number>();
         setIsLoadingTracks(true);
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
-            () => {
-                setIsLoadingTracks(false);
-            },
-        );
-        // TODO: add missing dependencies
-    }, [canvas.selectedPoints]);
+        selected.forEach((pointId) => {
+            dispatchCanvas({
+                type: ActionType.ADD_TRACKS,
+                trackManager,
+                pointId,
+                adding,
+                // pass in the dispatcher to trigger a refresh, is this a hack?
+                dispatcher: dispatchCanvas,
+            });
+        });
+        dispatchCanvas({ type: ActionType.SELECTION, selection: new Map() });
+    }, [canvas.points.id, canvas.selectedPoints, dispatchCanvas, trackManager]);
 
     // playback time points
     // TODO: this is basic and may drop frames
