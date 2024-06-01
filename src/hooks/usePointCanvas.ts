@@ -145,15 +145,15 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
                 for (const t of tracks) {
                     const lineage = await trackManager.fetchLineageForTrack(t);
                     for (const l of lineage) {
-                        if (adding.has(l) || canvas.tracks.has(l)) continue;
+                        if (adding.has(l) || newCanvas.tracks.has(l)) continue;
                         adding.add(l);
                         const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                        canvas.addTrack(l, pos, ids);
+                        newCanvas.addTrack(l, pos, ids);
                         dispatcher({ type: ActionType.REFRESH });
                     }
                 }
             };
-            fetchAndAddTrack(canvas.curTime * trackManager.maxPointsPerTimepoint + pointId);
+            fetchAndAddTrack(newCanvas.curTime * trackManager.maxPointsPerTimepoint + pointId);
             break;
         }
         case ActionType.CAMERA_PROPERTIES:
