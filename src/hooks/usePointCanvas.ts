@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from "react";
+import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject, SetStateAction } from "react";
 
 import { Vector3 } from "three";
 
 import { PointCanvas } from "@/lib/PointCanvas";
-import { PointsCollection } from "@/lib/PointSelectionBox";
-import { PointSelectionMode } from "@/lib/PointSelector";
+import { PointSelection, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 import { TrackManager } from "@/lib/TrackManager";
 
 enum ActionType {
-    ADD_TRACKS = "ADD_TRACKS",
+    SYNC_TRACKS = "SYNC_TRACKS",
     AUTO_ROTATE = "AUTO_ROTATE",
     CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
@@ -27,13 +26,13 @@ enum ActionType {
     MIN_MAX_TIME = "MIN_MAX_TIME",
 }
 
-interface AddTracks {
-    type: ActionType.ADD_TRACKS;
+interface SyncTracks {
+    type: ActionType.SYNC_TRACKS;
     trackManager: TrackManager;
     pointId: number;
     adding: Set<number>;
-    // callback to dispatch a refresh action from our async fetching
-    dispatcher: React.Dispatch<PointCanvasAction>;
+    // callback to decrement the number of loading tracks
+    setNumLoadingTracks: Dispatch<SetStateAction<number>>;
 }
 
 interface AutoRotate {
@@ -82,7 +81,7 @@ interface RemoveAllTracks {
 
 interface Selection {
     type: ActionType.SELECTION;
-    selection: PointsCollection;
+    selection: PointSelection;
 }
 
 interface SelectionMode {
@@ -114,7 +113,7 @@ interface MinMaxTime {
 
 // setting up a tagged union for the actions
 type PointCanvasAction =
-    | AddTracks
+    | SyncTracks
     | AutoRotate
     | CameraProperties
     | CurTime
@@ -137,25 +136,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
-        case ActionType.ADD_TRACKS: {
-            const { trackManager, pointId, adding, dispatcher } = action;
-            const fetchAndAddTrack = async (p: number) => {
-                const tracks = await trackManager.fetchTrackIDsForPoint(p);
-                // TODO: points actually only belong to one track, so can get rid of the outer loop
-                for (const t of tracks) {
-                    const lineage = await trackManager.fetchLineageForTrack(t);
-                    for (const l of lineage) {
-                        if (adding.has(l) || newCanvas.tracks.has(l)) continue;
-                        adding.add(l);
-                        const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                        newCanvas.addTrack(l, pos, ids);
-                        dispatcher({ type: ActionType.REFRESH });
-                    }
-                }
-            };
-            fetchAndAddTrack(newCanvas.curTime * trackManager.maxPointsPerTimepoint + pointId);
-            break;
-        }
         case ActionType.CAMERA_PROPERTIES:
             newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
@@ -209,6 +189,30 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.SIZE:
             newCanvas.setSize(action.width, action.height);
             break;
+        case ActionType.SYNC_TRACKS: {
+            const { trackManager, pointId, adding, setNumLoadingTracks } = action;
+            const fetchAndAddTrack = async (p: number) => {
+                setNumLoadingTracks((n) => n + 1);
+                const tracks = await trackManager.fetchTrackIDsForPoint(p);
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                for (const t of tracks) {
+                    // skip this if we already fetched the lineage for this track
+                    if (newCanvas.rootTracks.has(t)) continue;
+                    newCanvas.rootTracks.add(t);
+                    const lineage = await trackManager.fetchLineageForTrack(t);
+                    for (const l of lineage) {
+                        if (adding.has(l) || newCanvas.tracks.has(l)) continue;
+                        adding.add(l);
+                        const [pos, ids] = await trackManager.fetchPointsForTrack(l);
+                        newCanvas.addTrack(l, pos, ids);
+                    }
+                }
+            };
+            fetchAndAddTrack(pointId).then(() => {
+                setNumLoadingTracks((n) => n - 1);
+            });
+            break;
+        }
         case ActionType.MIN_MAX_TIME:
             newCanvas.minTime = action.minTime;
             newCanvas.maxTime = action.maxTime;
@@ -244,10 +248,14 @@ function usePointCanvas(
 
     // When the selection changes internally due to the user interacting with the canvas,
     // we need to trigger a react re-render.
-    canvas.selector.selectionChanged = useCallback((selection: PointsCollection) => {
-        console.debug("selectionChanged: refresh");
-        dispatchCanvas({ type: ActionType.SELECTION, selection: selection });
-    }, []);
+    canvas.selector.selectionChanged = useCallback(
+        (selection: PointSelection) => {
+            console.debug("selectionChanged:", selection);
+            const newSelection = new Set([...selection].map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
+            dispatchCanvas({ type: ActionType.SELECTION, selection: newSelection });
+        },
+        [canvas.curTime, canvas.maxPointsPerTimepoint],
+    );
 
     // set up the canvas when the div is available
     // this is an effect because:

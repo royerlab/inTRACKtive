@@ -1,9 +1,10 @@
 import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { PointsCollection } from "@/lib/PointSelectionBox";
 import { BoxPointSelector } from "./BoxPointSelector";
 import { SpherePointSelector } from "./SpherePointSelector";
+
+export type PointSelection = Set<number>;
 
 export enum PointSelectionMode {
     BOX = "BOX",
@@ -22,7 +23,7 @@ interface PointSelectorInterface {
     dispose(): void;
 }
 
-export type SelectionChanged = (selection: PointsCollection) => void;
+export type SelectionChanged = (selection: PointSelection) => void;
 
 // this is a separate class to keep the point selection logic separate from the rendering logic in
 // the PointCanvas class this fixes some issues with callbacks and event listeners binding to
@@ -34,9 +35,9 @@ export class PointSelector {
     readonly sphereSelector: SpherePointSelector;
 
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
-    selection: PointsCollection = new Map();
+    selection: PointSelection = new Set();
     // To optionally notify external observers about changes to the current selection.
-    selectionChanged: SelectionChanged = (_selection: PointsCollection) => {};
+    selectionChanged: SelectionChanged = (_selection: PointSelection) => {};
 
     constructor(
         scene: Scene,
@@ -45,7 +46,14 @@ export class PointSelector {
         controls: OrbitControls,
         points: Points,
     ) {
-        this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
+        this.boxSelector = new BoxPointSelector(
+            scene,
+            renderer,
+            camera,
+            controls,
+            points,
+            this.setSelectedPoints.bind(this),
+        );
         this.sphereSelector = new SpherePointSelector(
             scene,
             renderer,
@@ -84,7 +92,7 @@ export class PointSelector {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
 
-    setSelectedPoints(selection: PointsCollection) {
+    setSelectedPoints(selection: PointSelection) {
         console.debug("PointSelector.setSelectedPoints:", selection);
         this.selection = selection;
         this.selectionChanged(selection);

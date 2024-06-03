@@ -14,9 +14,7 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/Addons.js";
 
-import { PointsCollection } from "@/lib/PointSelectionBox";
-
-import { SelectionChanged } from "@/lib/PointSelector";
+import { PointSelection, SelectionChanged } from "@/lib/PointSelector";
 
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
@@ -175,8 +173,8 @@ export class SpherePointSelector {
                 selected.push(i);
             }
         }
-        const points: PointsCollection = new Map();
-        points.set(this.points.id, selected);
+        const points: PointSelection = new Set();
+        selected.forEach(points.add, points);
         console.log("selected points:", selected);
         this.selectionChanged(points);
     }

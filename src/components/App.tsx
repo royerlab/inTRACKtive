@@ -32,7 +32,6 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
-    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
@@ -42,6 +41,7 @@ export default function App() {
     // this state is pure React
     const [playing, setPlaying] = useState(false);
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+    const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -145,31 +145,28 @@ export default function App() {
 
     useEffect(() => {
         console.debug("effect-selection");
-        const pointsID = canvas.points.id;
         const selectedPoints = canvas.selectedPoints;
-        if (!trackManager || !selectedPoints || !selectedPoints.has(pointsID)) {
-            setIsLoadingTracks(false);
+        if (!trackManager || !selectedPoints) {
             return;
         }
 
         dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
-        const selected = selectedPoints.get(pointsID) || [];
-        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
+        const selected = Array.from(selectedPoints);
+        // TODO: HIGHLIGHT_POINTS still expects the point IDs within the current timeframe
+        // dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();
-        setIsLoadingTracks(true);
         selected.forEach((pointId) => {
             dispatchCanvas({
-                type: ActionType.ADD_TRACKS,
+                type: ActionType.SYNC_TRACKS,
                 trackManager,
                 pointId,
                 adding,
-                // pass in the dispatcher to trigger a refresh, is this a hack?
-                dispatcher: dispatchCanvas,
+                // pass in the setter to decrement the loading counter when we're done
+                setNumLoadingTracks,
             });
         });
-        dispatchCanvas({ type: ActionType.SELECTION, selection: new Map() });
     }, [canvas.points.id, canvas.selectedPoints, dispatchCanvas, trackManager]);
 
     // playback time points
@@ -290,7 +287,7 @@ export default function App() {
             >
                 <Scene
                     ref={sceneDivRef}
-                    isLoading={isLoadingPoints || isLoadingTracks}
+                    isLoading={isLoadingPoints || numLoadingTracks > 0}
                     initialCameraPosition={initialViewerState.cameraPosition}
                     initialCameraTarget={initialViewerState.cameraTarget}
                 />

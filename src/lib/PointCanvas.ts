@@ -22,8 +22,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
-import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
-import { PointsCollection } from "@/lib/PointSelectionBox";
+import { PointSelection, PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 
 type Tracks = Map<number, Track>;
 
@@ -38,6 +37,8 @@ export class PointCanvas {
     readonly selector: PointSelector;
 
     readonly tracks: Tracks = new Map();
+    // set of track IDs that have had their lineage fetched
+    readonly rootTracks: Set<number> = new Set();
 
     showTracks = true;
     showTrackHighlights = true;
@@ -48,8 +49,7 @@ export class PointCanvas {
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
-    // private here to consolidate external access via `TrackManager` instead
-    private maxPointsPerTimepoint = 0;
+    maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -107,7 +107,7 @@ export class PointCanvas {
         return newCanvas as PointCanvas;
     }
 
-    get selectedPoints(): PointsCollection {
+    get selectedPoints(): PointSelection {
         return this.selector.selection;
     }
 

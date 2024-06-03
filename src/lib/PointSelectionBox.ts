@@ -24,7 +24,8 @@ const _vectemp1 = new Vector3();
 const _vectemp2 = new Vector3();
 const _vectemp3 = new Vector3();
 
-type PointsCollection = Map<number, number[]>;
+// map of id: [indices]
+export type PointsCollection = Map<number, Set<number>>;
 
 class PointSelectionBox {
     camera: OrthographicCamera | PerspectiveCamera;
@@ -163,9 +164,9 @@ class PointSelectionBox {
                 if (frustum.containsPoint(_vec3)) {
                     const objectCollection = this.collection.get(object.id);
                     if (!objectCollection) {
-                        this.collection.set(object.id, [i]);
+                        this.collection.set(object.id, new Set([i]));
                     } else {
-                        objectCollection.push(i);
+                        objectCollection.add(i);
                     }
                 }
             }
@@ -192,5 +193,4 @@ function isPoints(obj: Object3D): obj is Points {
     return Boolean(obj && "isPoints" in obj && obj.isPoints);
 }
 
-export type { PointsCollection };
 export { PointSelectionBox };

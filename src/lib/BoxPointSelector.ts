@@ -1,8 +1,8 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 
-import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
+import { PointsCollection, PointSelectionBox } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
 // Selection with a 2D rectangle to make a 3D frustum.
@@ -11,6 +11,7 @@ export class BoxPointSelector {
     readonly controls: OrbitControls;
     readonly box: PointSelectionBox;
     readonly helper: SelectionHelper;
+    readonly points: Points;
     readonly selectionChanged: SelectionChanged;
 
     // True if this should not perform selection, false otherwise.
@@ -23,6 +24,7 @@ export class BoxPointSelector {
         renderer: WebGLRenderer,
         camera: PerspectiveCamera,
         controls: OrbitControls,
+        points: Points,
         selectionChanged: SelectionChanged,
     ) {
         this.renderer = renderer;
@@ -30,6 +32,7 @@ export class BoxPointSelector {
         this.helper = new SelectionHelper(renderer, "selectBox");
         this.helper.enabled = false;
         this.box = new PointSelectionBox(camera, scene);
+        this.points = points;
         this.selectionChanged = selectionChanged;
     }
 
@@ -52,7 +55,7 @@ export class BoxPointSelector {
     setSelectedPoints(selectedPoints: PointsCollection) {
         console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
         this.box.collection = selectedPoints;
-        this.selectionChanged(selectedPoints);
+        this.selectionChanged(selectedPoints.get(this.points.id) ?? new Set());
     }
 
     pointerUp(_event: MouseEvent) {
