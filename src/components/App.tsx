@@ -152,8 +152,7 @@ export default function App() {
 
         dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
         const selected = Array.from(selectedPoints);
-        // TODO: HIGHLIGHT_POINTS still expects the point IDs within the current timeframe
-        // dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
+        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
 
         // keep track of which tracks we are adding to avoid duplicate fetching
         const adding = new Set<number>();

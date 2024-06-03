@@ -154,7 +154,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.controls.autoRotate = action.autoRotate;
             break;
         case ActionType.HIGHLIGHT_POINTS:
-            newCanvas.highlightPoints(action.points);
+            newCanvas.highlightPoints([...action.points].map((p) => p % newCanvas.maxPointsPerTimepoint));
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
