@@ -205,6 +205,7 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
     canvas.curTime = initialViewerState.curTime;
     canvas.minTime = initialViewerState.minTime;
     canvas.maxTime = initialViewerState.maxTime;
+    canvas.maxPointsPerTimepoint = initialViewerState.maxPointsPerTimepoint;
     canvas.pointBrightness = initialViewerState.pointBrightness;
     canvas.showTracks = initialViewerState.showTracks;
     canvas.showTrackHighlights = initialViewerState.showTrackHighlights;

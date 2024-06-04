@@ -20,6 +20,7 @@ export class ViewerState {
     curTime = 0;
     minTime: number = -6;
     maxTime: number = 5;
+    maxPointsPerTimepoint = 0;
     pointBrightness = 1.0;
     selectedTrackIds: Array<number> = [];
     showTracks = true;

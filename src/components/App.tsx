@@ -53,6 +53,7 @@ export default function App() {
         state.curTime = canvas.curTime;
         state.minTime = canvas.minTime;
         state.maxTime = canvas.maxTime;
+        state.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
         state.pointBrightness = canvas.pointBrightness;
         state.showTracks = canvas.showTracks;
         state.showTrackHighlights = canvas.showTrackHighlights;
@@ -67,6 +68,7 @@ export default function App() {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
+        dispatchCanvas({ type: ActionType.INIT_POINTS_GEOMETRY, maxPointsPerTimepoint: state.maxPointsPerTimepoint});
         dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
         dispatchCanvas({ type: ActionType.MIN_MAX_TIME, minTime: state.minTime, maxTime: state.maxTime });
         dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: state.pointBrightness });

@@ -52,8 +52,7 @@ export class PointCanvas {
 
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
-    // private here to consolidate external access via `TrackManager` instead
-    private maxPointsPerTimepoint = 0;
+    maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
