@@ -37,21 +37,23 @@ export class PointCanvas {
     readonly bloomPass: UnrealBloomPass;
     readonly selector: PointSelector;
 
+    // Maps from track ID to three.js Track objects.
+    // This contains all tracks or tracklets across the lineages of all
+    // selected cells.
     readonly tracks: Tracks = new Map();
     // Needed to skip fetches for lineages that have already been fetched.
     readonly fetchedTrackIds = new Set<number>();
 
+    // The track IDs that have been selected at specific time points.
+    // In general, this is a subset of the keys in tracks because that
+    // also contains ancestors and descendants of these selected tracks.
+    selectedTrackIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
     curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
-    // The track IDs that have been selected at specific time points.
-    // In general, this is a subset of the keys in tracks because that
-    // likely contains ancestors and descendants of selected tracks.
-    selectedTrackIds: Set<number> = new Set();
-
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
