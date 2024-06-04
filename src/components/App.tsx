@@ -32,7 +32,6 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
-    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
@@ -42,28 +41,18 @@ export default function App() {
     // this state is pure React
     const [playing, setPlaying] = useState(false);
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState();
+        const state = canvas.toState();
         if (trackManager) {
             state.dataUrl = trackManager.store;
         }
-        state.curTime = canvas.curTime;
-        state.minTime = canvas.minTime;
-        state.maxTime = canvas.maxTime;
-        state.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
-        state.pointBrightness = canvas.pointBrightness;
-        state.showTracks = canvas.showTracks;
-        state.showTrackHighlights = canvas.showTrackHighlights;
-        state.selectedTrackIds = new Array(...canvas.selectedTrackIds);
-        state.cameraPosition = canvas.camera.position.clone();
-        state.cameraTarget = canvas.controls.target.clone();
         const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
-
     const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();

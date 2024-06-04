@@ -115,6 +115,21 @@ export class PointCanvas {
         return newCanvas as PointCanvas;
     }
 
+    toState(): ViewerState {
+        const state = new ViewerState();
+        state.curTime = this.curTime;
+        state.minTime = this.minTime;
+        state.maxTime = this.maxTime;
+        state.maxPointsPerTimepoint = this.maxPointsPerTimepoint;
+        state.pointBrightness = this.pointBrightness;
+        state.showTracks = this.showTracks;
+        state.showTrackHighlights = this.showTrackHighlights;
+        state.selectedTrackIds = new Array(...this.selectedTrackIds);
+        state.cameraPosition = this.camera.position.clone();
+        state.cameraTarget = this.controls.target.clone();
+        return state;
+    }
+
     updateWithState(state: ViewerState) {
         this.curTime = state.curTime;
         this.minTime = state.minTime;
