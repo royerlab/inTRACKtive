@@ -46,7 +46,7 @@ export class PointCanvas {
     maxTime: number = 5;
     pointBrightness = 1.0;
     // The track IDs that have been selected at specific time points.
-    // In general, this is a subset of the keys of Tracks because that
+    // In general, this is a subset of the keys in tracks because that
     // likely contains ancestors and descendants of selected tracks.
     selectedTrackIds: Set<number> = new Set();
 
@@ -108,12 +108,6 @@ export class PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
-    }
-
-    // Converts a point index within the points shown at the current time point
-    // to a unique point ID in the dataset.
-    pointIndexToPointId(index: number): number {
-        return this.curTime * this.maxPointsPerTimepoint + index;
     }
 
     get selectedPoints(): PointsCollection {

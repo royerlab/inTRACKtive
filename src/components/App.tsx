@@ -167,7 +167,7 @@ export default function App() {
 
     // This fetches track IDs based on the selected points.
     // While selectedPoints is transient state that we may not want to depend
-    // on in the react render loop, we have to do it here because this is the
+    // on in the react render loop, we need to do it here because this is the
     // only place that we have access to the TrackManager.
     useEffect(() => {
         console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints);
@@ -182,11 +182,16 @@ export default function App() {
 
         if (!selectedPoints || !selectedPoints.has(pointsID)) return;
 
+        // Capture the point ID offset once.
+        // TODO: store this at the time of selection to ensure we have the right
+        // time point. Or store the point IDs as state instead.
+        const pointIdOffset = canvas.curTime * canvas.maxPointsPerTimepoint;
+
         const updateTrackIds = async () => {
             const selectedTrackIds = new Set<number>();
             const pointIndices = selectedPoints.get(pointsID) || [];
             for (const pointIndex of pointIndices) {
-                const pointId = canvas.pointIndexToPointId(pointIndex);
+                const pointId = pointIdOffset + pointIndex;
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
                 for (const trackId of trackIds) {
                     selectedTrackIds.add(trackId);
