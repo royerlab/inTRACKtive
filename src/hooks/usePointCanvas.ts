@@ -23,6 +23,7 @@ enum ActionType {
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
     ADD_SELECTED_TRACK_IDS = "ADD_SELECTED_TRACK_IDS",
+    UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
 }
 
 interface AutoRotate {
@@ -101,6 +102,13 @@ interface AddSelectedTrackIds {
     selectedTrackIds: Set<number>;
 }
 
+interface UpdateWithState {
+    type: ActionType.UPDATE_WITH_STATE;
+    state: ViewerState;
+}
+
+
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -117,7 +125,8 @@ type PointCanvasAction =
     | ShowTrackHighlights
     | Size
     | MinMaxTime
-    | AddSelectedTrackIds;
+    | AddSelectedTrackIds
+    | UpdateWithState;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -188,6 +197,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.selectedTrackIds = newSelectedTrackIds;
             break;
         }
+        case ActionType.UPDATE_WITH_STATE:
+            newCanvas.updateWithState(action.state);
+            break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
             return canvas;
@@ -201,16 +213,8 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
     // these will be overridden when the canvas is inserted into a div
     const canvas = new PointCanvas(800, 600);
 
-    // restore canvas from initial viewer state
-    canvas.curTime = initialViewerState.curTime;
-    canvas.minTime = initialViewerState.minTime;
-    canvas.maxTime = initialViewerState.maxTime;
-    canvas.maxPointsPerTimepoint = initialViewerState.maxPointsPerTimepoint;
-    canvas.pointBrightness = initialViewerState.pointBrightness;
-    canvas.showTracks = initialViewerState.showTracks;
-    canvas.showTrackHighlights = initialViewerState.showTrackHighlights;
-    canvas.selectedTrackIds = new Set(initialViewerState.selectedTrackIds);
-    canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
+    // Update the state from any initial values.
+    canvas.updateWithState(initialViewerState);
 
     // start animating - this keeps the scene rendering when controls change, etc.
     canvas.animate();

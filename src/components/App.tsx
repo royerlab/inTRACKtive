@@ -68,21 +68,7 @@ export default function App() {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
-        dispatchCanvas({ type: ActionType.INIT_POINTS_GEOMETRY, maxPointsPerTimepoint: state.maxPointsPerTimepoint });
-        dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
-        dispatchCanvas({ type: ActionType.MIN_MAX_TIME, minTime: state.minTime, maxTime: state.maxTime });
-        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: state.pointBrightness });
-        dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: state.showTracks });
-        dispatchCanvas({ type: ActionType.SHOW_TRACK_HIGHLIGHTS, showTrackHighlights: state.showTrackHighlights });
-        dispatchCanvas({
-            type: ActionType.CAMERA_PROPERTIES,
-            cameraPosition: state.cameraPosition,
-            cameraTarget: state.cameraTarget,
-        });
-        dispatchCanvas({
-            type: ActionType.ADD_SELECTED_TRACK_IDS,
-            selectedTrackIds: new Set(state.selectedTrackIds),
-        });
+        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state});
     }, [dispatchCanvas]);
 
     // update the state when the hash changes, but only register the listener once

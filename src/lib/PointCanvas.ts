@@ -24,6 +24,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { PointsCollection } from "@/lib/PointSelectionBox";
+import { ViewerState } from "./ViewerState";
 
 type Tracks = Map<number, Track>;
 
@@ -112,6 +113,18 @@ export class PointCanvas {
         const newCanvas = { ...this };
         Object.setPrototypeOf(newCanvas, PointCanvas.prototype);
         return newCanvas as PointCanvas;
+    }
+
+    updateWithState(state: ViewerState) {
+        this.curTime = state.curTime;
+        this.minTime = state.minTime;
+        this.maxTime = state.maxTime;
+        this.maxPointsPerTimepoint = state.maxPointsPerTimepoint;
+        this.pointBrightness = state.pointBrightness;
+        this.showTracks = state.showTracks;
+        this.showTrackHighlights = state.showTrackHighlights;
+        this.selectedTrackIds = new Set(state.selectedTrackIds);
+        this.setCameraProperties(state.cameraPosition, state.cameraTarget);
     }
 
     get selectedPoints(): PointsCollection {
