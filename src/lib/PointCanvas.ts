@@ -38,6 +38,8 @@ export class PointCanvas {
     readonly selector: PointSelector;
 
     readonly tracks: Tracks = new Map();
+    // Needed to skip fetches for lineages that have already been fetched.
+    readonly fetchedTrackIds = new Set<number>();
 
     showTracks = true;
     showTrackHighlights = true;
