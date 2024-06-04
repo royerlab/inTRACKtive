@@ -257,6 +257,8 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
+        this.selectedTrackIds = new Set();
+        this.fetchedRootTrackIds.clear();
         for (const trackID of this.tracks.keys()) {
             this.removeTrack(trackID);
         }
