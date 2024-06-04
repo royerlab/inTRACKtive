@@ -223,8 +223,8 @@ export default function App() {
             console.debug("updateTracks: ", canvas.selectedTrackIds);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const trackId of canvas.selectedTrackIds) {
-                if (canvas.fetchedTrackIds.has(trackId)) continue;
-                canvas.fetchedTrackIds.add(trackId);
+                if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+                canvas.fetchedRootTrackIds.add(trackId);
                 const lineage = await trackManager.fetchLineageForTrack(trackId);
                 for (const relatedId of lineage) {
                     if (adding.has(relatedId) || canvas.tracks.has(relatedId)) continue;

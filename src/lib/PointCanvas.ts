@@ -42,7 +42,7 @@ export class PointCanvas {
     // selected cells.
     readonly tracks: Tracks = new Map();
     // Needed to skip fetches for lineages that have already been fetched.
-    readonly fetchedTrackIds = new Set<number>();
+    readonly fetchedRootTrackIds = new Set<number>();
 
     // The track IDs that have been selected at specific time points.
     // In general, this is a subset of the keys in tracks because that
