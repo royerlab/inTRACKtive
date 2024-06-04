@@ -57,7 +57,7 @@ export default function App() {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
-        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state});
+        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
 
     // update the state when the hash changes, but only register the listener once

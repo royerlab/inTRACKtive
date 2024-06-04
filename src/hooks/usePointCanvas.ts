@@ -107,8 +107,6 @@ interface UpdateWithState {
     state: ViewerState;
 }
 
-
-
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
