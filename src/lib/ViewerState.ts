@@ -22,7 +22,7 @@ export class ViewerState {
     maxTime: number = 5;
     maxPointsPerTimepoint = 0;
     pointBrightness = 1.0;
-    selectedTrackIds: Array<number> = [];
+    selectedPointIds: Array<number> = [];
     showTracks = true;
     showTrackHighlights = true;
     // Default position and target from interacting with ZSNS001.

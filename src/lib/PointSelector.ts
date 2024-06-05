@@ -1,7 +1,6 @@
 import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { PointsCollection } from "@/lib/PointSelectionBox";
 import { BoxPointSelector } from "./BoxPointSelector";
 import { SpherePointSelector } from "./SpherePointSelector";
 
@@ -22,7 +21,7 @@ interface PointSelectorInterface {
     dispose(): void;
 }
 
-export type SelectionChanged = (selection: PointsCollection) => void;
+export type SelectionChanged = (selection: number[]) => void;
 
 // this is a separate class to keep the point selection logic separate from the rendering logic in
 // the PointCanvas class this fixes some issues with callbacks and event listeners binding to
@@ -34,9 +33,8 @@ export class PointSelector {
     readonly sphereSelector: SpherePointSelector;
 
     selectionMode: PointSelectionMode = PointSelectionMode.BOX;
-    selection: PointsCollection = new Map();
-    // To optionally notify external observers about changes to the current selection.
-    selectionChanged: SelectionChanged = (_selection: PointsCollection) => {};
+    // To notify external observers about changes to the current selection.
+    selectionChanged: SelectionChanged = (_selection: number[]) => {};
 
     constructor(
         scene: Scene,
@@ -45,7 +43,13 @@ export class PointSelector {
         controls: OrbitControls,
         points: Points,
     ) {
-        this.boxSelector = new BoxPointSelector(scene, renderer, camera, controls, this.setSelectedPoints.bind(this));
+        this.boxSelector = new BoxPointSelector(
+            scene,
+            renderer,
+            camera,
+            controls,
+            points,
+            this.setSelectedPoints.bind(this));
         this.sphereSelector = new SpherePointSelector(
             scene,
             renderer,
@@ -84,9 +88,8 @@ export class PointSelector {
         return this.selectionMode === PointSelectionMode.BOX ? this.boxSelector : this.sphereSelector;
     }
 
-    setSelectedPoints(selection: PointsCollection) {
+    setSelectedPoints(selection: number[]) {
         console.debug("PointSelector.setSelectedPoints:", selection);
-        this.selection = selection;
         this.selectionChanged(selection);
     }
 

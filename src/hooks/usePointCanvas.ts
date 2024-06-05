@@ -3,7 +3,6 @@ import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from 
 import { Vector3 } from "three";
 
 import { PointCanvas } from "@/lib/PointCanvas";
-import { PointsCollection } from "@/lib/PointSelectionBox";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 
@@ -22,7 +21,7 @@ enum ActionType {
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
-    ADD_SELECTED_TRACK_IDS = "ADD_SELECTED_TRACK_IDS",
+    ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
 }
 
@@ -97,9 +96,10 @@ interface MinMaxTime {
     maxTime: number;
 }
 
-interface AddSelectedTrackIds {
-    type: ActionType.ADD_SELECTED_TRACK_IDS;
-    selectedTrackIds: Set<number>;
+interface AddSelectedPointIds {
+    type: ActionType.ADD_SELECTED_POINT_IDS;
+    selectedPointIndices: number[];
+    selectedPointIds: Set<number>;
 }
 
 interface UpdateWithState {
@@ -123,7 +123,7 @@ type PointCanvasAction =
     | ShowTrackHighlights
     | Size
     | MinMaxTime
-    | AddSelectedTrackIds
+    | AddSelectedPointIds
     | UpdateWithState;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
@@ -187,12 +187,15 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.maxTime = action.maxTime;
             newCanvas.updateAllTrackHighlights();
             break;
-        case ActionType.ADD_SELECTED_TRACK_IDS: {
-            const newSelectedTrackIds = new Set(canvas.selectedTrackIds);
-            for (const trackId of action.selectedTrackIds) {
-                newSelectedTrackIds.add(trackId);
+        case ActionType.ADD_SELECTED_POINT_IDS: {
+            const newSelectedPointIds = new Set(canvas.selectedPointIds);
+            for (const trackId of action.selectedPointIds) {
+                newSelectedPointIds.add(trackId);
             }
-            newCanvas.selectedTrackIds = newSelectedTrackIds;
+            newCanvas.selectedPointIds = newSelectedPointIds;
+            // TODO: only highlight the indices if the canvas is at the same time
+            // point as when it was selected.
+            newCanvas.highlightPoints(action.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:
@@ -227,11 +230,15 @@ function usePointCanvas(
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
     // When the selection changes internally due to the user interacting with the canvas,
-    // we need to trigger a react re-render.
-    canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
-        console.debug("selectionChanged: refresh");
-        dispatchCanvas({ type: ActionType.REFRESH });
-    }, []);
+    // we need to dispatch an addition to the canvas' state.
+    canvas.selector.selectionChanged = useCallback(
+        (pointIndices: number[]) => {
+            console.debug("selectionChanged:", pointIndices);
+            const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
+            dispatchCanvas({ type: ActionType.ADD_SELECTED_POINT_IDS, selectedPointIndices: pointIndices, selectedPointIds: pointIds });
+        },
+        [canvas.points.id, canvas.curTime, canvas.maxPointsPerTimepoint],
+    );
 
     // set up the canvas when the div is available
     // this is an effect because:

@@ -23,7 +23,6 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
-import { PointsCollection } from "@/lib/PointSelectionBox";
 import { ViewerState } from "./ViewerState";
 
 type Tracks = Map<number, Track>;
@@ -45,10 +44,12 @@ export class PointCanvas {
     // Needed to skip fetches for lineages that have already been fetched.
     readonly fetchedRootTrackIds = new Set<number>();
 
-    // The track IDs that have been selected at specific time points.
-    // In general, this is a subset of the keys in tracks because that
-    // also contains ancestors and descendants of these selected tracks.
-    selectedTrackIds: Set<number> = new Set();
+    // All the point IDs that have been selected.
+    // PointCanvas.selector.selection is the transient array of selected
+    // point indices associated with a specific time point and selection action,
+    // whereas these are a union of all those selection actions, are unique
+    // across the whole dataset and can be used for persistent storage.
+    selectedPointIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
     curTime: number = 0;
@@ -124,7 +125,7 @@ export class PointCanvas {
         state.pointBrightness = this.pointBrightness;
         state.showTracks = this.showTracks;
         state.showTrackHighlights = this.showTrackHighlights;
-        state.selectedTrackIds = new Array(...this.selectedTrackIds);
+        state.selectedPointIds = new Array(...this.selectedPointIds);
         state.cameraPosition = this.camera.position.clone();
         state.cameraTarget = this.controls.target.clone();
         return state;
@@ -138,12 +139,8 @@ export class PointCanvas {
         this.pointBrightness = state.pointBrightness;
         this.showTracks = state.showTracks;
         this.showTrackHighlights = state.showTrackHighlights;
-        this.selectedTrackIds = new Set(state.selectedTrackIds);
+        this.selectedPointIds = new Set(state.selectedPointIds);
         this.setCameraProperties(state.cameraPosition, state.cameraTarget);
-    }
-
-    get selectedPoints(): PointsCollection {
-        return this.selector.selection;
     }
 
     setSelectionMode(mode: PointSelectionMode) {
@@ -257,7 +254,7 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
-        this.selectedTrackIds = new Set();
+        this.selectedPointIds = new Set();
         this.fetchedRootTrackIds.clear();
         for (const trackID of this.tracks.keys()) {
             this.removeTrack(trackID);

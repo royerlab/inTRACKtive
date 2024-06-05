@@ -140,53 +140,11 @@ export default function App() {
         };
     }, [canvas.curTime, dispatchCanvas, trackManager]);
 
-    // This fetches track IDs based on the selected points.
-    // While selectedPoints is transient state that we may not want to depend
-    // on in the react render loop, we need to do it here because this is the
-    // only place that we have access to the TrackManager.
+    // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
-        console.debug("effect-selectedPoints: ", trackManager, canvas.selectedPoints);
+        console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
-
-        const pointsID = canvas.points.id;
-        const selectedPoints = canvas.selectedPoints;
-        const selected = selectedPoints.get(pointsID) || [];
-
-        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
-        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
-
-        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-
-        // Capture the point ID offset once.
-        // TODO: store this at the time of selection to ensure we have the right
-        // time point. Or store the point IDs as state instead.
-        const pointIdOffset = canvas.curTime * canvas.maxPointsPerTimepoint;
-
-        const updateTrackIds = async () => {
-            const selectedTrackIds = new Set<number>();
-            const pointIndices = selectedPoints.get(pointsID) || [];
-            for (const pointIndex of pointIndices) {
-                const pointId = pointIdOffset + pointIndex;
-                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-                for (const trackId of trackIds) {
-                    selectedTrackIds.add(trackId);
-                }
-            }
-            dispatchCanvas({
-                type: ActionType.ADD_SELECTED_TRACK_IDS,
-                selectedTrackIds: selectedTrackIds,
-            });
-        };
-        updateTrackIds();
-    }, [trackManager, dispatchCanvas, canvas.selectedPoints]);
-
-    // This loads tracks based on the selected track IDs.
-    // The new set of track IDs should be an entirely new object otherwise
-    // the effect dependency will not be detected by react.
-    useEffect(() => {
-        console.debug("effect-selectedTrackIds: ", trackManager, canvas.selectedTrackIds);
-        if (!trackManager) return;
-        if (!canvas.selectedTrackIds) return;
+        if (!canvas.selectedPointIds) return;
 
         setIsLoadingTracks(true);
 
@@ -195,27 +153,29 @@ export default function App() {
 
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
-            console.debug("updateTracks: ", canvas.selectedTrackIds);
+            console.debug("updateTracks: ", canvas.selectedPointIds);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
-            for (const trackId of canvas.selectedTrackIds) {
-                if (canvas.fetchedRootTrackIds.has(trackId)) continue;
-                canvas.fetchedRootTrackIds.add(trackId);
-                const lineage = await trackManager.fetchLineageForTrack(trackId);
-                for (const relatedTrackId of lineage) {
-                    if (adding.has(relatedTrackId) || canvas.tracks.has(relatedTrackId)) continue;
-                    adding.add(relatedTrackId);
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(relatedTrackId, pos, ids);
-                    dispatchCanvas({ type: ActionType.REFRESH });
+            for (const pointId of canvas.selectedPointIds) {
+                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+                for (const trackId of trackIds) {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+                    canvas.fetchedRootTrackIds.add(trackId);
+                    const lineage = await trackManager.fetchLineageForTrack(trackId);
+                    for (const relatedTrackId of lineage) {
+                        if (adding.has(relatedTrackId) || canvas.tracks.has(relatedTrackId)) continue;
+                        adding.add(relatedTrackId);
+                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
+                        // adding the track *in* the dispatcher creates issues with duplicate fetching
+                        // but we refresh so the selected/loaded count is updated
+                        canvas.addTrack(relatedTrackId, pos, ids);
+                        dispatchCanvas({ type: ActionType.REFRESH });
+                    }
                 }
             }
-
             setIsLoadingTracks(false);
         };
         updateTracks();
-    }, [trackManager, dispatchCanvas, canvas.selectedTrackIds]);
+    }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
     // TODO: this is basic and may drop frames
