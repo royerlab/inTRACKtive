@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from "react";
+
+import { Vector3 } from "three";
 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointsCollection } from "@/lib/PointSelectionBox";
@@ -7,14 +9,18 @@ import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
+    CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
+    INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
+    POINTS_POSITIONS = "POINTS_POSITIONS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
+    SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
 }
 
@@ -23,9 +29,15 @@ interface AutoRotate {
     autoRotate: boolean;
 }
 
+interface CameraProperties {
+    type: ActionType.CAMERA_PROPERTIES;
+    cameraPosition: Vector3;
+    cameraTarget: Vector3;
+}
+
 interface CurTime {
     type: ActionType.CUR_TIME;
-    curTime: number;
+    curTime: number | ((curTime: number) => number);
 }
 
 interface HighlightPoints {
@@ -33,9 +45,19 @@ interface HighlightPoints {
     points: number[];
 }
 
+interface InitPointsGeometry {
+    type: ActionType.INIT_POINTS_GEOMETRY;
+    maxPointsPerTimepoint: number;
+}
+
 interface PointBrightness {
     type: ActionType.POINT_BRIGHTNESS;
     brightness: number;
+}
+
+interface PointsPositions {
+    type: ActionType.POINTS_POSITIONS;
+    positions: Float32Array;
 }
 
 interface Refresh {
@@ -61,6 +83,12 @@ interface ShowTrackHighlights {
     showTrackHighlights: boolean;
 }
 
+interface Size {
+    type: ActionType.SIZE;
+    width: number;
+    height: number;
+}
+
 interface MinMaxTime {
     type: ActionType.MIN_MAX_TIME;
     minTime: number;
@@ -70,14 +98,18 @@ interface MinMaxTime {
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
+    | CameraProperties
     | CurTime
     | HighlightPoints
+    | InitPointsGeometry
     | PointBrightness
+    | PointsPositions
     | Refresh
     | RemoveAllTracks
     | SelectionMode
     | ShowTracks
     | ShowTrackHighlights
+    | Size
     | MinMaxTime;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
@@ -86,7 +118,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
+        case ActionType.CAMERA_PROPERTIES:
+            newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
+            break;
         case ActionType.CUR_TIME: {
+            // if curTime is a function, call it with the current time
+            if (typeof action.curTime === "function") {
+                action.curTime = action.curTime(canvas.curTime);
+            }
             newCanvas.curTime = action.curTime;
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
@@ -99,9 +138,17 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.HIGHLIGHT_POINTS:
             newCanvas.highlightPoints(action.points);
             break;
+        case ActionType.INIT_POINTS_GEOMETRY:
+            newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
+            break;
+        case ActionType.POINTS_POSITIONS:
+            newCanvas.setPointsPositions(action.positions);
+            newCanvas.resetPointColors();
+            newCanvas.updateHighlightedPoints();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
@@ -118,6 +165,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.SHOW_TRACK_HIGHLIGHTS:
             newCanvas.showTrackHighlights = action.showTrackHighlights;
             newCanvas.updateAllTrackHighlights();
+            break;
+        case ActionType.SIZE:
+            newCanvas.setSize(action.width, action.height);
             break;
         case ActionType.MIN_MAX_TIME:
             newCanvas.minTime = action.minTime;
@@ -147,7 +197,7 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 
 function usePointCanvas(
     initialViewerState: ViewerState,
-): [PointCanvas, React.Dispatch<PointCanvasAction>, React.RefObject<HTMLDivElement>] {
+): [PointCanvas, Dispatch<PointCanvasAction>, RefObject<HTMLDivElement>] {
     console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
@@ -172,7 +222,7 @@ function usePointCanvas(
             if (!div) return;
             const renderWidth = div.clientWidth;
             const renderHeight = div.clientHeight;
-            canvas.setSize(renderWidth, renderHeight);
+            dispatchCanvas({ type: ActionType.SIZE, width: renderWidth, height: renderHeight });
         };
         window.addEventListener("resize", handleWindowResize);
         handleWindowResize();
@@ -182,7 +232,7 @@ function usePointCanvas(
             window.removeEventListener("resize", handleWindowResize);
             div.removeChild(canvas.renderer.domElement);
         };
-    }, []);
+    }, [canvas.renderer.domElement]);
 
     return [canvas, dispatchCanvas, divRef];
 }

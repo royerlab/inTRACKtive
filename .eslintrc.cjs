@@ -12,6 +12,9 @@ module.exports = {
     rules: {
         "react/react-in-jsx-scope": "off",
         "react/jsx-uses-react": "off",
+        "react-hooks/rules-of-hooks": "error", // Enforce Rules of Hooks
+        // TODO: change exhaustive-deps to error
+        "react-hooks/exhaustive-deps": "warn", // Enforce effect dependencies
         "camelcase": "error",
         "spaced-comment": "error",
         "semi": ["error", "always"],
