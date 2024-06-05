@@ -299,8 +299,6 @@ export default function App() {
                 <Scene
                     ref={sceneDivRef}
                     isLoading={isLoadingPoints || isLoadingTracks}
-                    initialCameraPosition={initialViewerState.cameraPosition}
-                    initialCameraTarget={initialViewerState.cameraTarget}
                 />
                 <Box flexGrow={0} padding="1em">
                     <TimestampOverlay timestamp={canvas.curTime} />
