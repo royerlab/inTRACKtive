@@ -175,10 +175,8 @@ export class SpherePointSelector {
                 selected.push(i);
             }
         }
-        const points: PointsCollection = new Map();
-        points.set(this.points.id, selected);
         console.log("selected points:", selected);
-        this.selectionChanged(points);
+        this.selectionChanged(selected);
     }
 
     pointerDown(_event: MouseEvent) {}
