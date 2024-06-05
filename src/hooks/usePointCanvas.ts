@@ -136,6 +136,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.controls.autoRotate = action.autoRotate;
             break;
         case ActionType.HIGHLIGHT_POINTS:
+            newCanvas.selectedPointIndices = action.points;
             newCanvas.highlightPoints(action.points);
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
@@ -148,6 +149,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();

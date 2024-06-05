@@ -38,6 +38,7 @@ export class PointCanvas {
     readonly selector: PointSelector;
 
     readonly tracks: Tracks = new Map();
+    selectedPointIndices: number[] = [];
 
     showTracks = true;
     showTrackHighlights = true;
@@ -123,6 +124,18 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    updateSelectedPointIndices() {
+        const idOffset = this.curTime * this.maxPointsPerTimepoint;
+        this.selectedPointIndices = [];
+        for (const track of this.tracks.values()) {
+            if (this.curTime < track.startTime || this.curTime > track.endTime) continue;
+            const timeIndex = this.curTime - track.startTime;
+            const pointId = track.pointIds[timeIndex];
+            this.selectedPointIndices.push(pointId - idOffset);
+        }
+        this.highlightPoints(this.selectedPointIndices);
+    }
 
     setCameraProperties(position?: Vector3, target?: Vector3) {
         position && this.camera.position.set(position.x, position.y, position.z);

@@ -7,7 +7,8 @@ import { TrackManager } from "@/lib/TrackManager";
 
 interface CellControlsProps {
     clearTracks: () => void;
-    numSelectedCells?: number;
+    numTracksLoaded?: number;
+    numPointsHighlighted?: number;
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
@@ -31,7 +32,10 @@ export default function CellControls(props: CellControlsProps) {
                 </SmallCapsButton>
             </Box>
             <FontS>
-                <strong>{props.numSelectedCells ?? 0}</strong> cells selected
+                <strong>{props.numTracksLoaded ?? 0}</strong> cells selected
+            </FontS>
+            <FontS>
+                <strong>{props.numPointsHighlighted ?? 0}</strong> points highlighted
             </FontS>
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
@@ -52,7 +56,7 @@ export default function CellControls(props: CellControlsProps) {
             <InputSlider
                 id="points-brightness-slider"
                 aria-labelledby="input-slider-points-brightness-slider"
-                disabled={!props.numSelectedCells}
+                disabled={!props.numTracksLoaded}
                 min={0}
                 max={100}
                 valueLabelDisplay="on"
