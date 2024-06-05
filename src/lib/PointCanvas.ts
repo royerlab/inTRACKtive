@@ -142,7 +142,6 @@ export class PointCanvas {
     }
 
     highlightPoints(points: number[]) {
-        console.debug("highlightPoints: ", points);
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
         color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
