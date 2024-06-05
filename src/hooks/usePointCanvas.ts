@@ -175,6 +175,8 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.ADD_SELECTED_POINT_IDS: {
+            newCanvas.pointBrightness = 0.8;
+            newCanvas.resetPointColors();
             // TODO: only highlight the indices if the canvas is at the same time
             // point as when it was selected.
             newCanvas.highlightPoints(action.selectedPointIndices);
