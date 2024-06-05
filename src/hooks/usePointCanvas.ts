@@ -235,7 +235,11 @@ function usePointCanvas(
         (pointIndices: number[]) => {
             console.debug("selectionChanged:", pointIndices);
             const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
-            dispatchCanvas({ type: ActionType.ADD_SELECTED_POINT_IDS, selectedPointIndices: pointIndices, selectedPointIds: pointIds });
+            dispatchCanvas({
+                type: ActionType.ADD_SELECTED_POINT_IDS,
+                selectedPointIndices: pointIndices,
+                selectedPointIds: pointIds,
+            });
         },
         [canvas.points.id, canvas.curTime, canvas.maxPointsPerTimepoint],
     );

@@ -49,7 +49,8 @@ export class PointSelector {
             camera,
             controls,
             points,
-            this.setSelectedPoints.bind(this));
+            this.setSelectedPoints.bind(this),
+        );
         this.sphereSelector = new SpherePointSelector(
             scene,
             renderer,
