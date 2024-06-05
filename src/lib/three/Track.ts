@@ -19,7 +19,6 @@ export class Track extends Mesh {
     pointIds: Int32Array = new Int32Array(0);
     startTime: number = 0;
     endTime: number = 0;
-    maxPointsPerTimepoint: number = 0;
 
     static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
         const geometry = new TrackGeometry();
@@ -49,21 +48,11 @@ export class Track extends Mesh {
         track.geometry.setTime(time);
         track.geometry.computeBoundingSphere();
 
-        track.maxPointsPerTimepoint = maxPointsPerTimepoint;
         track.pointIds = pointIDs;
         track.startTime = time[0];
         track.endTime = time[time.length - 1];
 
         return track;
-    }
-
-    pointIndexAtTime(time: number): number {
-        if (time < this.startTime || time > this.endTime) {
-            return -1;
-        }
-        const timeIndex = time - this.startTime;
-        const idOffset = time * this.maxPointsPerTimepoint;
-        return this.pointIds[timeIndex] - idOffset;
     }
 
     updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {

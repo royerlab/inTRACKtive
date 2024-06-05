@@ -129,9 +129,14 @@ export class PointCanvas {
     };
 
     updateHighlightedPoints() {
-        const pointIndices = Array.from(this.tracks.values())
-            .map(track => track.pointIndexAtTime(this.curTime))
-            .filter(index => index >= 0);
+        const idOffset = this.curTime * this.maxPointsPerTimepoint;
+        const pointIndices: number[] = [];
+        for (const track of this.tracks.values()) {
+            if (this.curTime < track.startTime || this.curTime > track.endTime) continue;
+            const timeIndex = this.curTime - track.startTime;
+            const pointId = track.pointIds[timeIndex];
+            pointIndices.push(pointId - idOffset);
+        }
         this.highlightPoints(pointIndices);
     }
 
