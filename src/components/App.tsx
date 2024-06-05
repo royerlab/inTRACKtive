@@ -154,9 +154,11 @@ export default function App() {
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const pointId of canvas.selectedPointIds) {
+                if (canvas.fetchedPointIds.has(pointId)) continue;
+                canvas.fetchedPointIds.add(pointId);
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
                 for (const trackId of trackIds) {
                     if (canvas.fetchedRootTrackIds.has(trackId)) continue;
                     canvas.fetchedRootTrackIds.add(trackId);

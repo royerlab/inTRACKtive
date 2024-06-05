@@ -43,6 +43,8 @@ export class PointCanvas {
     readonly tracks: Tracks = new Map();
     // Needed to skip fetches for lineages that have already been fetched.
     readonly fetchedRootTrackIds = new Set<number>();
+    // Needed to skip fetches for point IDs that been selected.
+    readonly fetchedPointIds = new Set<number>();
 
     // All the point IDs that have been selected.
     // PointCanvas.selector.selection is the transient array of selected
@@ -256,6 +258,7 @@ export class PointCanvas {
     removeAllTracks() {
         this.selectedPointIds = new Set();
         this.fetchedRootTrackIds.clear();
+        this.fetchedPointIds.clear();
         for (const trackID of this.tracks.keys()) {
             this.removeTrack(trackID);
         }

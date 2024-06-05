@@ -188,14 +188,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.ADD_SELECTED_POINT_IDS: {
+            // TODO: only highlight the indices if the canvas is at the same time
+            // point as when it was selected.
+            newCanvas.highlightPoints(action.selectedPointIndices);
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
             newCanvas.selectedPointIds = newSelectedPointIds;
-            // TODO: only highlight the indices if the canvas is at the same time
-            // point as when it was selected.
-            newCanvas.highlightPoints(action.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:
