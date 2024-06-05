@@ -177,6 +177,7 @@ export default function App() {
             setIsLoadingTracks(false);
         };
         updateTracks();
+        // TODO: add missing dependencies
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
