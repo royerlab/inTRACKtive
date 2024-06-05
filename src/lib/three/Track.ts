@@ -17,8 +17,8 @@ export class Track extends Mesh {
     declare geometry: TrackGeometry;
     declare material: TrackMaterial;
     pointIds: Int32Array = new Int32Array(0);
-    startTime: number = 0;
-    endTime: number = 0;
+    startTime: number = -1;
+    endTime: number = -1;
 
     static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
         const geometry = new TrackGeometry();
@@ -49,9 +49,10 @@ export class Track extends Mesh {
         track.geometry.computeBoundingSphere();
 
         track.pointIds = pointIDs;
-        track.startTime = time[0];
-        track.endTime = time[time.length - 1];
-
+        if (time.length > 0) {
+            track.startTime = time[0];
+            track.endTime = time[time.length - 1];
+        }
         return track;
     }
 

@@ -111,24 +111,6 @@ export default function App() {
                     return;
                 }
 
-                // TODO: changing the time point should also change the selection.
-                // Because that selection state stores the indices of the points at the
-                // time they were selected.
-                // We do not want to change the selection state as it is now because that is
-                // lossy (i.e. some points don't have corresponding points at other time points).
-                // Instead we have two options going forward.
-                // 1. Store the time with the point indices. This can then be used with
-                //    other information to find the corresponding point indices at other
-                //    time points. This is effectively solution used below to keep the
-                //    highlighted points consistent with that selection. In this case, we do
-                //    not need to update, but need to make sure we use this information.
-                // 2. Store the trackIDs instead of the point indices. These are already
-                //    somewhat present in PointCanvas.tracks (though that represents the
-                //    all the selections made rather than the current one - different issue).
-                //    Every time we want point indices, we would have to map from the track
-                //    indices to the point indices. These do not need to be updated when the time
-                //    changes because they are stable over time.
-
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
@@ -168,11 +150,6 @@ export default function App() {
             const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
             // TODO: points actually only belong to one track, so can get rid of the outer loop
             for (const t of tracks) {
-                // Do not currently store parent track IDs anywhere.
-                // Could get stored in the Track object.
-                // TODO: do we want to store the selected track IDs or
-                // their descendants and ancestors.
-                // Likely want to store only the currently selected track IDs.
                 const lineage = await trackManager.fetchLineageForTrack(t);
                 for (const l of lineage) {
                     if (adding.has(l) || canvas.tracks.has(l)) continue;
