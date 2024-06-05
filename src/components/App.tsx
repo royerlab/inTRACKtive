@@ -296,10 +296,7 @@ export default function App() {
                     overflow: "hidden",
                 }}
             >
-                <Scene
-                    ref={sceneDivRef}
-                    isLoading={isLoadingPoints || isLoadingTracks}
-                />
+                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || isLoadingTracks} />
                 <Box flexGrow={0} padding="1em">
                     <TimestampOverlay timestamp={canvas.curTime} />
                     <ColorMap />
