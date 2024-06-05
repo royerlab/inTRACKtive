@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from "react";
 
-import { Vector3 } from "three";
-
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
-    CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
     HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
@@ -28,12 +25,6 @@ enum ActionType {
 interface AutoRotate {
     type: ActionType.AUTO_ROTATE;
     autoRotate: boolean;
-}
-
-interface CameraProperties {
-    type: ActionType.CAMERA_PROPERTIES;
-    cameraPosition: Vector3;
-    cameraTarget: Vector3;
 }
 
 interface CurTime {
@@ -110,7 +101,6 @@ interface UpdateWithState {
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
-    | CameraProperties
     | CurTime
     | HighlightPoints
     | InitPointsGeometry
@@ -131,9 +121,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
-            break;
-        case ActionType.CAMERA_PROPERTIES:
-            newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time

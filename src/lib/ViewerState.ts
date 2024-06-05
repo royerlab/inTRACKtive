@@ -1,5 +1,3 @@
-import { Vector3 } from "three";
-
 export const DEFAULT_ZARR_URL =
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
     "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
@@ -26,8 +24,8 @@ export class ViewerState {
     showTracks = true;
     showTrackHighlights = true;
     // Default position and target from interacting with ZSNS001.
-    cameraPosition = new Vector3(500, 500, -1250);
-    cameraTarget = new Vector3(500, 500, 250);
+    cameraPosition = [500, 500, -1250];
+    cameraTarget = [500, 500, 250];
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.

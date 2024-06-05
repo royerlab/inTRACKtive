@@ -12,7 +12,6 @@ import {
     SRGBColorSpace,
     TextureLoader,
     Vector2,
-    Vector3,
     WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -128,8 +127,8 @@ export class PointCanvas {
         state.showTracks = this.showTracks;
         state.showTrackHighlights = this.showTrackHighlights;
         state.selectedPointIds = new Array(...this.selectedPointIds);
-        state.cameraPosition = this.camera.position.clone();
-        state.cameraTarget = this.controls.target.clone();
+        state.cameraPosition = this.camera.position.toArray();
+        state.cameraTarget = this.controls.target.toArray();
         return state;
     }
 
@@ -142,7 +141,8 @@ export class PointCanvas {
         this.showTracks = state.showTracks;
         this.showTrackHighlights = state.showTrackHighlights;
         this.selectedPointIds = new Set(state.selectedPointIds);
-        this.setCameraProperties(state.cameraPosition, state.cameraTarget);
+        this.camera.position.fromArray(state.cameraPosition);
+        this.controls.target.fromArray(state.cameraTarget);
     }
 
     setSelectionMode(mode: PointSelectionMode) {
@@ -157,11 +157,6 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
-
-    setCameraProperties(position: Vector3, target: Vector3) {
-        this.camera.position.set(position.x, position.y, position.z);
-        this.controls.target.set(target.x, target.y, target.z);
-    }
 
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
