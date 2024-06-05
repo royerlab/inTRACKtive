@@ -144,7 +144,7 @@ export default function App() {
     useEffect(() => {
         console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
-        if (!canvas.selectedPointIds) return;
+        if (canvas.selectedPointIds.size == 0) return;
 
         setIsLoadingTracks(true);
 
