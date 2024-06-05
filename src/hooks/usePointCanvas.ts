@@ -228,7 +228,7 @@ function usePointCanvas(
                 selectedPointIds: pointIds,
             });
         },
-        [canvas.points.id, canvas.curTime, canvas.maxPointsPerTimepoint],
+        [canvas.curTime, canvas.maxPointsPerTimepoint],
     );
 
     // set up the canvas when the div is available
