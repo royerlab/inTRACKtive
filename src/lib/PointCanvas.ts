@@ -128,16 +128,11 @@ export class PointCanvas {
         this.controls.update();
     };
 
-    pointIDsAtTime(time: number): number[] {
-        return Array.from(this.tracks.values())
-            .map((track: Track) => track.pointIndexAtTime(time))
-            .filter((id) => id !== null);
-    }
-
     updateHighlightedPoints() {
-        console.debug("updateHighlightedPoints: ", this.curTime);
-        const selectedPoints = this.pointIDsAtTime(this.curTime);
-        this.highlightPoints(selectedPoints);
+        const pointIndices = Array.from(this.tracks.values())
+            .map(track => track.pointIndexAtTime(this.curTime))
+            .filter(index => index >= 0);
+        this.highlightPoints(pointIndices);
     }
 
     setCameraProperties(position?: Vector3, target?: Vector3) {

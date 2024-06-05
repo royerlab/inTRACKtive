@@ -57,12 +57,13 @@ export class Track extends Mesh {
         return track;
     }
 
-    pointIndexAtTime(time: number): number | null {
+    pointIndexAtTime(time: number): number {
         if (time < this.startTime || time > this.endTime) {
-            return null;
+            return -1;
         }
-        const index = time - this.startTime;
-        return this.pointIds[index] - time * this.maxPointsPerTimepoint;
+        const timeIndex = time - this.startTime;
+        const idOffset = time * this.maxPointsPerTimepoint;
+        return this.pointIds[timeIndex] - idOffset;
     }
 
     updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
