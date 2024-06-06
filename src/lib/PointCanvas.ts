@@ -12,7 +12,6 @@ import {
     SRGBColorSpace,
     TextureLoader,
     Vector2,
-    Vector3,
     WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -23,7 +22,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
-import { PointsCollection } from "@/lib/PointSelectionBox";
+import { ViewerState } from "./ViewerState";
 
 type Tracks = Map<number, Track>;
 
@@ -37,19 +36,32 @@ export class PointCanvas {
     readonly bloomPass: UnrealBloomPass;
     readonly selector: PointSelector;
 
+    // Maps from track ID to three.js Track objects.
+    // This contains all tracks or tracklets across the lineages of all
+    // selected cells.
     readonly tracks: Tracks = new Map();
+    // Needed to skip fetches for lineages that have already been fetched.
+    // TODO: storing the fetched track and point IDs here works for now,
+    // but is likely a good candidate for a refactor.
+    readonly fetchedRootTrackIds = new Set<number>();
+    // Needed to skip fetches for point IDs that been selected.
+    readonly fetchedPointIds = new Set<number>();
 
+    // All the point IDs that have been selected.
+    // PointCanvas.selector.selection is the transient array of selected
+    // point indices associated with a specific time point and selection action,
+    // whereas these are a union of all those selection actions, are unique
+    // across the whole dataset and can be used for persistent storage.
+    selectedPointIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
     curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
-
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
-    // private here to consolidate external access via `TrackManager` instead
-    private maxPointsPerTimepoint = 0;
+    maxPointsPerTimepoint = 0;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -107,8 +119,32 @@ export class PointCanvas {
         return newCanvas as PointCanvas;
     }
 
-    get selectedPoints(): PointsCollection {
-        return this.selector.selection;
+    toState(): ViewerState {
+        const state = new ViewerState();
+        state.curTime = this.curTime;
+        state.minTime = this.minTime;
+        state.maxTime = this.maxTime;
+        state.maxPointsPerTimepoint = this.maxPointsPerTimepoint;
+        state.pointBrightness = this.pointBrightness;
+        state.showTracks = this.showTracks;
+        state.showTrackHighlights = this.showTrackHighlights;
+        state.selectedPointIds = new Array(...this.selectedPointIds);
+        state.cameraPosition = this.camera.position.toArray();
+        state.cameraTarget = this.controls.target.toArray();
+        return state;
+    }
+
+    updateWithState(state: ViewerState) {
+        this.curTime = state.curTime;
+        this.minTime = state.minTime;
+        this.maxTime = state.maxTime;
+        this.maxPointsPerTimepoint = state.maxPointsPerTimepoint;
+        this.pointBrightness = state.pointBrightness;
+        this.showTracks = state.showTracks;
+        this.showTrackHighlights = state.showTrackHighlights;
+        this.selectedPointIds = new Set(state.selectedPointIds);
+        this.camera.position.fromArray(state.cameraPosition);
+        this.controls.target.fromArray(state.cameraTarget);
     }
 
     setSelectionMode(mode: PointSelectionMode) {
@@ -123,11 +159,6 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
-
-    setCameraProperties(position?: Vector3, target?: Vector3) {
-        position && this.camera.position.set(position.x, position.y, position.z);
-        target && this.controls.target.set(target.x, target.y, target.z);
-    }
 
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
@@ -222,6 +253,9 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
+        this.selectedPointIds = new Set();
+        this.fetchedRootTrackIds.clear();
+        this.fetchedPointIds.clear();
         for (const trackID of this.tracks.keys()) {
             this.removeTrack(trackID);
         }

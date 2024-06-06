@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from "react";
 
-import { Vector3 } from "three";
-
 import { PointCanvas } from "@/lib/PointCanvas";
-import { PointsCollection } from "@/lib/PointSelectionBox";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
-    CAMERA_PROPERTIES = "CAMERA_PROPERTIES",
     CUR_TIME = "CUR_TIME",
-    HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
@@ -22,6 +17,8 @@ enum ActionType {
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
+    ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
+    UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
 }
 
 interface AutoRotate {
@@ -29,20 +26,9 @@ interface AutoRotate {
     autoRotate: boolean;
 }
 
-interface CameraProperties {
-    type: ActionType.CAMERA_PROPERTIES;
-    cameraPosition: Vector3;
-    cameraTarget: Vector3;
-}
-
 interface CurTime {
     type: ActionType.CUR_TIME;
     curTime: number | ((curTime: number) => number);
-}
-
-interface HighlightPoints {
-    type: ActionType.HIGHLIGHT_POINTS;
-    points: number[];
 }
 
 interface InitPointsGeometry {
@@ -95,12 +81,21 @@ interface MinMaxTime {
     maxTime: number;
 }
 
+interface AddSelectedPointIds {
+    type: ActionType.ADD_SELECTED_POINT_IDS;
+    selectedPointIndices: number[];
+    selectedPointIds: Set<number>;
+}
+
+interface UpdateWithState {
+    type: ActionType.UPDATE_WITH_STATE;
+    state: ViewerState;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
-    | CameraProperties
     | CurTime
-    | HighlightPoints
     | InitPointsGeometry
     | PointBrightness
     | PointsPositions
@@ -110,16 +105,15 @@ type PointCanvasAction =
     | ShowTracks
     | ShowTrackHighlights
     | Size
-    | MinMaxTime;
+    | MinMaxTime
+    | AddSelectedPointIds
+    | UpdateWithState;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
     const newCanvas = canvas.shallowCopy();
     switch (action.type) {
         case ActionType.REFRESH:
-            break;
-        case ActionType.CAMERA_PROPERTIES:
-            newCanvas.setCameraProperties(action.cameraPosition, action.cameraTarget);
             break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
@@ -134,9 +128,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         }
         case ActionType.AUTO_ROTATE:
             newCanvas.controls.autoRotate = action.autoRotate;
-            break;
-        case ActionType.HIGHLIGHT_POINTS:
-            newCanvas.highlightPoints(action.points);
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
@@ -173,6 +164,22 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.maxTime = action.maxTime;
             newCanvas.updateAllTrackHighlights();
             break;
+        case ActionType.ADD_SELECTED_POINT_IDS: {
+            newCanvas.pointBrightness = 0.8;
+            newCanvas.resetPointColors();
+            // TODO: only highlight the indices if the canvas is at the same time
+            // point as when it was selected.
+            newCanvas.highlightPoints(action.selectedPointIndices);
+            const newSelectedPointIds = new Set(canvas.selectedPointIds);
+            for (const trackId of action.selectedPointIds) {
+                newSelectedPointIds.add(trackId);
+            }
+            newCanvas.selectedPointIds = newSelectedPointIds;
+            break;
+        }
+        case ActionType.UPDATE_WITH_STATE:
+            newCanvas.updateWithState(action.state);
+            break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
             return canvas;
@@ -181,12 +188,13 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
 }
 
 function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
+    console.debug("createPointCanvas: ", initialViewerState);
     // create the canvas with some default dimensions
     // these will be overridden when the canvas is inserted into a div
     const canvas = new PointCanvas(800, 600);
 
-    // restore canvas from initial viewer state
-    canvas.setCameraProperties(initialViewerState.cameraPosition, initialViewerState.cameraTarget);
+    // Update the state from any initial values.
+    canvas.updateWithState(initialViewerState);
 
     // start animating - this keeps the scene rendering when controls change, etc.
     canvas.animate();
@@ -197,16 +205,23 @@ function createPointCanvas(initialViewerState: ViewerState): PointCanvas {
 function usePointCanvas(
     initialViewerState: ViewerState,
 ): [PointCanvas, Dispatch<PointCanvasAction>, RefObject<HTMLDivElement>] {
-    console.debug("usePointCanvas: ", initialViewerState);
     const divRef = useRef<HTMLDivElement>(null);
     const [canvas, dispatchCanvas] = useReducer(reducer, initialViewerState, createPointCanvas);
 
     // When the selection changes internally due to the user interacting with the canvas,
-    // we need to trigger a react re-render.
-    canvas.selector.selectionChanged = useCallback((_selection: PointsCollection) => {
-        console.debug("selectionChanged: refresh");
-        dispatchCanvas({ type: ActionType.REFRESH });
-    }, []);
+    // we need to dispatch an addition to the canvas' state.
+    canvas.selector.selectionChanged = useCallback(
+        (pointIndices: number[]) => {
+            console.debug("selectionChanged:", pointIndices);
+            const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
+            dispatchCanvas({
+                type: ActionType.ADD_SELECTED_POINT_IDS,
+                selectedPointIndices: pointIndices,
+                selectedPointIds: pointIds,
+            });
+        },
+        [canvas.curTime, canvas.maxPointsPerTimepoint],
+    );
 
     // set up the canvas when the div is available
     // this is an effect because:

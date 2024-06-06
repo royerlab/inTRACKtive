@@ -19,7 +19,7 @@ import { ColorMap } from "./overlays/ColorMap";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
-console.log("initial viewer state: %s", JSON.stringify(initialViewerState));
+console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
 const drawerWidth = 256;
@@ -32,7 +32,6 @@ export default function App() {
     const numTimes = trackManager?.numTimes ?? 0;
     // TODO: dataUrl can be stored in the TrackManager only
     const [dataUrl, setDataUrl] = useState(initialViewerState.dataUrl);
-    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
@@ -42,25 +41,23 @@ export default function App() {
     // this state is pure React
     const [playing, setPlaying] = useState(false);
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+    const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
-        const state = new ViewerState(dataUrl, canvas.curTime, canvas.camera.position, canvas.controls.target);
-        const url = window.location.toString() + "#" + state.toUrlHash();
+        const state = canvas.toState();
+        if (trackManager) {
+            state.dataUrl = trackManager.store;
+        }
+        const url = window.location.toString() + state.toUrlHash();
         navigator.clipboard.writeText(url);
     };
-
     const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
         clearUrlHash();
         setDataUrl(state.dataUrl);
-        dispatchCanvas({ type: ActionType.CUR_TIME, curTime: state.curTime });
-        dispatchCanvas({
-            type: ActionType.CAMERA_PROPERTIES,
-            cameraPosition: state.cameraPosition,
-            cameraTarget: state.cameraTarget,
-        });
+        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
 
     // update the state when the hash changes, but only register the listener once
@@ -143,48 +140,40 @@ export default function App() {
         };
     }, [canvas.curTime, dispatchCanvas, trackManager]);
 
+    // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
-        console.debug("effect-selection");
-        const pointsID = canvas.points.id;
-        const selectedPoints = canvas.selectedPoints;
-        if (!selectedPoints || !selectedPoints.has(pointsID)) return;
-        // keep track of which tracks we are adding to avoid duplicate fetching
-        const adding = new Set<number>();
+        console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
+        if (!trackManager) return;
+        if (canvas.selectedPointIds.size == 0) return;
 
         // this fetches the entire lineage for each track
-        const fetchAndAddTrack = async (pointID: number) => {
-            if (!trackManager) return;
-            const tracks = await trackManager.fetchTrackIDsForPoint(pointID);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
-            for (const t of tracks) {
-                const lineage = await trackManager.fetchLineageForTrack(t);
-                for (const l of lineage) {
-                    if (adding.has(l) || canvas.tracks.has(l)) continue;
-                    adding.add(l);
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(l);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(l, pos, ids);
-                    dispatchCanvas({ type: ActionType.REFRESH });
+        const updateTracks = async () => {
+            console.debug("updateTracks: ", canvas.selectedPointIds);
+            for (const pointId of canvas.selectedPointIds) {
+                if (canvas.fetchedPointIds.has(pointId)) continue;
+                setNumLoadingTracks((n) => n + 1);
+                canvas.fetchedPointIds.add(pointId);
+                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                for (const trackId of trackIds) {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+                    canvas.fetchedRootTrackIds.add(trackId);
+                    const lineage = await trackManager.fetchLineageForTrack(trackId);
+                    for (const relatedTrackId of lineage) {
+                        if (canvas.tracks.has(relatedTrackId)) continue;
+                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
+                        // adding the track *in* the dispatcher creates issues with duplicate fetching
+                        // but we refresh so the selected/loaded count is updated
+                        canvas.addTrack(relatedTrackId, pos, ids);
+                        dispatchCanvas({ type: ActionType.REFRESH });
+                    }
                 }
+                setNumLoadingTracks((n) => n - 1);
             }
         };
-
-        dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness: 0.8 });
-
-        const selected = selectedPoints.get(pointsID) || [];
-        dispatchCanvas({ type: ActionType.HIGHLIGHT_POINTS, points: selected });
-
-        const maxPointsPerTimepoint = trackManager?.maxPointsPerTimepoint ?? 0;
-
-        setIsLoadingTracks(true);
-        Promise.all(selected.map((p: number) => canvas.curTime * maxPointsPerTimepoint + p).map(fetchAndAddTrack)).then(
-            () => {
-                setIsLoadingTracks(false);
-            },
-        );
+        updateTracks();
         // TODO: add missing dependencies
-    }, [canvas.selectedPoints]);
+    }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
     // TODO: this is basic and may drop frames
@@ -302,12 +291,7 @@ export default function App() {
                     overflow: "hidden",
                 }}
             >
-                <Scene
-                    ref={sceneDivRef}
-                    isLoading={isLoadingPoints || isLoadingTracks}
-                    initialCameraPosition={initialViewerState.cameraPosition}
-                    initialCameraTarget={initialViewerState.cameraTarget}
-                />
+                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || numLoadingTracks > 0} />
                 <Box flexGrow={0} padding="1em">
                     <TimestampOverlay timestamp={canvas.curTime} />
                     <ColorMap />
