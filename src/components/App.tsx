@@ -151,7 +151,7 @@ export default function App() {
             console.debug("updateTracks: ", canvas.selectedPointIds);
             for (const pointId of canvas.selectedPointIds) {
                 if (canvas.fetchedPointIds.has(pointId)) continue;
-                setNumLoadingTracks(n => n + 1);
+                setNumLoadingTracks((n) => n + 1);
                 canvas.fetchedPointIds.add(pointId);
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
                 // TODO: points actually only belong to one track, so can get rid of the outer loop
@@ -168,7 +168,7 @@ export default function App() {
                         dispatchCanvas({ type: ActionType.REFRESH });
                     }
                 }
-                setNumLoadingTracks(n => n - 1);
+                setNumLoadingTracks((n) => n - 1);
             }
         };
         updateTracks();
