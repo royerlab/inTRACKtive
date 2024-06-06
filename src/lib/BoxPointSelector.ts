@@ -2,7 +2,7 @@ import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 
-import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
+import { PointSelectionBox } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
 // Selection with a 2D rectangle to make a 3D frustum.
