@@ -7,7 +7,6 @@ import { ViewerState } from "@/lib/ViewerState";
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
-    HIGHLIGHT_POINTS = "HIGHLIGHT_POINTS",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
@@ -30,11 +29,6 @@ interface AutoRotate {
 interface CurTime {
     type: ActionType.CUR_TIME;
     curTime: number | ((curTime: number) => number);
-}
-
-interface HighlightPoints {
-    type: ActionType.HIGHLIGHT_POINTS;
-    points: number[];
 }
 
 interface InitPointsGeometry {
@@ -102,7 +96,6 @@ interface UpdateWithState {
 type PointCanvasAction =
     | AutoRotate
     | CurTime
-    | HighlightPoints
     | InitPointsGeometry
     | PointBrightness
     | PointsPositions
@@ -135,9 +128,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         }
         case ActionType.AUTO_ROTATE:
             newCanvas.controls.autoRotate = action.autoRotate;
-            break;
-        case ActionType.HIGHLIGHT_POINTS:
-            newCanvas.highlightPoints(action.points);
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
