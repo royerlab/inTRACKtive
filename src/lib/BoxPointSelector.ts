@@ -52,12 +52,6 @@ export class BoxPointSelector {
         }
     }
 
-    setSelectedPoints(selectedPoints: PointsCollection) {
-        console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
-        this.box.collection = selectedPoints;
-        this.selectionChanged(selectedPoints.get(this.points.id) ?? []);
-    }
-
     pointerUp(_event: MouseEvent) {
         console.debug("BoxPointSelector.pointerUp");
         this.blocked = false;
@@ -81,7 +75,7 @@ export class BoxPointSelector {
         // TODO: consider restricting selection to a specific object
         this.box.select();
 
-        this.setSelectedPoints(this.box.collection);
+        this.selectionChanged(this.box.collection.get(this.points.id) ?? []);
     }
 
     pointerCancel(_event: MouseEvent) {
