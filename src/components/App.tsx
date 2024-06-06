@@ -148,9 +148,6 @@ export default function App() {
 
         setIsLoadingTracks(true);
 
-        // keep track of which tracks we are adding to avoid duplicate fetching
-        const adding = new Set<number>();
-
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
@@ -164,8 +161,7 @@ export default function App() {
                     canvas.fetchedRootTrackIds.add(trackId);
                     const lineage = await trackManager.fetchLineageForTrack(trackId);
                     for (const relatedTrackId of lineage) {
-                        if (adding.has(relatedTrackId) || canvas.tracks.has(relatedTrackId)) continue;
-                        adding.add(relatedTrackId);
+                        if (canvas.tracks.has(relatedTrackId)) continue;
                         const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
