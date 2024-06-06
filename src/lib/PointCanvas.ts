@@ -41,6 +41,8 @@ export class PointCanvas {
     // selected cells.
     readonly tracks: Tracks = new Map();
     // Needed to skip fetches for lineages that have already been fetched.
+    // TODO: storing the fetched track and point IDs here works for now,
+    // but is likely a good candidate for a refactor.
     readonly fetchedRootTrackIds = new Set<number>();
     // Needed to skip fetches for point IDs that been selected.
     readonly fetchedPointIds = new Set<number>();
