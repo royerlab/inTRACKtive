@@ -41,7 +41,7 @@ export default function App() {
     // this state is pure React
     const [playing, setPlaying] = useState(false);
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
-    const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+    const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -146,13 +146,12 @@ export default function App() {
         if (!trackManager) return;
         if (canvas.selectedPointIds.size == 0) return;
 
-        setIsLoadingTracks(true);
-
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
             for (const pointId of canvas.selectedPointIds) {
                 if (canvas.fetchedPointIds.has(pointId)) continue;
+                setNumLoadingTracks(n => n + 1);
                 canvas.fetchedPointIds.add(pointId);
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
                 // TODO: points actually only belong to one track, so can get rid of the outer loop
@@ -169,8 +168,8 @@ export default function App() {
                         dispatchCanvas({ type: ActionType.REFRESH });
                     }
                 }
+                setNumLoadingTracks(n => n - 1);
             }
-            setIsLoadingTracks(false);
         };
         updateTracks();
         // TODO: add missing dependencies
@@ -292,7 +291,7 @@ export default function App() {
                     overflow: "hidden",
                 }}
             >
-                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || isLoadingTracks} />
+                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || numLoadingTracks > 0} />
                 <Box flexGrow={0} padding="1em">
                     <TimestampOverlay timestamp={canvas.curTime} />
                     <ColorMap />
