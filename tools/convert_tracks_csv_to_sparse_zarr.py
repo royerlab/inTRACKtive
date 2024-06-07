@@ -6,7 +6,7 @@ import numpy as np
 import zarr
 from scipy.sparse import lil_matrix
 
-root_dir = "/Users/aandersoniii/Data/tracking/"
+root_dir = "/Users/ehoops/development/"
 
 start = time.monotonic()
 points = []
@@ -35,16 +35,18 @@ points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dt
 tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
 tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 
-# create a map of trackIds to parent trackIds 
-direct_parent_map = {}
-for point in points:
-    track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
-    if direct_parent_map.get(track_id) is None:
-        direct_parent_map[track_id] = parent_track_id    
+# create a map of the track_index to the parent_track_index
+# track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
+direct_parent_index_map = {}  
 
 for point in points:
     track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
     point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
+
+    track_index = track_id - 1
+    if track_index not in direct_parent_index_map:
+      # maps the track_index to the parent_track_index
+      direct_parent_index_map[track_index] = parent_track_id - 1
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
@@ -85,13 +87,11 @@ tracks_to_tracks = tracks_to_tracks.tolil()
 non_zero = tracks_to_tracks.nonzero()
 
 for i in range(len(non_zero[0])):
-    track_id = non_zero[0][i] + 1
-    parent_track_id = direct_parent_map[track_id]
+    # track_index = track_id - 1 since track_id is 1-indexed
+    track_index = non_zero[1][i]
+    parent_track_index = direct_parent_index_map[track_index]
 
-    tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_id
-
-# scipy sparse
-# numpy where np.nonzero
+    tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_index + 1
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()

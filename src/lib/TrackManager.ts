@@ -146,7 +146,7 @@ export async function loadTrackManager(url: string) {
         });
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
-        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", false);
+        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
         trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks);
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);
