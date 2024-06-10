@@ -129,10 +129,15 @@ export class TrackManager {
         return [flatPoints, pointIDs];
     }
 
-    async fetchLineageForTrack(trackID: number): Promise<Int32Array> {
+    async fetchLineageForTrack(trackID: number): Promise<[Int32Array, Int32Array]> {
         const rowStartEnd = await this.tracksToTracks.getIndPtr(slice(trackID, trackID + 2));
-        const lineage = await this.tracksToTracks.indices.get([slice(rowStartEnd[0], rowStartEnd[1])]);
-        return lineage.data;
+        const lineage = await this.tracksToTracks.indices
+            .get([slice(rowStartEnd[0], rowStartEnd[1])])
+            .then((lineage: SparseZarrArray) => lineage.data);
+        const trackData = await this.tracksToTracks.data
+            .get([slice(rowStartEnd[0], rowStartEnd[1])])
+            .then((trackData: SparseZarrArray) => trackData.data);
+        return Promise.all([lineage, trackData]);
     }
 }
 

@@ -222,13 +222,13 @@ export class PointCanvas {
         this.points.geometry.computeBoundingSphere();
     }
 
-    addTrack(trackID: number, positions: Float32Array, ids: Int32Array): Track | null {
+    addTrack(trackID: number, positions: Float32Array, ids: Int32Array, parentTrackID: number): Track | null {
         if (this.tracks.has(trackID)) {
             // this is a warning because it should alert us to duplicate fetching
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
-        const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
+        const track = Track.new(positions, ids, this.maxPointsPerTimepoint, parentTrackID);
         track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
         this.tracks.set(trackID, track);
         this.scene.add(track);

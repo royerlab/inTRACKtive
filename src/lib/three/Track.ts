@@ -14,10 +14,11 @@ import { TrackMaterial } from "./TrackMaterial.js";
 export class Track extends Mesh {
     isTrack = true;
     type = "Track";
+    parentTrackID: number = -1;
     declare geometry: TrackGeometry;
     declare material: TrackMaterial;
 
-    static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
+    static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number, parentTrackID: number) {
         const geometry = new TrackGeometry();
         const material = new TrackMaterial({
             vertexColors: true,
@@ -44,6 +45,7 @@ export class Track extends Mesh {
         track.geometry.setColors(colors);
         track.geometry.setTime(time);
         track.geometry.computeBoundingSphere();
+        track.parentTrackID = parentTrackID;
         return track;
     }
 

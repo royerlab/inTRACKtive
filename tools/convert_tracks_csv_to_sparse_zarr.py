@@ -45,8 +45,10 @@ for point in points:
 
     track_index = track_id - 1
     if track_index not in direct_parent_index_map:
-      # maps the track_index to the parent_track_index
-      direct_parent_index_map[track_index] = parent_track_id - 1
+      # maps the track_index to the parent_track_id
+      direct_parent_index_map[track_id - 1] = parent_track_id - 1
+      if parent_track_id >= 0:
+          print(f"Track {track_id} has point {point_id} and parent {parent_track_id}")
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 

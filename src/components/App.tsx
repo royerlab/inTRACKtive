@@ -158,15 +158,15 @@ export default function App() {
                 for (const trackId of trackIds) {
                     if (canvas.fetchedRootTrackIds.has(trackId)) continue;
                     canvas.fetchedRootTrackIds.add(trackId);
-                    const lineage = await trackManager.fetchLineageForTrack(trackId);
-                    for (const relatedTrackId of lineage) {
-                        if (canvas.tracks.has(relatedTrackId)) continue;
+                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                    lineage.forEach(async (relatedTrackId: number, index) => {
+                        if (canvas.tracks.has(relatedTrackId)) return;
                         const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
-                        canvas.addTrack(relatedTrackId, pos, ids);
+                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
                         dispatchCanvas({ type: ActionType.REFRESH });
-                    }
+                    });
                 }
                 setNumLoadingTracks((n) => n - 1);
             }
