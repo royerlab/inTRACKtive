@@ -1,8 +1,8 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 
-import { PointSelectionBox, PointsCollection } from "@/lib/PointSelectionBox";
+import { PointSelectionBox } from "@/lib/PointSelectionBox";
 import { SelectionChanged } from "@/lib/PointSelector";
 
 // Selection with a 2D rectangle to make a 3D frustum.
@@ -11,6 +11,7 @@ export class BoxPointSelector {
     readonly controls: OrbitControls;
     readonly box: PointSelectionBox;
     readonly helper: SelectionHelper;
+    readonly points: Points;
     readonly selectionChanged: SelectionChanged;
 
     // True if this should not perform selection, false otherwise.
@@ -23,10 +24,12 @@ export class BoxPointSelector {
         renderer: WebGLRenderer,
         camera: PerspectiveCamera,
         controls: OrbitControls,
+        points: Points,
         selectionChanged: SelectionChanged,
     ) {
         this.renderer = renderer;
         this.controls = controls;
+        this.points = points;
         this.helper = new SelectionHelper(renderer, "selectBox");
         this.helper.enabled = false;
         this.box = new PointSelectionBox(camera, scene);
@@ -47,12 +50,6 @@ export class BoxPointSelector {
             this.helper.enabled = selecting;
             this.controls.enabled = !selecting;
         }
-    }
-
-    setSelectedPoints(selectedPoints: PointsCollection) {
-        console.debug("BoxPointSelector.setSelectedPoints: ", selectedPoints);
-        this.box.collection = selectedPoints;
-        this.selectionChanged(selectedPoints);
     }
 
     pointerUp(_event: MouseEvent) {
@@ -78,7 +75,7 @@ export class BoxPointSelector {
         // TODO: consider restricting selection to a specific object
         this.box.select();
 
-        this.setSelectedPoints(this.box.collection);
+        this.selectionChanged(this.box.collection.get(this.points.id) ?? []);
     }
 
     pointerCancel(_event: MouseEvent) {

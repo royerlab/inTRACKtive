@@ -5,8 +5,6 @@ import { Box } from "@mui/material";
 
 interface SceneProps {
     isLoading: boolean;
-    initialCameraPosition?: THREE.Vector3;
-    initialCameraTarget?: THREE.Vector3;
 }
 
 const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<HTMLDivElement>) {
