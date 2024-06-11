@@ -48,11 +48,14 @@ export default function DataControls(props: DataControlsProps) {
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
-            if (urlInput) {
+            if (urlInput && urlInput.value) {
                 setDataUrl(urlInput.value);
+            } else {
+                // set to the initial URL if the input is empty or can't be found
+                setDataUrl(props.initialDataUrl);
             }
         },
-        [setDataUrl],
+        [props.initialDataUrl, setDataUrl],
     );
 
     // only close the popover if the URL gives a valid track manager
