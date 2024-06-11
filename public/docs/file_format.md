@@ -33,13 +33,8 @@ ZSNS001_tracks_bundle.zarr (~575M)
     └── indptr (1.8M)
 ```
 
-A script (`convert_tracks_csv_to_sparse_zarr.py`) is provided to generate these arrays from a CSV
-file. The CSV file should be generated using Ultrack or a similar tracking software. To use this
-script, columns in the CSV file should be ordered as follows:
-- TrackID - unique identifier for the track this point belongs to
-- t - timepoint
-- z, y, x - 3D coordinates
-- ParentTrackID - reference to the parent track, if any (-1 otherwise)
+A [conversion script](#conversion-script) is provided to generate this zarr bundle arrays from a CSV
+file.
 
 
 ## points
@@ -82,9 +77,16 @@ This redundancy is an optimization so each point location does not have to be re
 This is the *last* query run when points are selected, and is run for each track in the lineage.
 
 # Conversion script
-`tools/convert_tracks_csv_to_sparse_zarr.py` is a script to convert a CSV file of tracking data to
-the Zarr format described above. It requires numpy, scipy, and zarr libraries. This script is not
-optimized, and takes about 4 minutes to convert the example dataset on an Apple M1 Pro.
+A script (`convert_tracks_csv_to_sparse_zarr.py`) is provided to generate these arrays from a CSV
+file. The CSV file should be generated using Ultrack or a similar tracking software. To use this
+script, columns in the CSV file should be ordered as follows:
+- TrackID - unique identifier for the track this point belongs to
+- t - timepoint
+- z, y, x - 3D coordinates
+- ParentTrackID - reference to the parent track, if any (-1 otherwise)
+
+The script requires numpy, scipy, and zarr libraries. This script is not optimized, and takes about
+4 minutes to convert the example dataset on an Apple M1 Pro.
 
 ## Lineage computation
 Most of the logic in the script is pretty straightforward, but the lineage computation may require
