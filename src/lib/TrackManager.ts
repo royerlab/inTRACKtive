@@ -131,7 +131,6 @@ export class TrackManager {
 
     async fetchLineageForTrack(trackID: number): Promise<[Int32Array, Int32Array]> {
         const rowStartEnd = await this.tracksToTracks.getIndPtr(slice(trackID, trackID + 2));
-        console.log("rowStartEnd: %s", rowStartEnd); // THIS IS A PROBLEM - START AND END ARE THE SAME
         const lineage = await this.tracksToTracks.indices
             .get([slice(rowStartEnd[0], rowStartEnd[1])])
             .then((lineage: SparseZarrArray) => lineage.data);

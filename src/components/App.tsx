@@ -16,6 +16,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
+import { DownloadButton, TrackDownloadData } from "./DownloadButton";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -159,20 +160,11 @@ export default function App() {
                     if (canvas.fetchedRootTrackIds.has(trackId)) return;
                     canvas.fetchedRootTrackIds.add(trackId);
                     const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                    console.log("lineage for track %d: %o", trackId, lineage);
-                    console.log("track data for track %d: %o", trackId, trackData);
                     lineage.forEach(async (relatedTrackId: number, index) => {
                         if (canvas.tracks.has(relatedTrackId)) return;
                         const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
-                        console.log(
-                            "add track %d at pos %o, ids %o, parentTrackId %o",
-                            relatedTrackId,
-                            pos,
-                            ids,
-                            trackData[index],
-                        );
                         canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
                         dispatchCanvas({ type: ActionType.REFRESH });
                     });
@@ -202,6 +194,14 @@ export default function App() {
             };
         }
     }, [dispatchCanvas, numTimes, playing]);
+
+    const getTrackDownloadData = () => {
+        const trackData: TrackDownloadData[] = [];
+        canvas.tracks.forEach((track, trackID) => {
+            trackData.push([trackID, track.parentTrackId]);
+        });
+        return trackData;
+    };
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -254,6 +254,7 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
                         />
+                        <DownloadButton getDownloadData={getTrackDownloadData} />
                     </Box>
                     <Divider />
                     <Box flexGrow={4} padding="2em">
