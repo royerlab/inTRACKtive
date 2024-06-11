@@ -27,7 +27,7 @@ import { ViewerState } from "./ViewerState";
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
     threeTrack: Track;
-    parentTrackId: number;
+    parentTrackID: number;
 };
 type Tracks = Map<number, TrackType>;
 
@@ -51,7 +51,6 @@ export class PointCanvas {
     readonly fetchedRootTrackIds = new Set<number>();
     // Needed to skip fetches for point IDs that been selected.
     readonly fetchedPointIds = new Set<number>();
-    // TODO: (Erin): - track relationships - map of trackId -> parentTrackId
 
     // All the point IDs that have been selected.
     // PointCanvas.selector.selection is the transient array of selected
@@ -236,7 +235,7 @@ export class PointCanvas {
         }
         const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
         track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
-        this.tracks.set(trackID, { threeTrack: track, parentTrackId: parentTrackID }); // TODO: (Erin): - update here
+        this.tracks.set(trackID, { threeTrack: track, parentTrackID: parentTrackID }); // TODO: (Erin): - update here
         this.scene.add(track);
         return track;
     }

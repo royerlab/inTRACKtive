@@ -1,12 +1,13 @@
 import { Button } from "@czi-sds/components";
 
-// TrackDownloadData is a tuple of trackID and parentTrackID
-export type TrackDownloadData = [number, number];
+// TrackDownloadData is a list for each point
+// It contains trackID, time, x, y, z, parentTrackID
+export type TrackDownloadData = [number, number, number, number, number, number];
 interface DownloadButtonProps {
     getDownloadData: () => TrackDownloadData[];
 }
 
-const dataHeaders = ["trackID", "parentTrackID"];
+const dataHeaders = ["trackID", "t", "x", "y", "z", "parentTrackID"];
 
 const convertToCSV = (nestedArray: (string | number)[][]) => {
     let csvString = "";
