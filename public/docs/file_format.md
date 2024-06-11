@@ -19,7 +19,7 @@ the relatively small size of the `indptr` arrays, providing an opportunity for e
 reducing the total number of requests when fetching tracks.
 
 ```
-ZSNS001_tracks_bundle.zarr
+ZSNS001_tracks_bundle.zarr (~575M)
 ├── points (198M)
 ├── points_to_tracks (62M)
 │   ├── indices (61M)
@@ -66,12 +66,10 @@ This is the first query run when points are selected.
 ## tracks_to_tracks
 
 This array, shape `(n_tracks, n_tracks)` allows us to retrieve lineage (ancestors and descendents)
-for a given track. This can be pre-computed by first creating adjacency matrices for two directed
-graphs: `tracks_to_children` and `tracks_to_parents`. Iterative squaring of these matrices converges
-on the transitive closure of each - this gives each track a connection to all of its descendents
-(`tracks_to_children`) or all of its ancestors (`tracks_to_parents`). The sum of these matrices
-produces the matrix we want, where a track is connected directly to all of its ancestors and
-descendents.
+for a given track. Each row is a track, and the columns are the tracks it is connected to. Currently
+the value of the element is not used, just the presence of a nonzero element (adjacency matrix). How
+this is computed will determine the lineage returned when selecting data. See the section on [lineage
+computation](#lineage-computation) in the included conversion script for more details on how it is currently computed.
 
 This is run for each track returned from the initial `points_to_tracks` query.
 
@@ -82,3 +80,30 @@ This redundancy is an optimization so each point location does not have to be re
 `points` array.
 
 This is the *last* query run when points are selected, and is run for each track in the lineage.
+
+# Conversion script
+`tools/convert_tracks_csv_to_sparse_zarr.py` is a script to convert a CSV file of tracking data to
+the Zarr format described above. It requires numpy, scipy, and zarr libraries. This script is not
+optimized, and takes about 4 minutes to convert the example dataset on an Apple M1 Pro.
+
+## Lineage computation
+Most of the logic in the script is pretty straightforward, but the lineage computation may require
+some explanation.
+
+The lineage we're after for a given tracklet is all of its ancestors and descendents. The goal is to
+encode this in a single row of the `tracks_to_tracks` array. To do this, we need to pre-compute the
+[transitive closure](https://en.wikipedia.org/wiki/Transitive_closure) of the directed graph of
+track connections. This result is something like a cluster graph, where each cluster is a
+fully-connected graph of all the tracks in a lineage.
+
+This can be computed by first creating adjacency matrices for two *un*directed graphs:
+`tracks_to_children` and `tracks_to_parents`. Iterative squaring of these matrices converges on the
+transitive closure of each - this gives each track a connection to all of its descendents
+(`tracks_to_children`) or all of its ancestors (`tracks_to_parents`). This is not a very efficient
+algorithm but it's very simple and works for the sizes of data we're dealing with. For larger
+datasets or more complex lineage (e.g. full lineage including "cousins"), a more efficient algorithm
+(Floyd–Warshall) may be necessary.
+
+The sum of these matrices produces the directed adjacency matrix we want, where a track is connected
+directly to all of its ancestors and descendents. This allows efficient lineage retrieval form a CSR
+matrix by fetching a single row.
