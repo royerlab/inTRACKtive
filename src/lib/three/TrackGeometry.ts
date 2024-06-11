@@ -14,22 +14,26 @@ class TrackGeometry extends LineSegmentsGeometry {
         // converts [ x1, y1, z1, x2, y2, z2, ... ] to pairs format
 
         const length = array.length - 3;
-        const points = new Float32Array(2 * length);
+        const points = new Float32Array(2 * length); // start and end of each line
 
         for (let i = 0; i < length; i += 3) {
+            // start point
             points[2 * i] = array[i];
             points[2 * i + 1] = array[i + 1];
             points[2 * i + 2] = array[i + 2];
-
+            // end point
             points[2 * i + 3] = array[i + 3];
             points[2 * i + 4] = array[i + 4];
             points[2 * i + 5] = array[i + 5];
         }
 
+        // TODO: (Erin) undo this to get the actual positions. start point for the first and end point for the rest or vice versa
+
         super.setPositions(points);
 
         return this;
     }
+    // TODO: (Erin) getPositions() here
 
     setColors(array: number[] | Float32Array) {
         // converts [ r1, g1, b1, r2, g2, b2, ... ] to pairs format

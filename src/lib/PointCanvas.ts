@@ -24,7 +24,12 @@ import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 
-type Tracks = Map<number, Track>;
+// TrackType is a place to store the visual information about a track and any track-specific attributes
+type TrackType = {
+    threeTrack: Track;
+    parentTrackId: number;
+};
+type Tracks = Map<number, TrackType>;
 
 export class PointCanvas {
     readonly scene: Scene;
@@ -46,6 +51,7 @@ export class PointCanvas {
     readonly fetchedRootTrackIds = new Set<number>();
     // Needed to skip fetches for point IDs that been selected.
     readonly fetchedPointIds = new Set<number>();
+    // TODO: (Erin): - track relationships - map of trackId -> parentTrackId
 
     // All the point IDs that have been selected.
     // PointCanvas.selector.selection is the transient array of selected
@@ -228,24 +234,24 @@ export class PointCanvas {
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
-        const track = Track.new(positions, ids, this.maxPointsPerTimepoint, parentTrackID);
+        const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
         track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
-        this.tracks.set(trackID, track);
+        this.tracks.set(trackID, { threeTrack: track, parentTrackId: parentTrackID }); // TODO: (Erin): - update here
         this.scene.add(track);
         return track;
     }
 
     updateAllTrackHighlights() {
-        for (const track of this.tracks.values()) {
-            track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
-        }
+        this.tracks.forEach((track) => {
+            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+        });
     }
 
     removeTrack(trackID: number) {
         const track = this.tracks.get(trackID);
         if (track) {
-            this.scene.remove(track);
-            track.dispose();
+            this.scene.remove(track.threeTrack);
+            track.threeTrack.dispose();
             this.tracks.delete(trackID);
         } else {
             console.warn("No track with ID %d to remove", trackID);

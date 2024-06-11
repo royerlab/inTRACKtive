@@ -149,27 +149,36 @@ export default function App() {
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
-            for (const pointId of canvas.selectedPointIds) {
-                if (canvas.fetchedPointIds.has(pointId)) continue;
+            canvas.selectedPointIds.forEach(async (pointId) => {
+                if (canvas.fetchedPointIds.has(pointId)) return;
                 setNumLoadingTracks((n) => n + 1);
                 canvas.fetchedPointIds.add(pointId);
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
                 // TODO: points actually only belong to one track, so can get rid of the outer loop
-                for (const trackId of trackIds) {
-                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+                trackIds.forEach(async (trackId) => {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
                     canvas.fetchedRootTrackIds.add(trackId);
                     const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                    console.log("lineage for track %d: %o", trackId, lineage);
+                    console.log("track data for track %d: %o", trackId, trackData);
                     lineage.forEach(async (relatedTrackId: number, index) => {
                         if (canvas.tracks.has(relatedTrackId)) return;
                         const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
+                        console.log(
+                            "add track %d at pos %o, ids %o, parentTrackId %o",
+                            relatedTrackId,
+                            pos,
+                            ids,
+                            trackData[index],
+                        );
                         canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
                         dispatchCanvas({ type: ActionType.REFRESH });
                     });
-                }
+                });
                 setNumLoadingTracks((n) => n - 1);
-            }
+            });
         };
         updateTracks();
         // TODO: add missing dependencies
