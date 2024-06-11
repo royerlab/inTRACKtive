@@ -80,11 +80,11 @@ export default function App() {
             dispatchCanvas({
                 type: ActionType.CUR_TIME,
                 curTime: (c: number) => {
-                    return Math.min(c, (tm?.numTimes ?? numTimes) - 1);
+                    return Math.min(c, tm?.numTimes ? tm.numTimes - 1 : 0);
                 },
             });
         });
-    }, [dispatchCanvas, dataUrl, numTimes]);
+    }, [dispatchCanvas, dataUrl]);
 
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
