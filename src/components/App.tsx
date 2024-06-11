@@ -100,8 +100,8 @@ export default function App() {
     // update the points when the array or timepoint changes
     useEffect(() => {
         console.debug("effect-curTime");
-        // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
+        // show a loading indicator if the fetch takes longer than 1/2 a frame (avoid flicker)
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs / 2);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
