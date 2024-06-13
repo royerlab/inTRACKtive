@@ -35,10 +35,10 @@ export default function CellControls(props: CellControlsProps) {
             <FontS>
                 <strong>{props.numSelectedCells ?? 0}</strong> cells selected
             </FontS>
+            {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
             </label>
-            <DownloadButton getDownloadData={props.getTrackDownloadData} />
             <Box display="flex" flexDirection="row" justifyContent="space-around">
                 <SegmentedControl
                     id="selection-mode-control"
