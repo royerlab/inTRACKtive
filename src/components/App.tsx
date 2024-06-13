@@ -201,24 +201,28 @@ export default function App() {
             const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
             const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
             for (let i = 0; i < startPositions.count; i++) {
-                const t = startTimes.getX(i);
-                const x = startPositions.getX(i);
-                const y = startPositions.getY(i);
-                const z = startPositions.getZ(i);
-                trackData.push([trackID + 1, t, x, y, z, track.parentTrackID]);
+                trackData.push([
+                    // trackID is 1-indexed in input and output CSVs
+                    trackID + 1,
+                    startTimes.getX(i),
+                    Math.round(startPositions.getX(i) * 1000) / 1000, // round to 3 decimal places
+                    Math.round(startPositions.getY(i) * 1000) / 1000,
+                    Math.round(startPositions.getZ(i) * 1000) / 1000,
+                    track.parentTrackID,
+                ]);
             }
             const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
             const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
             const lastIndex = endPositions.count - 1;
             trackData.push([
+                // trackID is 1-indexed in input and output CSVs
                 trackID + 1,
-                endTimes.getX(lastIndex),
-                endPositions.getX(lastIndex),
-                endPositions.getY(lastIndex),
-                endPositions.getZ(lastIndex),
+                Math.round(endTimes.getX(lastIndex)),
+                Math.round(endPositions.getX(lastIndex) * 1000) / 1000, // round to 3 decimal places
+                Math.round(endPositions.getY(lastIndex) * 1000) / 1000,
+                Math.round(endPositions.getZ(lastIndex) * 1000) / 1000,
                 track.parentTrackID,
             ]);
-            debugger;
         });
         return trackData;
     };
