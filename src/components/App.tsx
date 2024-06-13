@@ -200,12 +200,25 @@ export default function App() {
         canvas.tracks.forEach((track, trackID) => {
             const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
             const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
-            for (let i = 0; i < startPositions.count / 3; i += 3) {
-                const x = startPositions.array[i];
-                const y = startPositions.array[i + 1];
-                const z = startPositions.array[i + 2];
-                trackData.push([trackID, startTimes.array[i], x, y, z, track.parentTrackID]);
+            for (let i = 0; i < startPositions.count; i++) {
+                const t = startTimes.getX(i);
+                const x = startPositions.getX(i);
+                const y = startPositions.getY(i);
+                const z = startPositions.getZ(i);
+                trackData.push([trackID + 1, t, x, y, z, track.parentTrackID]);
             }
+            const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
+            const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
+            const lastIndex = endPositions.count - 1;
+            trackData.push([
+                trackID + 1,
+                endTimes.getX(lastIndex),
+                endPositions.getX(lastIndex),
+                endPositions.getY(lastIndex),
+                endPositions.getZ(lastIndex),
+                track.parentTrackID,
+            ]);
+            debugger;
         });
         return trackData;
     };

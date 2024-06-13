@@ -47,8 +47,6 @@ for point in points:
     if track_index not in direct_parent_index_map:
       # maps the track_index to the parent_track_index
       direct_parent_index_map[track_id - 1] = parent_track_id - 1
-      if parent_track_id >= 0:
-          print(f"Track {track_id} has point {point_id} and parent {parent_track_id}") # this seems to work
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
@@ -92,8 +90,6 @@ for i in range(len(non_zero[0])):
     # track_index = track_id - 1 since track_id is 1-indexed
     track_index = non_zero[1][i]
     parent_track_index = direct_parent_index_map[track_index]
-    if parent_track_index >= -1:
-        print(f"Track {track_index + 1} has parent {parent_track_index + 1}")
     tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_index + 1
 
 # Convert to CSR format for efficient row slicing
