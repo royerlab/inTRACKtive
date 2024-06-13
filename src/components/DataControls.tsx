@@ -4,13 +4,14 @@ import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
 
 import { Button, ButtonIcon, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
+import { TrackManager } from "@/lib/TrackManager";
 
 interface DataControlsProps {
     dataUrl: string;
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
-    validTrackManager: boolean;
+    trackManager: TrackManager | null;
 }
 
 export default function DataControls(props: DataControlsProps) {
@@ -47,20 +48,23 @@ export default function DataControls(props: DataControlsProps) {
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
-            if (urlInput) {
+            if (urlInput && urlInput.value) {
                 setDataUrl(urlInput.value);
+            } else {
+                // set to the initial URL if the input is empty or can't be found
+                setDataUrl(props.initialDataUrl);
             }
         },
-        [setDataUrl],
+        [props.initialDataUrl, setDataUrl],
     );
 
     // only close the popover if the URL gives a valid track manager
-    const validTrackManager = props.validTrackManager;
+    const trackManager = props.trackManager;
     useEffect(() => {
-        if (validTrackManager) {
+        if (trackManager) {
             setUrlPopoverAnchor(null);
         }
-    }, [validTrackManager]);
+    }, [trackManager]);
 
     return (
         <Box
@@ -87,7 +91,7 @@ export default function DataControls(props: DataControlsProps) {
                 icon="Share"
                 sdsSize="large"
                 sdsType="secondary"
-                disabled={!props.validTrackManager}
+                disabled={!props.trackManager}
                 onClick={copyShareableUrlToClipBoard}
             />
             <Snackbar
@@ -143,7 +147,7 @@ export default function DataControls(props: DataControlsProps) {
                             placeholder={props.initialDataUrl}
                             defaultValue={props.dataUrl}
                             fullWidth={true}
-                            intent={props.validTrackManager ? "default" : "error"}
+                            intent={props.trackManager ? "default" : "error"}
                         />
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
