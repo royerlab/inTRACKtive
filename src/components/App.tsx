@@ -16,7 +16,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
-import { DownloadButton, TrackDownloadData } from "./DownloadButton";
+import { TrackDownloadData } from "./DownloadButton";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -267,6 +267,7 @@ export default function App() {
                             clearTracks={() => {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
+                            getTrackDownloadData={getTrackDownloadData}
                             numSelectedCells={numTracksLoaded}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
@@ -278,7 +279,6 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
                         />
-                        <DownloadButton getDownloadData={getTrackDownloadData} />
                     </Box>
                     <Divider />
                     <Box flexGrow={4} padding="2em">

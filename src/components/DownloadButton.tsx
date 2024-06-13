@@ -37,5 +37,9 @@ export const DownloadButton = (props: DownloadButtonProps) => {
         document.body.removeChild(link);
     };
 
-    return <Button onClick={downloadCSV}>Download CSV</Button>;
+    return (
+        <Button sdsStyle="square" sdsType="primary" onClick={downloadCSV}>
+            Export Cell Tracks
+        </Button>
+    );
 };
