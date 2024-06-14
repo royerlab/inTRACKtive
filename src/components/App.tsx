@@ -198,9 +198,16 @@ export default function App() {
     const getTrackDownloadData = () => {
         const trackData: TrackDownloadData[] = [];
         canvas.tracks.forEach((track, trackID) => {
+            // Keep track of the timepoints we've seen in this track to avoid duplication
+            // This is necessary because if a track contains a single point, we set
+            // the start and end positions to be the same
+            const timepointsInTrack = new Set();
+
             const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
             const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
-            for (let i = 0; i < startPositions.count; i++) {
+
+            for (let i = 0; i < startTimes.count; i++) {
+                timepointsInTrack.add(startTimes.getX(i));
                 trackData.push([
                     // trackID is 1-indexed in input and output CSVs
                     trackID + 1,
@@ -214,15 +221,19 @@ export default function App() {
             const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
             const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
             const lastIndex = endPositions.count - 1;
-            trackData.push([
-                // trackID is 1-indexed in input and output CSVs
-                trackID + 1,
-                Math.round(endTimes.getX(lastIndex)),
-                Math.round(endPositions.getX(lastIndex) * 1000) / 1000, // round to 3 decimal places
-                Math.round(endPositions.getY(lastIndex) * 1000) / 1000,
-                Math.round(endPositions.getZ(lastIndex) * 1000) / 1000,
-                track.parentTrackID,
-            ]);
+
+            // Only add the end position if it's not the same as the start position
+            if (!timepointsInTrack.has(endTimes.getX(lastIndex))) {
+                trackData.push([
+                    // trackID is 1-indexed in input and output CSVs
+                    trackID + 1,
+                    endTimes.getX(lastIndex),
+                    Math.round(endPositions.getX(lastIndex) * 1000) / 1000, // round to 3 decimal places
+                    Math.round(endPositions.getY(lastIndex) * 1000) / 1000,
+                    Math.round(endPositions.getZ(lastIndex) * 1000) / 1000,
+                    track.parentTrackID,
+                ]);
+            }
         });
         return trackData;
     };
