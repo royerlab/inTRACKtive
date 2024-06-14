@@ -7,7 +7,7 @@ interface DownloadButtonProps {
     getDownloadData: () => TrackDownloadData[];
 }
 
-const dataHeaders = ["trackID", "t", "x", "y", "z", "parentTrackID"];
+const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
 
 const convertToCSV = (nestedArray: (string | number)[][]) => {
     let csvString = "";
