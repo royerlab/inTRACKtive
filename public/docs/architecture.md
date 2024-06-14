@@ -28,23 +28,6 @@ to changes in the application or `canvas` state.
 
 Additionally, this component renders the actual canvas element and the controls for the application.
 
-## ViewerState
-The `ViewerState` class wraps the state of the application that is persisted in the URL. This class
-contains the following properties, taken from both the `Scene` and `PointCanvas` state:
-- `dataUrl` - from `TrackManager`
-- `curTime` - from `PointCanvas`
-- `minTime` and `maxTime` - from `PointCanvas` (highlighted portion of tracks)
-- `maxPointsPerTimepoint` - from `PointCanvas`
-- `pointBrightness` - from `PointCanvas`
-- `showTracks` - from `PointCanvas`
-- `showTrackHighlights` - from `PointCanvas`
-- `selectedPointIds` - from `PointCanvas`
-- `cameraPosition` - from `PointCanvas`
-- `cameraTarget` - from `PointCanvas`
-
-This class also provides methods for updating the state from the URL and for generating a shareable
-URL from the current state.
-
 ## PointCanvas
 The `PointCanvas` holds the Three.js scene (including points and tracks), camera, and renderer. It
 is responsible for rendering the points and tracks, as well as handling user interactions (camera
@@ -80,3 +63,21 @@ provides a simple interface for fetching rows of the array. Each row requires tw
 Zarr array: one for the `indptr` array and one for the `indices` array. The `SparseZarr` class also
 handles basic caching of the `indptr` arrays to reduce the number of requests required. Additional
 caching is just left to the browser cache.
+
+## ViewerState
+The `ViewerState` class wraps the state of the application that is persisted in the URL. This class
+contains the following properties, taken from both the `Scene` and `PointCanvas` state:
+- `dataUrl` - from `TrackManager`
+- `curTime` - from `PointCanvas`
+- `minTime` and `maxTime` - from `PointCanvas` (highlighted portion of tracks)
+- `maxPointsPerTimepoint` - from `PointCanvas`
+- `pointBrightness` - from `PointCanvas`
+- `showTracks` - from `PointCanvas`
+- `showTrackHighlights` - from `PointCanvas`
+- `selectedPointIds` - from `PointCanvas`
+- `cameraPosition` - from `PointCanvas`
+- `cameraTarget` - from `PointCanvas`
+
+This class also provides methods for updating the state from the URL and for generating a shareable
+URL from the current state.
+
