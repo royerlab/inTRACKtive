@@ -1,17 +1,34 @@
+import argparse
 import csv
 import time
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 import zarr
 from scipy.sparse import lil_matrix
 
-root_dir = "/Users/ehoops/development/"
+parser = argparse.ArgumentParser(description="Convert a CSV of tracks to a sparse Zarr store")
+parser.add_argument("csv_file", type=str, help="Path to the CSV file")
+parser.add_argument(
+    "out_dir",
+    type=str,
+    help="Path to the output directory (optional, defaults to the parent dir of the CSV file)",
+    nargs="?",
+)
+args = parser.parse_args()
+
+csv_file = Path(args.csv_file)
+if args.out_dir is None:
+    out_dir = csv_file.parent
+else:
+    out_dir = Path(args.out_dir)
+zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
 start = time.monotonic()
 points = []
 points_in_timepoint = Counter()
-with open(root_dir + "ZSNS001_tracks.csv", "r") as f:
+with open(csv_file, "r") as f:
     reader = csv.reader(f)
     next(reader)  # Skip the header
     # TrackID,t,z,y,x,parent_track_id
@@ -102,7 +119,7 @@ start = time.monotonic()
 
 # save the points array (same format as ZSHS001_nodes.zarr)
 top_level_group = zarr.hierarchy.group(
-    zarr.storage.DirectoryStore(root_dir + "ZSNS001_tracks_bundle.zarr"),
+    zarr.storage.DirectoryStore(zarr_path.as_posix()),
     overwrite=True,
 )
 
