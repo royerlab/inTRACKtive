@@ -233,11 +233,11 @@ export class PointCanvas {
             console.warn("Track with ID %d already exists", trackID);
             return null;
         }
-        const track = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        track.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
-        this.tracks.set(trackID, { threeTrack: track, parentTrackID: parentTrackID });
-        this.scene.add(track);
-        return track;
+        const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
+        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+        this.tracks.set(trackID, { threeTrack, parentTrackID: parentTrackID });
+        this.scene.add(threeTrack);
+        return threeTrack;
     }
 
     updateAllTrackHighlights() {
