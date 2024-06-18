@@ -235,7 +235,8 @@ export default function App() {
                 ]);
             }
         });
-        return trackData.map((row) => row.map((entry) => entry.toFixed(3)));
+        // Round to 3 decimal places, but turn back into a number to strip trailing zeros
+        return trackData.map((row) => row.map((entry) => parseFloat(entry.toFixed(3)))) as TrackDownloadData[];
     };
 
     return (

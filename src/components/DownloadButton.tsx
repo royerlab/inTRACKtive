@@ -4,23 +4,23 @@ import { Button } from "@czi-sds/components";
 // It contains trackID, time, x, y, z, parentTrackID
 export type TrackDownloadData = [number, number, number, number, number, number];
 interface DownloadButtonProps {
-    getDownloadData: () => string[][];
+    getDownloadData: () => TrackDownloadData[];
 }
 
 const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
 
-const convertToCSV = (nestedArray: string[][]) => {
+const convertToCSV = (nestedArray: TrackDownloadData[] | string[][]) => {
     let csvString = "";
 
-    for (let row = 0; row < nestedArray.length; row++) {
+    nestedArray.forEach((row) => {
         let line = "";
-        for (const entry in nestedArray[row]) {
+        row.forEach((entry) => {
             if (line !== "") line += ",";
 
-            line += nestedArray[row][entry];
-        }
+            line += entry;
+        });
         csvString += line + "\r\n";
-    }
+    });
     return csvString;
 };
 

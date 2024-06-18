@@ -4,11 +4,11 @@ import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager } from "@/lib/TrackManager";
-import { DownloadButton } from "./DownloadButton";
+import { DownloadButton, TrackDownloadData } from "./DownloadButton";
 
 interface CellControlsProps {
     clearTracks: () => void;
-    getTrackDownloadData: () => string[][];
+    getTrackDownloadData: () => TrackDownloadData[];
     numSelectedCells?: number;
     trackManager: TrackManager | null;
     pointBrightness: number;
