@@ -19,7 +19,7 @@ class TrackGeometry extends LineSegmentsGeometry {
         // in order to keep this point in our data, we are using the point as both the start and end
         // Initialize the points array with a minimum of 6 to store a single point and larger if there
         // are more points in the input array
-        const points = new Float32Array(Math.max(3, 2 * length)); // start and end of each line
+        const points = new Float32Array(Math.max(6, 2 * length)); // start and end of each line
 
         if (array.length === 3) {
             console.log({ array });
