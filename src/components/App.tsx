@@ -212,9 +212,9 @@ export default function App() {
                     // trackID is 1-indexed in input and output CSVs
                     trackID + 1,
                     startTimes.getX(i),
-                    Math.round(startPositions.getX(i) * 1000) / 1000, // round to 3 decimal places
-                    Math.round(startPositions.getY(i) * 1000) / 1000,
-                    Math.round(startPositions.getZ(i) * 1000) / 1000,
+                    startPositions.getX(i),
+                    startPositions.getY(i),
+                    startPositions.getZ(i),
                     track.parentTrackID,
                 ]);
             }
@@ -228,14 +228,14 @@ export default function App() {
                     // trackID is 1-indexed in input and output CSVs
                     trackID + 1,
                     endTimes.getX(lastIndex),
-                    Math.round(endPositions.getX(lastIndex) * 1000) / 1000, // round to 3 decimal places
-                    Math.round(endPositions.getY(lastIndex) * 1000) / 1000,
-                    Math.round(endPositions.getZ(lastIndex) * 1000) / 1000,
+                    endPositions.getX(lastIndex),
+                    endPositions.getY(lastIndex),
+                    endPositions.getZ(lastIndex),
                     track.parentTrackID,
                 ]);
             }
         });
-        return trackData;
+        return trackData.map((row) => row.map((entry) => entry.toFixed(3)));
     };
 
     return (

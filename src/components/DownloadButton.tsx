@@ -4,12 +4,12 @@ import { Button } from "@czi-sds/components";
 // It contains trackID, time, x, y, z, parentTrackID
 export type TrackDownloadData = [number, number, number, number, number, number];
 interface DownloadButtonProps {
-    getDownloadData: () => TrackDownloadData[];
+    getDownloadData: () => string[][];
 }
 
 const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
 
-const convertToCSV = (nestedArray: (string | number)[][]) => {
+const convertToCSV = (nestedArray: string[][]) => {
     let csvString = "";
 
     for (let row = 0; row < nestedArray.length; row++) {
