@@ -17,6 +17,7 @@ import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
+import { temp } from "three/examples/jsm/nodes/Nodes.js";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -235,8 +236,10 @@ export default function App() {
                 ]);
             }
         });
-        // Round to 3 decimal places, but turn back into a number to strip trailing zeros
-        return trackData.map((row) => row.map((entry) => parseFloat(entry.toFixed(3)))) as TrackDownloadData[];
+
+        // Round to 3 decimal places
+        const formatter = Intl.NumberFormat("en-US", { useGrouping: false });
+        return trackData.map((row) => row.map(formatter.format));
     };
 
     return (

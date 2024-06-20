@@ -235,7 +235,7 @@ export class PointCanvas {
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
         threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
-        this.tracks.set(trackID, { threeTrack, parentTrackID: parentTrackID });
+        this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
     }
