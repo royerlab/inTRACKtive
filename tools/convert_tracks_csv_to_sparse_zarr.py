@@ -1,17 +1,34 @@
+import argparse
 import csv
 import time
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 import zarr
 from scipy.sparse import lil_matrix
 
-root_dir = "/Users/aandersoniii/Data/tracking/"
+parser = argparse.ArgumentParser(description="Convert a CSV of tracks to a sparse Zarr store")
+parser.add_argument("csv_file", type=str, help="Path to the CSV file")
+parser.add_argument(
+    "out_dir",
+    type=str,
+    help="Path to the output directory (optional, defaults to the parent dir of the CSV file)",
+    nargs="?",
+)
+args = parser.parse_args()
+
+csv_file = Path(args.csv_file)
+if args.out_dir is None:
+    out_dir = csv_file.parent
+else:
+    out_dir = Path(args.out_dir)
+zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
 start = time.monotonic()
 points = []
 points_in_timepoint = Counter()
-with open(root_dir + "ZSNS001_tracks.csv", "r") as f:
+with open(csv_file, "r") as f:
     reader = csv.reader(f)
     next(reader)  # Skip the header
     # TrackID,t,z,y,x,parent_track_id
@@ -34,9 +51,19 @@ points_array = np.ones((timepoints, 3 * max_points_in_timepoint), dtype=np.float
 points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
 tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
 tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
+
+# create a map of the track_index to the parent_track_index
+# track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
+direct_parent_index_map = {}  
+
 for point in points:
-    track_id, t, z, y, x, parent_track_id, n = point
-    point_id = t * max_points_in_timepoint + n
+    track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
+    point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
+
+    track_index = track_id - 1
+    if track_index not in direct_parent_index_map:
+      # maps the track_index to the parent_track_index
+      direct_parent_index_map[track_id - 1] = parent_track_id - 1
 
     points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
@@ -45,7 +72,7 @@ for point in points:
     if parent_track_id > 0:
         tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
         tracks_to_children[parent_track_id - 1, track_id - 1] = 1
-
+    
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
 
 tracks_to_parents.setdiag(1)
@@ -55,6 +82,8 @@ tracks_to_children = tracks_to_children.tocsr()
 
 start = time.monotonic()
 iter = 0
+# More info on sparse matrix: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
+# Transitive closure: https://en.wikipedia.org/wiki/Transitive_closure
 while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
     tracks_to_parents = nxt
     iter += 1
@@ -71,6 +100,14 @@ print(f"Chased track lineage backward in {time.monotonic() - start} seconds ({it
 start = time.monotonic()
 
 tracks_to_tracks = tracks_to_parents + tracks_to_children
+tracks_to_tracks = tracks_to_tracks.tolil()
+non_zero = tracks_to_tracks.nonzero()
+
+for i in range(len(non_zero[0])):
+    # track_index = track_id - 1 since track_id is 1-indexed
+    track_index = non_zero[1][i]
+    parent_track_index = direct_parent_index_map[track_index]
+    tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_index + 1
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()
@@ -82,7 +119,7 @@ start = time.monotonic()
 
 # save the points array (same format as ZSHS001_nodes.zarr)
 top_level_group = zarr.hierarchy.group(
-    zarr.storage.DirectoryStore(root_dir + "ZSNS001_tracks_bundle.zarr"),
+    zarr.storage.DirectoryStore(zarr_path.as_posix()),
     overwrite=True,
 )
 
