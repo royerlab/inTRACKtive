@@ -10,18 +10,7 @@ interface DownloadButtonProps {
 const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
 
 const convertToCSV = (nestedArray: TrackDownloadData[] | string[][]) => {
-    let csvString = "";
-
-    nestedArray.forEach((row) => {
-        let line = "";
-        row.forEach((entry) => {
-            if (line !== "") line += ",";
-
-            line += entry;
-        });
-        csvString += line + "\r\n";
-    });
-    return csvString;
+    return nestedArray.map((row) => row.join(",")).join("\r\n");
 };
 
 export const DownloadButton = (props: DownloadButtonProps) => {
