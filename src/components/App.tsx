@@ -16,6 +16,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
+import { TrackDownloadData } from "./DownloadButton";
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -80,11 +81,11 @@ export default function App() {
             dispatchCanvas({
                 type: ActionType.CUR_TIME,
                 curTime: (c: number) => {
-                    return Math.min(c, (tm?.numTimes ?? numTimes) - 1);
+                    return Math.min(c, tm?.numTimes ? tm.numTimes - 1 : 0);
                 },
             });
         });
-    }, [dispatchCanvas, dataUrl, numTimes]);
+    }, [dispatchCanvas, dataUrl]);
 
     // update the geometry buffers when the array changes
     // TODO: do this in the above useEffect
@@ -100,8 +101,8 @@ export default function App() {
     // update the points when the array or timepoint changes
     useEffect(() => {
         console.debug("effect-curTime");
-        // show a loading indicator if the fetch takes longer than 1 frame (avoid flicker)
-        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs);
+        // show a loading indicator if the fetch takes longer than 1/2 a frame (avoid flicker)
+        const loadingTimeout = setTimeout(() => setIsLoadingPoints(true), playbackIntervalMs / 2);
         let ignore = false;
         // TODO: this is a very basic attempt to prevent stale data
         // in addition, we should debounce the input and verify the data is current
@@ -149,27 +150,27 @@ export default function App() {
         // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
-            for (const pointId of canvas.selectedPointIds) {
-                if (canvas.fetchedPointIds.has(pointId)) continue;
+            canvas.selectedPointIds.forEach(async (pointId) => {
+                if (canvas.fetchedPointIds.has(pointId)) return;
                 setNumLoadingTracks((n) => n + 1);
                 canvas.fetchedPointIds.add(pointId);
                 const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
                 // TODO: points actually only belong to one track, so can get rid of the outer loop
-                for (const trackId of trackIds) {
-                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+                trackIds.forEach(async (trackId) => {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
                     canvas.fetchedRootTrackIds.add(trackId);
-                    const lineage = await trackManager.fetchLineageForTrack(trackId);
-                    for (const relatedTrackId of lineage) {
-                        if (canvas.tracks.has(relatedTrackId)) continue;
+                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                    lineage.forEach(async (relatedTrackId: number, index) => {
+                        if (canvas.tracks.has(relatedTrackId)) return;
                         const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
-                        canvas.addTrack(relatedTrackId, pos, ids);
+                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
                         dispatchCanvas({ type: ActionType.REFRESH });
-                    }
-                }
+                    });
+                });
                 setNumLoadingTracks((n) => n - 1);
-            }
+            });
         };
         updateTracks();
         // TODO: add missing dependencies
@@ -193,6 +194,52 @@ export default function App() {
             };
         }
     }, [dispatchCanvas, numTimes, playing]);
+
+    const getTrackDownloadData = () => {
+        const trackData: TrackDownloadData[] = [];
+        canvas.tracks.forEach((track, trackID) => {
+            // Keep track of the timepoints we've seen in this track to avoid duplication
+            // This is necessary because if a track contains a single point, we set
+            // the start and end positions to be the same
+            const timepointsInTrack = new Set();
+
+            const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
+            const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
+
+            for (let i = 0; i < startTimes.count; i++) {
+                timepointsInTrack.add(startTimes.getX(i));
+                trackData.push([
+                    // trackID is 1-indexed in input and output CSVs
+                    trackID + 1,
+                    startTimes.getX(i),
+                    startPositions.getX(i),
+                    startPositions.getY(i),
+                    startPositions.getZ(i),
+                    track.parentTrackID,
+                ]);
+            }
+            const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
+            const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
+            const lastIndex = endPositions.count - 1;
+
+            // Only add the end position if it's not the same as the start position
+            if (!timepointsInTrack.has(endTimes.getX(lastIndex))) {
+                trackData.push([
+                    // trackID is 1-indexed in input and output CSVs
+                    trackID + 1,
+                    endTimes.getX(lastIndex),
+                    endPositions.getX(lastIndex),
+                    endPositions.getY(lastIndex),
+                    endPositions.getZ(lastIndex),
+                    track.parentTrackID,
+                ]);
+            }
+        });
+
+        // Round to 3 decimal places
+        const formatter = Intl.NumberFormat("en-US", { useGrouping: false });
+        return trackData.map((row) => row.map(formatter.format));
+    };
 
     return (
         <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
@@ -234,6 +281,7 @@ export default function App() {
                             clearTracks={() => {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
+                            getTrackDownloadData={getTrackDownloadData}
                             numSelectedCells={numTracksLoaded}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
@@ -277,7 +325,7 @@ export default function App() {
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                            validTrackManager={trackManager !== null}
+                            trackManager={trackManager}
                         />
                     </Box>
                 </Box>

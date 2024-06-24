@@ -4,9 +4,11 @@ import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager } from "@/lib/TrackManager";
+import { DownloadButton } from "./DownloadButton";
 
 interface CellControlsProps {
     clearTracks: () => void;
+    getTrackDownloadData: () => string[][];
     numSelectedCells?: number;
     trackManager: TrackManager | null;
     pointBrightness: number;
@@ -33,6 +35,7 @@ export default function CellControls(props: CellControlsProps) {
             <FontS>
                 <strong>{props.numSelectedCells ?? 0}</strong> cells selected
             </FontS>
+            {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
             </label>

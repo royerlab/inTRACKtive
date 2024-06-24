@@ -40,6 +40,15 @@ export class Track extends Mesh {
             // TODO: use a LUT for the main track, too
             colors.push(((0.9 * (n - i)) / n) ** 3, ((0.9 * (n - i)) / n) ** 3, (0.9 * (n - i)) / n);
         }
+
+        // if this track has a single point, in order to keep this point in our data,
+        // we are using the point as both the start and end of the line segment
+        if (pos.length === 3) {
+            pos.push(pos[0], pos[1], pos[2]);
+            colors.push(colors[0], colors[1], colors[2]);
+            time.push(time[0]);
+        }
+
         track.geometry.setPositions(pos);
         track.geometry.setColors(colors);
         track.geometry.setTime(time);
