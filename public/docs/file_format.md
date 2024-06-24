@@ -111,30 +111,36 @@ some explanation.
 
 The lineage we're after for a given tracklet is all of its ancestors and descendents. The goal is to
 encode this in a single row of the `tracks_to_tracks` array. This means the lineage we fetch depends
-on which tracklet in the lineage corresponds to the selected point. Here are two examples to
-illustrate this:
+on which tracklet in the lineage corresponds to the selected point. *Figure 2* shows two examples to
+illustrate this. To load the *complete* lineage for a given tracklet, find its oldest ancestor
+tracklet and select any point in it.
 
 <p align="center">
-  <img src="images/tracklets-selected-0.svg" width="45%">
+  <img src="images/tracklets.svg" width="45%">
+  <br>
   <img src="images/tracklets-selected-1.svg" width="45%">
+  <img src="images/tracklets-selected-0.svg" width="45%">
   <p align="center">
-    <em>Figure 2 - lineage depends on which point is selected.</em>
+    <em>Figure 2 - lineage depends on which point is selected. (top) a cartoon depecting a group of
+    related tracklets. (left) selecting points at earlier timepoints will load more descendent
+    tracks. (right) selecting points at later timepoints will load all ancestors, but fewer
+    descendents.</em>
   </p>
 </p>
 
 To do this, we need to pre-compute something like the [transitive
 closure](https://en.wikipedia.org/wiki/Transitive_closure) of the directed graph of track
-connections. This results in a graph where each cluster is a fully-connected graph of all the tracks
-in a lineage.
-
-This can be computed by first creating adjacency matrices for two *un*directed graphs:
-`tracks_to_children` and `tracks_to_parents`. Iterative squaring of these matrices converges on the
-transitive closure of each - this gives each track a connection to all of its descendents
-(`tracks_to_children`) or all of its ancestors (`tracks_to_parents`). This is not a very efficient
-algorithm but it's very simple and works for the sizes of data we're dealing with. For larger
-datasets or more complex lineage (e.g. full lineage including "cousins"), a more efficient algorithm
-(Floyd–Warshall) may be necessary.
+connections. The *complete* transitive closure would produce a graph where each cluster is a
+fully-connected graph of all the tracks in a lineage. Instead we start by first creating adjacency
+matrices for two *un*directed graphs: `tracks_to_children` and `tracks_to_parents`. Iterative
+squaring of these matrices converges on the transitive closure of each - this gives each tracklet a
+connection to all of its descendents (`tracks_to_children`) or all of its ancestors
+(`tracks_to_parents`).
 
 The sum of these matrices produces the directed adjacency matrix we want, where a track is connected
 directly to all of its ancestors and descendents. Values in this matrix are overwritten by parent
 track IDs. This allows efficient lineage retrieval form a CSR matrix by fetching a single row.
+
+The iterative squaring algorithm is not very efficient, but it's simple and works for the sizes of
+data we're dealing with. For larger datasets or more complex lineage (e.g. full lineage including
+"cousins"), a more efficient algorithm (Floyd–Warshall) may be necessary.

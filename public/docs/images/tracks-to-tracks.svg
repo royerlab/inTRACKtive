@@ -21,13 +21,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.55529412"
-     inkscape:cx="245.81568"
-     inkscape:cy="129.66102"
-     inkscape:window-width="1312"
-     inkscape:window-height="449"
+     inkscape:zoom="1.5706089"
+     inkscape:cx="333.94691"
+     inkscape:cy="220.29672"
+     inkscape:window-width="1680"
+     inkscape:window-height="1213"
      inkscape:window-x="0"
-     inkscape:window-y="38"
+     inkscape:window-y="25"
      inkscape:window-maximized="0"
      inkscape:current-layer="g50" />
   <defs
@@ -35,6 +35,13 @@
   <g
      id="g50"
      transform="translate(-118.50738,-77.5)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke-width:3.2751"
+       id="rect1"
+       width="630.62427"
+       height="324.89847"
+       x="118.4256"
+       y="77" />
     <g
        id="g3"
        transform="translate(6)">
@@ -696,6 +703,7 @@
                  style="box-sizing: border-box; font-size: 0px; text-align: center;">
                 <xhtml:div
                    style="display: inline-block; font-size: 16px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; white-space: normal; overflow-wrap: normal;"><xhtml:i>value</xhtml:i>
+
 
  is the direct parent track ID of this column</xhtml:div>
               </xhtml:div>
