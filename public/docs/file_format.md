@@ -19,7 +19,7 @@ the relatively small size of the `indptr` arrays, providing an opportunity for e
 reducing the total number of requests when fetching tracks.
 
 ```
-ZSNS001_tracks_bundle.zarr (~575M)
+ZSNS001_tracks_bundle.zarr (~550M)
 ├── points (198M)
 ├── points_to_tracks (62M)
 │   ├── indices (61M)
@@ -27,11 +27,14 @@ ZSNS001_tracks_bundle.zarr (~575M)
 ├── tracks_to_points (259M)
 │   ├── data (207M)
 │   ├── indices (50M)
-│   └── indptr (1.9M)
-└── tracks_to_tracks (15M)
-    ├── indices (13M)
-    └── indptr (1.8M)
+│   └── indptr (2M)
+└── tracks_to_tracks (28M)
+    ├── data (19M)
+    ├── indices (7M)
+    └── indptr (2M)
 ```
+
+Arrays are stored as chunked zarr arrays. Chunk sizes should be optimized for your specific data.
 
 A [conversion script](#conversion-script) is provided to generate this zarr bundle arrays from a CSV
 file.
@@ -44,7 +47,7 @@ The `points` array is a dense, ragged array of 32-bit floats with shape `(n_time
 `[x0, y0, z0, x1, y1, z1, ...]`. Rows with fewer points are padded at the end with `-9999.9`. Each
 point is then given a unique ID calculated by `t * max_points_per_timepoint + n` where `t` is the
 timepoint (row in the `points` array), and `n` is the index of the point within the timepoint. That
-is, the point ID is just a flat index value.
+is, the point ID is just a flat index value into the ragged array.
 
 This array is used for fetching all the points in a given timeframe.
 
@@ -54,17 +57,31 @@ The `points_to_tracks` array encodes the relationship between a given point ID (
 IDs (columns) it is part of. The total shape of the array is then `(n_points, n_tracks)`. Thus,
 fetching a row is used to get all tracks associated with a given point. This is effectively an
 adjacency matrix. In the sample data, each point belongs to at most one track. Values in the array
-don't matter, just the presence of a nonzero element which indicates a connection.
+don't matter, just the presence of a nonzero element which indicates a connection. This is becasue
+the data we're interested in (the track ID) is encoded by the column index.
 
 This is the first query run when points are selected.
 
 ## tracks_to_tracks
 
 This array, shape `(n_tracks, n_tracks)` allows us to retrieve lineage (ancestors and descendents)
-for a given track. Each row is a track, and the columns are the tracks it is connected to. Currently
-the value of the element is not used, just the presence of a nonzero element (adjacency matrix). How
+for a given track. Each row is a track, and the columns are the tracks it is connected to. How
 this is computed will determine the lineage returned when selecting data. See the section on [lineage
-computation](#lineage-computation) in the included conversion script for more details on how it is currently computed.
+computation](#lineage-computation) in the included conversion script for more details on how it is
+currently computed.
+
+The *presence* of a nonzero element in this graph represents a connection between two tracks
+(adjacency matrix). The *value* of each nonzero element encodes the direct parent track id for the
+corresponding column.
+
+<p align="center">
+  <img src="images/tracks-to-tracks.svg" width="75%">
+  <p align="center">
+    <em>Figure 1 - structure of the</em> tracks_to_tracks <em>matrix. Diagonal elements are always
+    present, meaning a track is always part of its own lineage. The value of each sparse element is
+    the</em> parent_track_id <em>(or -1) for the track indicated by that column.</em>
+  </p>
+</p>
 
 This is run for each track returned from the initial `points_to_tracks` query.
 
@@ -80,10 +97,10 @@ This is the *last* query run when points are selected, and is run for each track
 A script (`convert_tracks_csv_to_sparse_zarr.py`) is provided to generate these arrays from a CSV
 file. The CSV file should be generated using Ultrack or a similar tracking software. To use this
 script, columns in the CSV file should be ordered as follows:
-- TrackID - unique identifier for the track this point belongs to
+- track_id - unique identifier for the track this point belongs to
 - t - timepoint
 - z, y, x - 3D coordinates
-- ParentTrackID - reference to the parent track, if any (-1 otherwise)
+- parent_track_id - reference to the parent track, if any (-1 otherwise)
 
 The script requires numpy, scipy, and zarr libraries. This script is not optimized, and takes about
 4 minutes to convert the example dataset on an Apple M1 Pro.
@@ -93,10 +110,22 @@ Most of the logic in the script is pretty straightforward, but the lineage compu
 some explanation.
 
 The lineage we're after for a given tracklet is all of its ancestors and descendents. The goal is to
-encode this in a single row of the `tracks_to_tracks` array. To do this, we need to pre-compute the
-[transitive closure](https://en.wikipedia.org/wiki/Transitive_closure) of the directed graph of
-track connections. This result is something like a cluster graph, where each cluster is a
-fully-connected graph of all the tracks in a lineage.
+encode this in a single row of the `tracks_to_tracks` array. This means the lineage we fetch depends
+on which tracklet in the lineage corresponds to the selected point. Here are two examples to
+illustrate this:
+
+<p align="center">
+  <img src="images/tracklets-selected-0.svg" width="45%">
+  <img src="images/tracklets-selected-1.svg" width="45%">
+  <p align="center">
+    <em>Figure 2 - lineage depends on which point is selected.</em>
+  </p>
+</p>
+
+To do this, we need to pre-compute something like the [transitive
+closure](https://en.wikipedia.org/wiki/Transitive_closure) of the directed graph of track
+connections. This results in a graph where each cluster is a fully-connected graph of all the tracks
+in a lineage.
 
 This can be computed by first creating adjacency matrices for two *un*directed graphs:
 `tracks_to_children` and `tracks_to_parents`. Iterative squaring of these matrices converges on the
@@ -107,5 +136,5 @@ datasets or more complex lineage (e.g. full lineage including "cousins"), a more
 (Floyd–Warshall) may be necessary.
 
 The sum of these matrices produces the directed adjacency matrix we want, where a track is connected
-directly to all of its ancestors and descendents. This allows efficient lineage retrieval form a CSR
-matrix by fetching a single row.
+directly to all of its ancestors and descendents. Values in this matrix are overwritten by parent
+track IDs. This allows efficient lineage retrieval form a CSR matrix by fetching a single row.
