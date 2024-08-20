@@ -83,7 +83,7 @@ export class TrackManager {
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
         this.numTimes = points.shape[0];
-        this.maxPointsPerTimepoint = points.shape[1] / 3;
+        this.maxPointsPerTimepoint = points.shape[1] / 4;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -97,9 +97,9 @@ export class TrackManager {
         let endIndex = points.findIndex((value) => value <= -127);
         if (endIndex === -1) {
             endIndex = points.length;
-        } else if (endIndex % 3 !== 0) {
-            console.error("invalid points - %d not divisible by 3", endIndex);
-            endIndex -= endIndex % 3;
+        } else if (endIndex % 4 !== 0) {
+            console.error("invalid points - %d not divisible by 4", endIndex);
+            endIndex -= endIndex % 4;
         }
         return points.subarray(0, endIndex);
     }

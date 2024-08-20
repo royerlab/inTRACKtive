@@ -1,6 +1,9 @@
+// export const DEFAULT_ZARR_URL =
+//     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
+//     "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
+
 export const DEFAULT_ZARR_URL =
-    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
+    "http://127.0.0.1:8000/misc/tracks2_withSize_bundle.zarr/";
 
 const HASH_KEY = "viewerState";
 

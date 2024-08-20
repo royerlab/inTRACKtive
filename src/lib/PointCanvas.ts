@@ -81,7 +81,7 @@ export class PointCanvas {
 
         const pointsGeometry = new BufferGeometry();
         const pointsMaterial = new PointsMaterial({
-            size: 16.0,
+            size: 100.0,
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
             blending: AdditiveBlending,
@@ -216,11 +216,14 @@ export class PointCanvas {
     }
 
     setPointsPositions(data: Float32Array) {
-        const numPoints = data.length / 3;
+        const numPoints = data.length / 4;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
+
+            positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
+            this.points.material.size = 11*data[4 * i + 3];
+            // console.log("plotted point %d on (%d,%d,%d) with size %d", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],this.points.material.size);
         }
         positions.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
