@@ -223,7 +223,6 @@ export class PointCanvas {
             positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
             // this.points.material.size = 11*data[4 * i + 3]
             (this.points.material as PointsMaterial).size = 11 * data[4 * i + 3];
-            // console.log("data = [%d,%d,%d,%d]", data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]);
             // console.log("plotted point %d on (%d,%d,%d) with size %d", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3]);
         }
         positions.needsUpdate = true;
