@@ -4,7 +4,7 @@
 
 // public test dataset that contains radius:
 export const DEFAULT_ZARR_URL =
-    "https://public.czbiohub.org/royerlab/zoo/misc/tracks2_bundle.zarr";
+    "https://public.czbiohub.org/royerlab/zoo/misc/tracks_withSize_bundle.zarr";
 
 const HASH_KEY = "viewerState";
 
