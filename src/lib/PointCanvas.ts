@@ -1,5 +1,4 @@
 import {
-    AdditiveBlending,
     AxesHelper,
     BufferGeometry,
     Color,
