@@ -113,10 +113,9 @@ export class PointCanvas {
         `;
 
         const shaderMaterial = new ShaderMaterial( {
-
             uniforms: {
-                color: { value: new Color( 0xffffff ) },
-                pointTexture: { value: new TextureLoader().load('/spark1.png' ) }
+                color: { value: new Color(0xffffff)},
+                pointTexture: { value: new TextureLoader().load("/spark1.png")}
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
@@ -126,7 +125,7 @@ export class PointCanvas {
             // alphaTest: 0.1, //no effect
             // depthWrite: true,  //true by default
             transparent: true,
-        } );
+        });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
         this.scene.add(new AxesHelper(128));
@@ -250,8 +249,7 @@ export class PointCanvas {
             geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3));
         }
         if (!geometry.hasAttribute("size") || geometry.getAttribute("size").count !== maxPointsPerTimepoint) {
-            geometry.setAttribute("size", new Float32BufferAttribute(new Float32Array(maxPointsPerTimepoint), 1),
-            );
+            geometry.setAttribute("size", new Float32BufferAttribute(new Float32Array(maxPointsPerTimepoint), 1));
         }
         // Initialize all the colors immediately.
         this.resetPointColors();
@@ -264,7 +262,8 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
-            sizes.setX(i, 21 * data[4 * i + 3]);  //factor of 21 used to match the desired size of the points
+            sizes.setX(i, 21 * data[4 * i + 3]);
+            // factor of 21 used to match the desired size of the points
             // console.log("plotted point %d on (%d,%d,%d) with size %d (=21 * %d)", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3],data[4 * i + 3]);
         }
         positions.needsUpdate = true;
