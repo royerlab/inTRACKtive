@@ -4,6 +4,7 @@
 
 // public Ascidian dataset that contains radius:
 export const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zoo/Ascidian/tracks_withSizee_bundle.zarr/";
+// export const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zoo/misc/tracks_withSize_3dots_bundle.zarr/";
 
 const HASH_KEY = "viewerState";
 

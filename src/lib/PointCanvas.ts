@@ -7,8 +7,8 @@ import {
     NormalBlending,
     PerspectiveCamera,
     Points,
-    PointsMaterial,
     Scene,
+    ShaderMaterial,
     SRGBColorSpace,
     TextureLoader,
     Vector2,
@@ -80,17 +80,54 @@ export class PointCanvas {
         );
 
         const pointsGeometry = new BufferGeometry();
-        const pointsMaterial = new PointsMaterial({
-            size: 100.0,
-            map: new TextureLoader().load("/spark1.png"),
-            vertexColors: true,
+        // const pointsMaterial = new PointsMaterial({
+        //     size: 100.0,
+        //     map: new TextureLoader().load("/spark1.png"),
+        //     vertexColors: true,
+        //     blending: NormalBlending,
+        //     depthTest: false,
+        //     alphaTest: 0.1,
+        //     depthWrite: true,
+        //     transparent: true,
+        // });
+        const pointVertexShader = `
+            attribute float size;
+            attribute vec3 color; //Declare the color attribute
+            varying vec3 vColor;
+
+            void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * (300.0 / -mvPosition.z); // Adjust scaling factor
+            gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+        const pointFragmentShader = `
+            varying vec3 vColor;
+            uniform sampler2D pointTexture;
+
+            void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+            gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+            }
+        `;
+
+        const shaderMaterial = new ShaderMaterial( {
+
+            uniforms: {
+                color: { value: new Color( 0xffffff ) },
+                pointTexture: { value: new TextureLoader().load('/spark1.png' ) }
+            },
+            vertexShader: pointVertexShader,
+            fragmentShader: pointFragmentShader,
+
             blending: NormalBlending,
             depthTest: false,
-            alphaTest: 0.1,
-            depthWrite: true,
+            // alphaTest: 0.1, //no effect
+            // depthWrite: true,  //true by default
             transparent: true,
-        });
-        this.points = new Points(pointsGeometry, pointsMaterial);
+        } );
+        this.points = new Points(pointsGeometry, shaderMaterial);
 
         this.scene.add(new AxesHelper(128));
         this.scene.add(this.points);
@@ -212,6 +249,10 @@ export class PointCanvas {
         if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== maxPointsPerTimepoint) {
             geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3));
         }
+        if (!geometry.hasAttribute("size") || geometry.getAttribute("size").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute("size", new Float32BufferAttribute(new Float32Array(maxPointsPerTimepoint), 1),
+            );
+        }
         // Initialize all the colors immediately.
         this.resetPointColors();
     }
@@ -220,13 +261,14 @@ export class PointCanvas {
         const numPoints = data.length / 4;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
+        const sizes = geometry.getAttribute("size");
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
-            // this.points.material.size = 11*data[4 * i + 3]
-            (this.points.material as PointsMaterial).size = 11 * data[4 * i + 3];
-            // console.log("plotted point %d on (%d,%d,%d) with size %d", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3]);
+            sizes.setX(i, 21 * data[4 * i + 3]);  //factor of 21 used to match the desired size of the points
+            // console.log("plotted point %d on (%d,%d,%d) with size %d (=21 * %d)", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3],data[4 * i + 3]);
         }
         positions.needsUpdate = true;
+        sizes.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
         this.points.geometry.computeBoundingSphere();
     }
