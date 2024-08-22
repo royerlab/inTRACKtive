@@ -112,10 +112,10 @@ export class PointCanvas {
             }
         `;
 
-        const shaderMaterial = new ShaderMaterial( {
+        const shaderMaterial = new ShaderMaterial({
             uniforms: {
-                color: { value: new Color(0xffffff)},
-                pointTexture: { value: new TextureLoader().load("/spark1.png")}
+                color: { value: new Color(0xffffff) },
+                pointTexture: { value: new TextureLoader().load("/spark1.png") },
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
