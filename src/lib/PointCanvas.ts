@@ -5,6 +5,7 @@ import {
     Color,
     Float32BufferAttribute,
     FogExp2,
+    NormalBlending,
     PerspectiveCamera,
     Points,
     PointsMaterial,
@@ -84,9 +85,10 @@ export class PointCanvas {
             size: 100.0,
             map: new TextureLoader().load("/spark1.png"),
             vertexColors: true,
-            blending: AdditiveBlending,
-            depthTest: true,
+            blending: NormalBlending,
+            depthTest: false,
             alphaTest: 0.1,
+            depthWrite: true,
             transparent: true,
         });
         this.points = new Points(pointsGeometry, pointsMaterial);
@@ -106,7 +108,7 @@ export class PointCanvas {
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderModel);
-        this.composer.addPass(this.bloomPass);
+        // this.composer.addPass(this.bloomPass);
         this.composer.addPass(outputPass);
 
         // Set up controls
