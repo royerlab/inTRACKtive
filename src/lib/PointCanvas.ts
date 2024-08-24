@@ -19,6 +19,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+// import { SAOPass } from 'three/addons/postprocessing/SAOPass.js';
 
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
@@ -109,6 +110,7 @@ export class PointCanvas {
             void main() {
             gl_FragColor = vec4(vColor, 1.0);
             gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+            if (gl_FragColor.a < .5) discard;
             }
         `;
 
@@ -123,7 +125,7 @@ export class PointCanvas {
             blending: NormalBlending,
             depthTest: false,
             // alphaTest: 0.1, //no effect
-            // depthWrite: true,  //true by default
+            depthWrite: true,  //true by default
             transparent: true,
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
@@ -145,6 +147,8 @@ export class PointCanvas {
         this.composer.addPass(renderModel);
         // this.composer.addPass(this.bloomPass);
         this.composer.addPass(outputPass);
+        // const saoPass = new SAOPass( this.scene, this.camera, false, true );
+        // this.composer.addPass( saoPass );
 
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
