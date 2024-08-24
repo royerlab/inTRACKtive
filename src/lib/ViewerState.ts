@@ -3,8 +3,7 @@
 //     "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
 
 // public Ascidian dataset that contains radius:
-export const DEFAULT_ZARR_URL =
-    "https://public.czbiohub.org/royerlab/zoo/Ascidian/tracks_withSize_bundle.zarr/";
+export const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zoo/Ascidian/tracks_withSize_bundle.zarr/";
 // export const DEFAULT_ZARR_URL = "https://public.czbiohub.org/royerlab/zoo/misc/tracks_withSize_3dots_bundle.zarr/";
 
 const HASH_KEY = "viewerState";

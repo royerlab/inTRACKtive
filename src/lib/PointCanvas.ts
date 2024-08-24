@@ -123,10 +123,10 @@ export class PointCanvas {
             fragmentShader: pointFragmentShader,
 
             blending: NormalBlending,
-            depthTest: false,
+            depthTest: true,
             // alphaTest: 0.1, //no effect
-            depthWrite: true,  //true by default
-            transparent: true,
+            depthWrite: true, // true by default
+            transparent: false,
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
@@ -140,12 +140,12 @@ export class PointCanvas {
             new Vector2(width, height), // resolution
             0.4, // strength
             0, // radius
-            0, // threshold
+            0.5, // threshold
         );
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderModel);
-        // this.composer.addPass(this.bloomPass);
+        this.composer.addPass(this.bloomPass);
         this.composer.addPass(outputPass);
         // const saoPass = new SAOPass( this.scene, this.camera, false, true );
         // this.composer.addPass( saoPass );
