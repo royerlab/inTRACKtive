@@ -52,6 +52,7 @@ export class PointCanvas {
     readonly fetchedRootTrackIds = new Set<number>();
     // Needed to skip fetches for point IDs that been selected.
     readonly fetchedPointIds = new Set<number>();
+    selectedPointIndices: number[] = [];
 
     // All the point IDs that have been selected.
     // PointCanvas.selector.selection is the transient array of selected
@@ -205,6 +206,18 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    updateSelectedPointIndices() {
+        const idOffset = this.curTime * this.maxPointsPerTimepoint;
+        this.selectedPointIndices = [];
+        for (const track of this.tracks.values()) {
+            if (this.curTime < track.threeTrack.startTime || this.curTime > track.threeTrack.endTime) continue;
+            const timeIndex = this.curTime - track.threeTrack.startTime;
+            const pointId = track.threeTrack.pointIds[timeIndex];
+            this.selectedPointIndices.push(pointId - idOffset);
+        }
+        this.highlightPoints(this.selectedPointIndices);
+    }
 
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");

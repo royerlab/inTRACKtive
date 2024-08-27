@@ -139,6 +139,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
