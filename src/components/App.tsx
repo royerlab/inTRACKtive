@@ -10,7 +10,7 @@ import PlaybackControls from "@/components/PlaybackControls";
 
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
-import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
+import { ViewerState } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
