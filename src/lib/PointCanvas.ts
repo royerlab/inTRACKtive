@@ -279,7 +279,7 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
-            sizes.setX(i, 21 * data[4 * i + 3]);
+            sizes.setX(i, 28 * data[4 * i + 3]);
             // factor of 21 used to match the desired size of the points
             // console.log("plotted point %d on (%d,%d,%d) with size %d (=21 * %d)", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3],data[4 * i + 3]);
         }
