@@ -135,6 +135,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
