@@ -74,7 +74,7 @@ export default function App() {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
-        canvas.removeAllTracks();
+        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
         trackManager.then((tm: TrackManager | null) => {
             setTrackManager(tm);
             // Defend against the case when a curTime valid for previous data
