@@ -24,6 +24,8 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
+import { numberInputClasses } from "@mui/base";
+import { numberOfValuesPerPoint } from "./TrackManager";
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -141,7 +143,7 @@ export class PointCanvas {
             new Vector2(width, height), // resolution
             0.4, // strength
             0, // radius
-            0.5, // threshold
+            0.2, // threshold
         );
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
@@ -273,13 +275,18 @@ export class PointCanvas {
     }
 
     setPointsPositions(data: Float32Array) {
-        const numPoints = data.length / 4;
+        const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
         const sizes = geometry.getAttribute("size");
+        const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[4 * i], data[4 * i + 1], data[4 * i + 2]);
-            sizes.setX(i, 28 * data[4 * i + 3]);
+            positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
+            if (num==4){
+                sizes.setX(i, 28 * data[4 * i + 3]);
+            } else {
+                sizes.setX(i, 30);
+            }
             // factor of 21 used to match the desired size of the points
             // console.log("plotted point %d on (%d,%d,%d) with size %d (=21 * %d)", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3],data[4 * i + 3]);
         }
