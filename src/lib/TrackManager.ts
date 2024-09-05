@@ -1,5 +1,5 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
+import { ZarrArray, slice, Slice, openArray, NestedArray} from "zarr";
 
 class SparseZarrArray {
     store: string;
@@ -144,11 +144,39 @@ export class TrackManager {
 export async function loadTrackManager(url: string) {
     let trackManager;
     try {
+        // const group = await openGroup(url)
+        // console.log('group')
+        // console.log(group)
+        // console.log('group.store')
+        // console.log(group.store)
+        // console.log('group.store.keys()')
+        // console.log(group.store.keys())
+        // const withoutRadius = await group.containsItem('tracks_to_points');
+        // console.log(group.store.getItemKeys(''))
+
+        let pathName = "..."
+        try {
+            const test = await openArray({
+                store: url,
+                path: "points",
+                mode: "r",
+            });
+            pathName = "points"
+            console.log('gelukt - points laden')
+        } catch (error) {
+            pathName = "points_with_radius"
+            console.log('niet gelukt')
+        }
+
+        console.log('pathName = %s',pathName)
+
+        // let pathName = "points_with_radius2"
         const points = await openArray({
             store: url,
-            path: "points",
+            path: pathName,
             mode: "r",
         });
+
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
