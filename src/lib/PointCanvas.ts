@@ -24,7 +24,6 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
-import { numberInputClasses } from "@mui/base";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
@@ -282,7 +281,7 @@ export class PointCanvas {
         const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
-            if (num==4){
+            if (num == 4) {
                 sizes.setX(i, 28 * data[4 * i + 3]);
             } else {
                 sizes.setX(i, 30);
