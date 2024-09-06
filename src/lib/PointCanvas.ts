@@ -70,6 +70,7 @@ export class PointCanvas {
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
+    private pointIndicesCache: Map<number, number[]> = new Map();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -209,6 +210,16 @@ export class PointCanvas {
     };
 
     updateSelectedPointIndices() {
+        const cacheKey = this.createCacheKey();
+
+        // Check if the result is already cached
+        if (this.pointIndicesCache.has(cacheKey)) {
+            this.selectedPointIndices = this.pointIndicesCache.get(cacheKey)!;
+            this.highlightPoints(this.selectedPointIndices);
+            return;
+        }
+
+        // If not cached: find selectedPointIndices
         const idOffset = this.curTime * this.maxPointsPerTimepoint;
         this.selectedPointIndices = [];
         for (const track of this.tracks.values()) {
@@ -217,7 +228,23 @@ export class PointCanvas {
             const pointId = track.threeTrack.pointIds[timeIndex];
             this.selectedPointIndices.push(pointId - idOffset);
         }
+
+        this.pointIndicesCache.set(cacheKey, this.selectedPointIndices);
+
         this.highlightPoints(this.selectedPointIndices);
+    }
+
+    // Helper function to create a unique key for the cache (based on curTime and selected trackIDs)
+    private createCacheKey(): number {
+        let hash = this.curTime;
+        for (const trackId of this.tracks.keys()) {
+            hash = hash * 31 + trackId;
+        }
+        return hash;
+    }
+
+    clearPointIndicesCache() {
+        this.pointIndicesCache.clear();
     }
 
     highlightPoints(points: number[]) {
