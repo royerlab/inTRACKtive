@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import "@/css/app.css";
 
-import { Box, Divider, Drawer } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Divider, Drawer } from "@mui/material";
 
 import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
@@ -44,6 +44,9 @@ export default function App() {
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
+    const [showWarningDialog, setShowWarningDialog] = useState(false);
+    const [newPoints, setNewPoints] = useState(0);
+
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
@@ -60,6 +63,39 @@ export default function App() {
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
+
+    // this function fetches the entire lineage for each track
+    const updateTracks = async () => {
+        if (!trackManager) return;
+        console.debug("updateTracks: ", canvas.selectedPointIds);
+        canvas.selectedPointIds.forEach(async (pointId) => {
+            if (canvas.fetchedPointIds.has(pointId)) return;
+            setNumLoadingTracks((n) => n + 1);
+            canvas.fetchedPointIds.add(pointId);
+            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
+            trackIds.forEach(async (trackId) => {
+                if (canvas.fetchedRootTrackIds.has(trackId)) return;
+                canvas.fetchedRootTrackIds.add(trackId);
+                const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                lineage.forEach(async (relatedTrackId: number, index) => {
+                    if (canvas.tracks.has(relatedTrackId)) return;
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
+                    // adding the track *in* the dispatcher creates issues with duplicate fetching
+                    // but we refresh so the selected/loaded count is updated
+                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                    dispatchCanvas({ type: ActionType.REFRESH });
+                });
+            });
+            setNumLoadingTracks((n) => n - 1);
+        });
+    }; //TODO: add missing dependencies
+
+    // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
+    const removeLastSelectedPoints = async () => {
+        canvas.selectedPointIds = canvas.fetchedPointIds;
+        dispatchCanvas({type: ActionType.POINTS_COLORS});
+    }
 
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -148,33 +184,22 @@ export default function App() {
         if (!trackManager) return;
         if (canvas.selectedPointIds.size == 0) return;
 
-        // this fetches the entire lineage for each track
-        const updateTracks = async () => {
-            console.debug("updateTracks: ", canvas.selectedPointIds);
-            canvas.selectedPointIds.forEach(async (pointId) => {
-                if (canvas.fetchedPointIds.has(pointId)) return;
-                setNumLoadingTracks((n) => n + 1);
-                canvas.fetchedPointIds.add(pointId);
-                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-                // TODO: points actually only belong to one track, so can get rid of the outer loop
-                trackIds.forEach(async (trackId) => {
-                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
-                    canvas.fetchedRootTrackIds.add(trackId);
-                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                    lineage.forEach(async (relatedTrackId: number, index) => {
-                        if (canvas.tracks.has(relatedTrackId)) return;
-                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                        // adding the track *in* the dispatcher creates issues with duplicate fetching
-                        // but we refresh so the selected/loaded count is updated
-                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                        dispatchCanvas({ type: ActionType.REFRESH });
-                    });
-                });
-                setNumLoadingTracks((n) => n - 1);
-            });
-        };
-        updateTracks();
-        // TODO: add missing dependencies
+        // check how many new points are selected
+        let new_points = 0; 
+        canvas.selectedPointIds.forEach(async (pointId) => {
+            if (!canvas.fetchedPointIds.has(pointId)){
+                new_points = new_points + 1; 
+            };
+        })
+
+        // if many cells are selected, let the user decide whether to fetch or cancel
+        if (new_points > 100){
+            setNewPoints(new_points);
+            setShowWarningDialog(true);
+        } else {
+            updateTracks();
+        }
+
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
@@ -360,6 +385,34 @@ export default function App() {
                     />
                 </Box>
             </Box>
+            <Dialog
+                open={showWarningDialog}
+                    onClose={() => setShowWarningDialog(false)}
+                >
+                    <DialogTitle>Warning</DialogTitle>
+                    <DialogContent>
+                        {`You have selected ${newPoints} new cells, which might take a longer load. Continue?`}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={() => {
+                                setShowWarningDialog(false)
+                                removeLastSelectedPoints(); //no fetching, remove selection
+                            }}
+                            color="primary"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setShowWarningDialog(false);
+                                updateTracks(); // Continue loading tracks
+                            }}
+                        >
+                            Continue
+                        </Button>
+                    </DialogActions>
+            </Dialog>
         </Box>
     );
 }
