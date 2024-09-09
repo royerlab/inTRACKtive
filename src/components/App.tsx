@@ -44,6 +44,11 @@ export default function App() {
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
+    // refresh window to initial staet
+    const refresh_page = () => {
+        setDataUrl(initialViewerState.dataUrl);
+    };
+
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
@@ -325,6 +330,7 @@ export default function App() {
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
+                            refresh_page={refresh_page}
                             trackManager={trackManager}
                         />
                     </Box>
