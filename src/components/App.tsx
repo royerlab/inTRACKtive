@@ -89,13 +89,13 @@ export default function App() {
             });
             setNumLoadingTracks((n) => n - 1);
         });
-    }; //TODO: add missing dependencies
+    }; // TODO: add missing dependencies
 
     // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
     const removeLastSelectedPoints = async () => {
         canvas.selectedPointIds = canvas.fetchedPointIds;
-        dispatchCanvas({type: ActionType.POINTS_COLORS});
-    }
+        dispatchCanvas({ type: ActionType.POINTS_COLORS });
+    };
 
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -185,21 +185,20 @@ export default function App() {
         if (canvas.selectedPointIds.size == 0) return;
 
         // check how many new points are selected
-        let new_points = 0; 
+        let newPoints = 0;
         canvas.selectedPointIds.forEach(async (pointId) => {
-            if (!canvas.fetchedPointIds.has(pointId)){
-                new_points = new_points + 1; 
-            };
-        })
+            if (!canvas.fetchedPointIds.has(pointId)) {
+                newPoints = newPoints + 1;
+            }
+        });
 
         // if many cells are selected, let the user decide whether to fetch or cancel
-        if (new_points > 100){
-            setNewPoints(new_points);
+        if (newPoints > 100) {
+            setNewPoints(newPoints);
             setShowWarningDialog(true);
         } else {
             updateTracks();
         }
-
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
@@ -385,33 +384,30 @@ export default function App() {
                     />
                 </Box>
             </Box>
-            <Dialog
-                open={showWarningDialog}
-                    onClose={() => setShowWarningDialog(false)}
-                >
-                    <DialogTitle>Warning</DialogTitle>
-                    <DialogContent>
-                        {`You have selected ${newPoints} new cells, which might take a longer load. Continue?`}
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => {
-                                setShowWarningDialog(false)
-                                removeLastSelectedPoints(); //no fetching, remove selection
-                            }}
-                            color="primary"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setShowWarningDialog(false);
-                                updateTracks(); // Continue loading tracks
-                            }}
-                        >
-                            Continue
-                        </Button>
-                    </DialogActions>
+            <Dialog open={showWarningDialog} onClose={() => setShowWarningDialog(false)}>
+                <DialogTitle>Warning</DialogTitle>
+                <DialogContent>
+                    {`You have selected ${newPoints} new cells, which might take longer to load. Continue?`}
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            setShowWarningDialog(false);
+                            removeLastSelectedPoints(); // no fetching, remove selection
+                        }}
+                        color="primary"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setShowWarningDialog(false);
+                            updateTracks(); // Continue loading tracks
+                        }}
+                    >
+                        Continue
+                    </Button>
+                </DialogActions>
             </Dialog>
         </Box>
     );
