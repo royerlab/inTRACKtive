@@ -10,7 +10,7 @@ import PlaybackControls from "@/components/PlaybackControls";
 
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
-import { ViewerState } from "@/lib/ViewerState";
+import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
@@ -45,7 +45,7 @@ export default function App() {
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // refresh window to initial staet
-    const refresh_page = () => {
+    const refreshpage = () => {
         setDataUrl(initialViewerState.dataUrl);
     };
 
@@ -330,7 +330,7 @@ export default function App() {
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                            refresh_page={refresh_page}
+                            refreshpage={refreshpage}
                             trackManager={trackManager}
                         />
                     </Box>
