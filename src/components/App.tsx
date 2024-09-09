@@ -21,7 +21,7 @@ import { TrackDownloadData } from "./DownloadButton";
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
-// clearUrlHash();
+clearUrlHash();
 
 const drawerWidth = 256;
 const playbackFPS = 16;
@@ -61,7 +61,7 @@ export default function App() {
     };
     const setStateFromHash = useCallback(() => {
         const state = ViewerState.fromUrlHash(window.location.hash);
-        // clearUrlHash();
+        clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
