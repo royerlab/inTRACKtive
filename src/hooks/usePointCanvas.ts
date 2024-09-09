@@ -6,6 +6,7 @@ import { ViewerState } from "@/lib/ViewerState";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
+    RESET_CAMERA = "RESET_CAMERA",
     CUR_TIME = "CUR_TIME",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
@@ -24,6 +25,11 @@ enum ActionType {
 interface AutoRotate {
     type: ActionType.AUTO_ROTATE;
     autoRotate: boolean;
+}
+
+interface ResetCamera {
+    type: ActionType.RESET_CAMERA;
+    state: ViewerState;
 }
 
 interface CurTime {
@@ -95,6 +101,7 @@ interface UpdateWithState {
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
+    | ResetCamera
     | CurTime
     | InitPointsGeometry
     | PointBrightness
@@ -115,6 +122,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
+
+        case ActionType.RESET_CAMERA:
+            newCanvas.resetCamera();
+            break;
+
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
             if (typeof action.curTime === "function") {

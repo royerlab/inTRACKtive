@@ -47,6 +47,8 @@ export default function App() {
     // refresh window to initial staet
     const refreshpage = () => {
         setDataUrl(initialViewerState.dataUrl);
+        const state = canvas.toState();
+        dispatchCanvas({ type: ActionType.RESET_CAMERA, state: state });
     };
 
     // Manage shareable state that can persist across sessions.

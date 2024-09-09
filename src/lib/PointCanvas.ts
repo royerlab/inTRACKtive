@@ -124,6 +124,13 @@ export class PointCanvas {
         return newCanvas as PointCanvas;
     }
 
+    resetCamera() {
+        this.camera.position.fromArray([500, 500, -1250]);
+        this.controls.target.fromArray([500, 500, 250]);
+        this.curTime = 0;
+        this.removeAllTracks();
+    }
+
     toState(): ViewerState {
         const state = new ViewerState();
         state.curTime = this.curTime;
