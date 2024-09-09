@@ -11,6 +11,7 @@ interface DataControlsProps {
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
+    refresh_page: () => void; 
     trackManager: TrackManager | null;
 }
 
@@ -21,6 +22,11 @@ export default function DataControls(props: DataControlsProps) {
     // assign some props to local variables to satisfy the hook dependency linter, otherwise it
     // wants all of props to be in the dependency array, and this is nicer than destrcuturing all of
     // the props
+
+    const refresh_page = props.refresh_page;
+    const refreshPage = useCallback(() => {
+        refresh_page();
+    }, [refresh_page]);
 
     const copyShareableUrlToClipboard = props.copyShareableUrlToClipboard;
     const copyShareableUrlToClipBoard = useCallback(() => {
@@ -85,6 +91,13 @@ export default function DataControls(props: DataControlsProps) {
                 onClick={() => {
                     window.alert("Not implemented :)");
                 }}
+            />
+
+            <ButtonIcon
+                icon="Refresh"
+                sdsSize="large"
+                sdsType="secondary"
+                onClick={refreshPage}           
             />
 
             <ButtonIcon
