@@ -273,9 +273,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src="/zebrahub-favicon-60x60.png" alt="logo" />
+                        <img src="/CZ-Biohub-SF-RGB-60x60.png" alt="logo" />
                         <Divider orientation="vertical" flexItem />
-                        <h2>ZEBRAHUB</h2>
+                        <h2>CZ BIOHUB</h2>
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
