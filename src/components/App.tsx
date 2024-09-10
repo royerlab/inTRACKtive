@@ -19,7 +19,13 @@ import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
 import { loadBranding } from "@/lib/getSettings";
-const [brandingName, brandingLogoPath] = await loadBranding();
+
+let brandingName: string | undefined;
+let brandingLogoPath: string | undefined;
+async function loadBrandingData() {
+    [brandingName, brandingLogoPath] = await loadBranding();
+}
+loadBrandingData();
 console.log("brandingName = %s", brandingName);
 console.log("brandingLogoPath = %s", brandingLogoPath);
 
