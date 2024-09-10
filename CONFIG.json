@@ -1,0 +1,14 @@
+{
+  "branding":{
+    "logo_path": "public/CZ-Biohub-SF-RGB-60x60.png",
+    "name": "CZ BIOHUB"
+  },
+
+  "data":{
+    "default_dataset": "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr"
+  },
+
+  "settings":{
+    "max_num_selected_cells": 100 
+  }
+}
