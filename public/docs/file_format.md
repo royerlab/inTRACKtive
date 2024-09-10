@@ -75,7 +75,7 @@ The *presence* of a nonzero element in this graph represents a connection betwee
 corresponding column.
 
 <p align="center">
-  <img src="/docs/images/tracks-to-tracks.svg" width="75%">
+  <img src="/public/docs/images/tracks-to-tracks.svg" width="75%">
   <p align="center">
     <em>Figure 1 - structure of the</em> tracks_to_tracks <em>matrix. Diagonal elements are always
     present, meaning a track is always part of its own lineage. The value of each sparse element is
@@ -116,10 +116,10 @@ illustrate this. To load the *complete* lineage for a given tracklet, find its o
 tracklet and select any point in it.
 
 <p align="center">
-  <img src="/docs/images/tracklets.svg" width="45%">
+  <img src="/public/docs/images/tracklets.svg" width="45%">
   <br>
-  <img src="/docs/images/tracklets-selected-1.svg" width="45%">
-  <img src="/docs/images/tracklets-selected-0.svg" width="45%">
+  <img src="/public/docs/images/tracklets-selected-1.svg" width="45%">
+  <img src="/public/docs/images/tracklets-selected-0.svg" width="45%">
   <p align="center">
     <em>Figure 2 - lineage depends on which point is selected. (top) a cartoon depecting a group of
     related tracklets. (left) selecting points at earlier timepoints will load more descendent
