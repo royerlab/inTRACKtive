@@ -18,10 +18,10 @@ import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
-import { load_branding } from '@/lib/getSettings';
-const [branding_name, branding_logo_path] = await load_branding();
-console.log('branding name = %s',branding_name)
-console.log('branding logo_path = %s',branding_logo_path)
+import { loadBranding } from "@/lib/getSettings";
+const [brandingName, brandingLogoPath] = await loadBranding();
+console.log("brandingName = %s", brandingName);
+console.log("brandingLogoPath = %s", brandingLogoPath);
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -278,9 +278,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src={branding_logo_path} alt="logo" />
+                        <img src={brandingLogoPath} alt="logo" />
                         <Divider orientation="vertical" flexItem />
-                        <h2>{branding_name}</h2>
+                        <h2>{brandingName}</h2>
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
