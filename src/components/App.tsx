@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import "@/css/app.css";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Divider, Drawer } from "@mui/material";
+import { Box, Divider, Drawer } from "@mui/material";
 
 import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import PlaybackControls from "@/components/PlaybackControls";
+import WarningDialog from "../components/WarningDialog";
 
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
@@ -385,31 +386,18 @@ export default function App() {
                     />
                 </Box>
             </Box>
-            <Dialog open={showWarningDialog} onClose={() => setShowWarningDialog(false)}>
-                <DialogTitle>Warning</DialogTitle>
-                <DialogContent>
-                    {`You have selected ${numUnfetchedPoints} new cells, which might take longer to load. Continue?`}
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => {
-                            setShowWarningDialog(false);
-                            removeLastSelectedPoints(); // no fetching, remove selection
-                        }}
-                        color="primary"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            setShowWarningDialog(false);
-                            updateTracks(); // Continue loading tracks
-                        }}
-                    >
-                        Continue
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <WarningDialog
+                open={showWarningDialog}
+                numUnfetchedPoints={numUnfetchedPoints}
+                onCloseAction={() => {
+                    setShowWarningDialog(false);
+                    removeLastSelectedPoints(); // no fetching, remove selection
+                }}
+                onContinueAction={() => {
+                    setShowWarningDialog(false);
+                    updateTracks(); // Continue loading tracks
+                }}
+            />
         </Box>
     );
 }
