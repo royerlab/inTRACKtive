@@ -45,8 +45,7 @@ export default function App() {
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // refresh window to initial staet
-    const refreshpage = () => {
-        setDataUrl(initialViewerState.dataUrl);
+    const refreshPage = () => {
         const state = canvas.toState();
         dispatchCanvas({ type: ActionType.RESET_CAMERA, state: state });
     };
@@ -332,7 +331,7 @@ export default function App() {
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                            refreshpage={refreshpage}
+                            refreshPage={refreshPage}
                             trackManager={trackManager}
                         />
                     </Box>

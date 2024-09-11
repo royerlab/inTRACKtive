@@ -11,7 +11,7 @@ interface DataControlsProps {
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
-    refreshpage: () => void;
+    refreshPage: () => void;
     trackManager: TrackManager | null;
 }
 
@@ -23,10 +23,10 @@ export default function DataControls(props: DataControlsProps) {
     // wants all of props to be in the dependency array, and this is nicer than destrcuturing all of
     // the props
 
-    const refreshpage = props.refreshpage;
-    const refreshPage = useCallback(() => {
-        refreshpage();
-    }, [refreshpage]);
+    const refreshPage = props.refreshPage;
+    const refreshPageCallBack = useCallback(() => {
+        refreshPage();
+    }, [refreshPage]);
 
     const copyShareableUrlToClipboard = props.copyShareableUrlToClipboard;
     const copyShareableUrlToClipBoard = useCallback(() => {
@@ -93,7 +93,7 @@ export default function DataControls(props: DataControlsProps) {
                 }}
             />
 
-            <ButtonIcon icon="Refresh" sdsSize="large" sdsType="secondary" onClick={refreshPage} />
+            <ButtonIcon icon="Refresh" sdsSize="large" sdsType="secondary" onClick={refreshPageCallBack} />
 
             <ButtonIcon
                 icon="Share"

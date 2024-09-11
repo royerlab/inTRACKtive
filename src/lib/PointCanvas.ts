@@ -125,9 +125,10 @@ export class PointCanvas {
     }
 
     resetCamera() {
-        this.camera.position.fromArray([500, 500, -1250]);
-        this.controls.target.fromArray([500, 500, 250]);
-        this.curTime = 0;
+        const defaultState = new ViewerState();
+        this.camera.position.fromArray(defaultState.cameraPosition);
+        this.controls.target.fromArray(defaultState.cameraTarget);
+        this.curTime = defaultState.curTime;
         this.removeAllTracks();
     }
 
