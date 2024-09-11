@@ -10,7 +10,7 @@ enum ActionType {
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
-    POINTS_COLORS = "POINT_COLORS",
+    RESET_POINTS_COLORS = "POINT_COLORS",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -48,7 +48,7 @@ interface PointsPositions {
 }
 
 interface PointColors {
-    type: ActionType.POINTS_COLORS;
+    type: ActionType.RESET_POINTS_COLORS;
 }
 
 interface Refresh {
@@ -146,7 +146,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.setPointsPositions(action.positions);
             newCanvas.resetPointColors();
             break;
-        case ActionType.POINTS_COLORS:
+        case ActionType.RESET_POINTS_COLORS:
             newCanvas.resetPointColors();
             break;
         case ActionType.REMOVE_ALL_TRACKS:

@@ -96,7 +96,7 @@ export default function App() {
     // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
     const removeLastSelectedPoints = async () => {
         canvas.selectedPointIds = canvas.fetchedPointIds;
-        dispatchCanvas({ type: ActionType.POINTS_COLORS });
+        dispatchCanvas({ type: ActionType.RESET_POINTS_COLORS });
     };
 
     // update the state when the hash changes, but only register the listener once
