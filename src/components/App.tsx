@@ -46,6 +46,7 @@ export default function App() {
 
     // refresh window to initial staet
     const refreshPage = () => {
+        setDataUrl(initialViewerState.dataUrl)
         const state = canvas.toState();
         dispatchCanvas({ type: ActionType.RESET_CAMERA, state: state });
     };
