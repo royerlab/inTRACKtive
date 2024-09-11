@@ -21,11 +21,11 @@ This tool was originally built to explore the light-sheet 3D cell tracking resul
 # Table of content
 The `points-web-viewer` has three main use-cases: 
 
-1. Explore the Virtual Embryo Zoo ([🠋go down🠋](#1-explore-the-virtual-embryo-zoo))
+1. Explore the Virtual Embryo Zoo ([↓go down↓](#1-explore-the-virtual-embryo-zoo))
 
-2. Vizualize your own cell tracking data ([🠋go down🠋](#2-vizualize-your-own-cell-tracking-data))
+2. Vizualize your own cell tracking data ([↓go down↓](#2-vizualize-your-own-cell-tracking-data))
 
-3. Host your own customized `points-web-viewer` client ([🠋go down🠋](#3-host-your-own-customized-viewer))
+3. Host your own customized `points-web-viewer` client ([↓go down↓](#3-host-your-own-customized-viewer))
 
 Below we will explain each use-case in more detail.
 
@@ -45,7 +45,7 @@ See the image below with the explanation of the viewer's GUI:
 
 **[ToDo: Figure explaining all GUI functionalities]**
 
-([🠉go up🠉](#table-of-content))
+([↑go up↑](#table-of-content))
 
 </details><br/>
 
@@ -98,7 +98,7 @@ python serve_directory_http path/to/data
 
 where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open](https://points-web-viewer.vercel.app/) the viewer, paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and vizualize your own data!
 
-([🠉go up🠉](#table-of-content))
+([↑go up↑](#table-of-content))
 
 
 
@@ -138,7 +138,7 @@ To customize the viewer, personalize the settings by simply changing elements in
 
 Of course, any other setting can be personalized by activately changing the code of the `points-web-viewer`
 
-([🠉go up🠉](#table-of-content))
+([↑go up↑](#table-of-content))
 
 </details><br/>
 
