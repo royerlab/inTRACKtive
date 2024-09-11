@@ -18,16 +18,9 @@ import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
-import { loadBranding } from "@/lib/getSettings";
-
-let brandingName: string | undefined;
-let brandingLogoPath: string | undefined;
-async function loadBrandingData() {
-    [brandingName, brandingLogoPath] = await loadBranding();
-}
-loadBrandingData();
-console.log("brandingName = %s", brandingName);
-console.log("brandingLogoPath = %s", brandingLogoPath);
+import * as configData from "../../CONFIG.json";
+const brandingName = configData.branding.name;
+const brandingLogoPath = configData.branding.logo_path;
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
