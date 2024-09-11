@@ -44,8 +44,9 @@ export default function App() {
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
+    // show a warning dialog before fetching lots of tracks
     const [showWarningDialog, setShowWarningDialog] = useState(false);
-    const [newPoints, setNewPoints] = useState(0);
+    const [numUnfetchedPoints, setNumUnfetchedPoints] = useState(0);
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -185,16 +186,16 @@ export default function App() {
         if (canvas.selectedPointIds.size == 0) return;
 
         // check how many new points are selected
-        let newPoints = 0;
+        let numUnfetchedPoints = 0;
         canvas.selectedPointIds.forEach(async (pointId) => {
             if (!canvas.fetchedPointIds.has(pointId)) {
-                newPoints = newPoints + 1;
+                numUnfetchedPoints = numUnfetchedPoints + 1;
             }
         });
 
         // if many cells are selected, let the user decide whether to fetch or cancel
-        if (newPoints > 100) {
-            setNewPoints(newPoints);
+        if (numUnfetchedPoints > 100) {
+            setNumUnfetchedPoints(numUnfetchedPoints);
             setShowWarningDialog(true);
         } else {
             updateTracks();
@@ -387,7 +388,7 @@ export default function App() {
             <Dialog open={showWarningDialog} onClose={() => setShowWarningDialog(false)}>
                 <DialogTitle>Warning</DialogTitle>
                 <DialogContent>
-                    {`You have selected ${newPoints} new cells, which might take longer to load. Continue?`}
+                    {`You have selected ${numUnfetchedPoints} new cells, which might take longer to load. Continue?`}
                 </DialogContent>
                 <DialogActions>
                     <Button
