@@ -277,9 +277,10 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}              
+                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
                         {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
-                        {brandingName && <h2>{brandingName}</h2>}                    </Box>
+                        {brandingName && <h2>{brandingName}</h2>}{" "}
+                    </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
                             clearTracks={() => {
