@@ -19,8 +19,8 @@ import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
 import * as configData from "../../CONFIG.json";
-const brandingName = configData.branding.name;
-const brandingLogoPath = configData.branding.logo_path;
+const brandingName = configData?.branding.name || undefined;
+const brandingLogoPath = configData.branding.logo_path || undefined;
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -277,10 +277,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src={brandingLogoPath} alt="logo" />
-                        <Divider orientation="vertical" flexItem />
-                        <h2>{brandingName}</h2>
-                    </Box>
+                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}              
+                        {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
+                        {brandingName && <h2>{brandingName}</h2>}                    </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
                             clearTracks={() => {
