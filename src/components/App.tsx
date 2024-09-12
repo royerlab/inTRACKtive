@@ -60,6 +60,9 @@ export default function App() {
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
+    const removeTracksUponNewData = () => {
+        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+    };
 
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -74,7 +77,6 @@ export default function App() {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
-        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
         trackManager.then((tm: TrackManager | null) => {
             setTrackManager(tm);
             // Defend against the case when a curTime valid for previous data
@@ -325,6 +327,7 @@ export default function App() {
                             dataUrl={dataUrl}
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
+                            removeTracksUponNewData={removeTracksUponNewData}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                             trackManager={trackManager}
                         />

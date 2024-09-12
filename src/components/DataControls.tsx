@@ -11,6 +11,7 @@ interface DataControlsProps {
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
+    removeTracksUponNewData: () => void; 
     trackManager: TrackManager | null;
 }
 
@@ -44,12 +45,14 @@ export default function DataControls(props: DataControlsProps) {
     }, [setUrlPopoverAnchor]);
 
     const setDataUrl = props.setDataUrl;
+    const removeTracksUponNewData = props.removeTracksUponNewData;
     const handleDataUrlSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
             if (urlInput && urlInput.value) {
                 setDataUrl(urlInput.value);
+                removeTracksUponNewData();
             } else {
                 // set to the initial URL if the input is empty or can't be found
                 setDataUrl(props.initialDataUrl);
