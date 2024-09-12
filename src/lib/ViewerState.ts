@@ -1,5 +1,6 @@
-import * as configData from "../../CONFIG.json";
-const DEFAULT_ZARR_URL = configData.data.default_dataset;
+import config from "../../CONFIG.ts";
+
+const DEFAULT_ZARR_URL = config.data.default_dataset;
 
 const HASH_KEY = "viewerState";
 
