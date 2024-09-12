@@ -1,6 +1,6 @@
-export const DEFAULT_ZARR_URL =
-    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
+import config from "../../CONFIG.ts";
+
+const DEFAULT_ZARR_URL = config.data.default_dataset;
 
 const HASH_KEY = "viewerState";
 

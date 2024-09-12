@@ -18,6 +18,10 @@ import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
+import config from "../../CONFIG.ts";
+const brandingName = config.branding.name || undefined;
+const brandingLogoPath = config.branding.logo_path || undefined;
+
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
@@ -275,9 +279,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src="/CZ-Biohub-SF-RGB-60x60.png" alt="logo" />
-                        <Divider orientation="vertical" flexItem />
-                        <h2>CZ BIOHUB</h2>
+                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
+                        {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
+                        {brandingName && <h2>{brandingName}</h2>}{" "}
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
