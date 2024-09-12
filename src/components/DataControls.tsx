@@ -11,7 +11,7 @@ interface DataControlsProps {
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
-    removeTracksUponNewData: () => void; 
+    removeTracksUponNewData: () => void;
     trackManager: TrackManager | null;
 }
 
@@ -58,7 +58,7 @@ export default function DataControls(props: DataControlsProps) {
                 setDataUrl(props.initialDataUrl);
             }
         },
-        [props.initialDataUrl, setDataUrl],
+        [props.initialDataUrl, setDataUrl, removeTracksUponNewData],
     );
 
     // only close the popover if the URL gives a valid track manager
