@@ -46,7 +46,7 @@ export default function App() {
 
     // refresh window to initial staet
     const refreshPage = () => {
-        const state = initialViewerState; //needs maxPointsPerTimepoint!!
+        const state = initialViewerState; // needs maxPointsPerTimepoint!!
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     };
 

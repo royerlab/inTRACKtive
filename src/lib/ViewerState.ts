@@ -26,7 +26,7 @@ export class ViewerState {
     showTracks = true;
     showTrackHighlights = true;
     // Default position and target from interacting with ZSNS001.
-    cameraPosition = [500, 500, -1250]; //ToDo: get these from data or config
+    cameraPosition = [500, 500, -1250]; // ToDo: get these from data or config
     cameraTarget = [500, 500, 250];
 
     toUrlHash(): string {
@@ -47,17 +47,17 @@ export class ViewerState {
         } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }
-        // ViewerState.fromUrlHash is called without a urlHash (only the case for making initialViewerState), 
-        // then we need to set the maxPointsPerTimePoints manually. Because this field is necessary when refreshing the page. 
+        // ViewerState.fromUrlHash is called without a urlHash (only the case for making initialViewerState),
+        // then we need to set the maxPointsPerTimePoints manually. Because this field is necessary when refreshing the page.
         // Naturally, initialViewerState.maxPointsPerTimepoint is never updated, because initialViewerState is not used
         const tm = loadTrackManager(state.dataUrl);
         tm.then((tm: TrackManager | null) => {
-            if (tm != null){
+            if (tm != null) {
                 state.maxPointsPerTimepoint = tm.maxPointsPerTimepoint;
-            } else{
-                console.error("TrackManager is null in Viewerstate.fromUrlHash!")
+            } else {
+                console.error("TrackManager is null in Viewerstate.fromUrlHash!");
             }
-        })
+        });
         return state;
     }
 }

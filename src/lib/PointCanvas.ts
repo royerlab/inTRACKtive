@@ -155,7 +155,7 @@ export class PointCanvas {
         this.pointBrightness = state.pointBrightness;
         this.showTracks = state.showTracks;
         this.showTrackHighlights = state.showTrackHighlights;
-        this.removeAllTracks(); //to make sure all tracks are removed, when the tracks are loaded from a certain state
+        this.removeAllTracks(); // to make sure all tracks are removed, when the tracks are loaded from a certain state
         this.selectedPointIds = new Set(state.selectedPointIds);
         this.camera.position.fromArray(state.cameraPosition);
         this.controls.target.fromArray(state.cameraTarget);
