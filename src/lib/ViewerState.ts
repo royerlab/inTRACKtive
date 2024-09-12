@@ -1,7 +1,3 @@
-// let DEFAULT_ZARR_URL =
-//     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-//     "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
-
 import * as configData from "../../CONFIG.json";
 const DEFAULT_ZARR_URL = configData.data.default_dataset;
 
