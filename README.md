@@ -129,14 +129,15 @@ For testing, use `npm run test` or `npm run coverage`
 To customize the viewer, personalize the settings by simply changing elements in `CONFIG.json`. The following settings can be changed: 
 
 - branding:
-    - name (`University of XX`)
-    - path to logo (`/path/to/logo.png`)
+    - name (`"University of XX"`)
+    - path to logo (`"/path/to/logo.png"`)
 - data:
-    - path to default dataset (`https://public/XXX_bundle.zarr/`)
+    - path to default dataset (`"https://public/XXX_bundle.zarr/"`)
 - parameters:
     - max number of points allowed to select, before warning pops up (`100`)
+    - colormap of the track highlights (`"viridis-inferno"`)
 
-Of course, any other setting can be personalized by activately changing the code of the `points-web-viewer`
+Of course, any other setting can be personalized by activately changing the code of the `points-web-viewer`. Check the documentation regarding the architecture of the application [here](public/docs/architecture.md))
 
 ([↑go up↑](#table-of-content))
 
