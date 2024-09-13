@@ -149,40 +149,192 @@ export default function App() {
         };
     }, [canvas.curTime, dispatchCanvas, trackManager]);
 
+
+
+
+
     // This fetches track IDs based on the selected point IDs.
+    // useEffect(() => {
+    //     console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
+    //     if (!trackManager) return;
+    //     if (canvas.selectedPointIds.size == 0) return;
+
+    //     // this fetches the entire lineage for each track
+    //     const updateTracks = async () => {
+    //         console.debug("updateTracks: ", canvas.selectedPointIds);
+
+    //         // Store promises for fetching all tracks and lineages
+    //         const allTrackPromises: Promise<void>[] = [];
+
+    //         canvas.selectedPointIds.forEach(async (pointId) => {
+    //             if (canvas.fetchedPointIds.has(pointId)) return; // Skip already fetched
+
+    //             setNumLoadingTracks((n) => n + 1);
+    //             canvas.fetchedPointIds.add(pointId);
+
+    //             const trackPromise = trackManager.fetchTrackIDsForPoint(pointId).then(async (trackIds) => {
+
+    //                 // TODO: points actually only belong to one track, so can get rid of the outer loop
+    //                 for (const trackId of trackIds) {
+    //                     if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+
+    //                     canvas.fetchedRootTrackIds.add(trackId);
+
+    //                     const lineagePromise = trackManager.fetchLineageForTrack(trackId).then(async ([lineage, trackData]) => {
+    //                         // Process each related track ID in the lineage
+    //                         for (const [index, relatedTrackId] of lineage.entries()) {
+    //                             if (canvas.tracks.has(relatedTrackId)) return;
+
+    //                             const pointsPromise = trackManager.fetchPointsForTrack(relatedTrackId).then(([pos, ids]) => {
+    //                                 // adding the track *in* the dispatcher creates issues with duplicate fetching
+    //                                 // but we refresh so the selected/loaded count is updated
+    //                                 canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+    //                                 dispatchCanvas({ type: ActionType.REFRESH });
+
+    //                                 canvas.renderer.render(canvas.scene, canvas.camera);
+    //                             });
+
+    //                             await pointsPromise;
+    //                         }
+    //                     });
+
+    //                     await lineagePromise;
+    //                 }
+    //             });
+
+    //             // Add the track fetching promise to the promises array
+    //             allTrackPromises.push(trackPromise);
+
+    //             // Decrement the loading count once fetching is complete
+    //             trackPromise.finally(() => {
+    //                 setNumLoadingTracks((n) => n - 1);
+    //             });
+    //         });
+
+    //     // Wait for all tracks and lineages to be fetched and added to the canvas
+    //     await Promise.all(allTrackPromises);
+
+    //     // Final render and check loop to confirm everything is rendered
+    //     const ensureFinalRender = () => {
+    //         const maxRenderFrames = 5;
+    //         let renderAttempts = 0;
+
+    //         const checkRender = () => {
+    //             // Trigger manual render
+    //             canvas.renderer.render(canvas.scene, canvas.camera);
+
+    //             renderAttempts += 1;
+
+    //             if (renderAttempts >= maxRenderFrames) {
+    //                 console.log("All tracks have been rendered on the canvas");
+    //             } else {
+    //                 // Continue rendering and checking in the next frame
+    //                 requestAnimationFrame(checkRender);
+    //             }
+    //         };
+
+    //         // Start the render-check loop
+    //         requestAnimationFrame(checkRender);
+    //     };
+
+    //     ensureFinalRender();
+    // };
+
+    //     updateTracks();
+    //     // TODO: add missing dependencies
+    // }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
+
     useEffect(() => {
         console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
-        if (canvas.selectedPointIds.size == 0) return;
+        if (canvas.selectedPointIds.size === 0) return;
 
-        // this fetches the entire lineage for each track
         const updateTracks = async () => {
             console.debug("updateTracks: ", canvas.selectedPointIds);
-            canvas.selectedPointIds.forEach(async (pointId) => {
-                if (canvas.fetchedPointIds.has(pointId)) return;
+
+            // Store promises for fetching all tracks and lineages
+            const allTrackPromises: Promise<void>[] = [];
+
+            canvas.selectedPointIds.forEach((pointId) => {
+                if (canvas.fetchedPointIds.has(pointId)) return;  // Skip already fetched
+
                 setNumLoadingTracks((n) => n + 1);
                 canvas.fetchedPointIds.add(pointId);
-                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-                // TODO: points actually only belong to one track, so can get rid of the outer loop
-                trackIds.forEach(async (trackId) => {
-                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
-                    canvas.fetchedRootTrackIds.add(trackId);
-                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                    lineage.forEach(async (relatedTrackId: number, index) => {
-                        if (canvas.tracks.has(relatedTrackId)) return;
-                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                        // adding the track *in* the dispatcher creates issues with duplicate fetching
-                        // but we refresh so the selected/loaded count is updated
-                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                        dispatchCanvas({ type: ActionType.REFRESH });
-                    });
+
+                const trackPromise = trackManager.fetchTrackIDsForPoint(pointId).then(async (trackIds) => {
+                    // Use for...of for async operations while maintaining parallelism
+                    const lineagePromises: Promise<void>[] = [];
+
+                    for (const trackId of trackIds) {
+                        if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+
+                        canvas.fetchedRootTrackIds.add(trackId);
+
+                        const lineagePromise = trackManager.fetchLineageForTrack(trackId).then(async ([lineage, trackData]) => {
+                            const relatedTrackPromises: Promise<void>[] = [];
+
+                            for (const [index, relatedTrackId] of lineage.entries()) {
+                                if (canvas.tracks.has(relatedTrackId)) continue;
+
+                                const pointsPromise = trackManager.fetchPointsForTrack(relatedTrackId).then(([pos, ids]) => {
+                                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                                    dispatchCanvas({ type: ActionType.REFRESH });
+                                });
+
+                                relatedTrackPromises.push(pointsPromise);
+                            }
+
+                            // Wait for all related tracks to be fetched and rendered in parallel
+                            await Promise.all(relatedTrackPromises);
+                        });
+
+                        lineagePromises.push(lineagePromise);
+                    }
+
+                    // Wait for all lineages to be fetched and processed in parallel
+                    await Promise.all(lineagePromises);
                 });
-                setNumLoadingTracks((n) => n - 1);
+
+                // Add the track fetching promise to the promises array
+                allTrackPromises.push(trackPromise);
+
+                // Decrement the loading count once fetching is complete
+                trackPromise.finally(() => {
+                    setNumLoadingTracks((n) => n - 1);
+                });
             });
+
+            // Wait for all tracks and lineages to be fetched in parallel
+            await Promise.all(allTrackPromises);
+
+            // Final render and check loop to confirm everything is rendered
+            const ensureFinalRender = () => {
+                const maxRenderFrames = 5;
+                let renderAttempts = 0;
+
+                const checkRender = () => {
+                    renderAttempts += 1;
+
+                    if (renderAttempts >= maxRenderFrames) {
+                        console.log("All tracks have been rendered on the canvas");
+                    } else {
+                        // Continue rendering and checking in the next frame
+                        requestAnimationFrame(checkRender);
+                    }
+                };
+
+                // Start the render-check loop
+                requestAnimationFrame(checkRender);
+            };
+
+            ensureFinalRender();
         };
+
         updateTracks();
-        // TODO: add missing dependencies
+
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
+
+
 
     // playback time points
     // TODO: this is basic and may drop frames
