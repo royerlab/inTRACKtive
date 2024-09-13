@@ -2,7 +2,7 @@ const config = {
     // Customize the branding of the viewer by providing a logo and/or name (at least one of them)
     branding:{
         // Path to logo image
-        logo_path: "../../public/CZ-Biohub-SF-RGB-60x60.png",
+        logo_path: "/CZ-Biohub-SF-RGB-60x60.png",
         // Organization name
         name: "CZ BIOHUB"
     },
