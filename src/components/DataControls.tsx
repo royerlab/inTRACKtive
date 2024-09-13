@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
+import { Alert, Box, Popover, Snackbar, Stack, Tooltip } from "@mui/material";
 
 import { Button, ButtonIcon, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
@@ -81,22 +81,25 @@ export default function DataControls(props: DataControlsProps) {
             }}
         >
             {/* TODO: make this do something */}
-            <ButtonIcon
-                icon="InfoCircle"
-                sdsSize="large"
-                sdsType="secondary"
-                onClick={() => {
-                    window.alert("Not implemented :)");
-                }}
-            />
-
-            <ButtonIcon
-                icon="Share"
-                sdsSize="large"
-                sdsType="secondary"
-                disabled={!props.trackManager}
-                onClick={copyShareableUrlToClipBoard}
-            />
+            <Tooltip title="More info">
+                <ButtonIcon
+                    icon="InfoCircle"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    onClick={() => {
+                        window.alert("Not implemented :)");
+                    }}
+                />
+            </Tooltip>
+            <Tooltip title="Copy a shareable URL for this exact view to your clipboard">
+                <ButtonIcon
+                    icon="Share"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    disabled={!props.trackManager}
+                    onClick={copyShareableUrlToClipBoard}
+                />
+            </Tooltip>
             <Snackbar
                 open={copyUrlSnackBarOpen}
                 anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
@@ -116,7 +119,10 @@ export default function DataControls(props: DataControlsProps) {
                 </Alert>
             </Snackbar>
 
-            <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+            <Tooltip title="Add link to other dataset">
+                <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+            </Tooltip>
+
             <Popover
                 open={!!urlPopoverAnchor}
                 anchorEl={urlPopoverAnchor}

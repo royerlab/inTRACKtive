@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, Tooltip } from "@mui/material";
 import { ButtonIcon, InputSlider } from "@czi-sds/components";
 
 interface PlaybackControlsProps {
@@ -15,14 +15,17 @@ interface PlaybackControlsProps {
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
-            <ButtonIcon
-                icon="Play"
-                sdsSize="large"
-                sdsType="primary"
-                on={props.playing}
-                disabled={!props.enabled}
-                onClick={() => props.setPlaying(!props.playing)}
-            />
+            <Tooltip title="Play/Pause">
+                <ButtonIcon
+                    icon="Play"
+                    sdsSize="large"
+                    sdsType="primary"
+                    on={props.playing}
+                    disabled={!props.enabled}
+                    onClick={() => props.setPlaying(!props.playing)}
+                />
+            </Tooltip>
+
             <InputSlider
                 id="time-frame-slider"
                 aria-labelledby="input-slider-time-frame"
@@ -35,14 +38,16 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 sx={{ alignSelf: "flex-end" }}
             />
             {/* TODO: add control button groups - perhaps a separate component */}
-            <ButtonIcon
-                icon="DNA"
-                sdsSize="large"
-                sdsType="primary"
-                on={props.autoRotate}
-                disabled={!props.enabled}
-                onClick={() => props.setAutoRotate(!props.autoRotate)}
-            />
+            <Tooltip title="Auto-rotate">
+                <ButtonIcon
+                    icon="DNA"
+                    sdsSize="large"
+                    sdsType="primary"
+                    on={props.autoRotate}
+                    disabled={!props.enabled}
+                    onClick={() => props.setAutoRotate(!props.autoRotate)}
+                />
+            </Tooltip>
         </Box>
     );
 }
