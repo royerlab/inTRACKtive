@@ -149,7 +149,6 @@ export default function App() {
         };
     }, [canvas.curTime, dispatchCanvas, trackManager]);
 
-
     useEffect(() => {
         console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
@@ -162,7 +161,7 @@ export default function App() {
             const allTrackPromises: Promise<void>[] = [];
 
             canvas.selectedPointIds.forEach((pointId) => {
-                if (canvas.fetchedPointIds.has(pointId)) return;  // Skip already fetched
+                if (canvas.fetchedPointIds.has(pointId)) return; // Skip already fetched
 
                 setNumLoadingTracks((n) => n + 1);
                 canvas.fetchedPointIds.add(pointId);
@@ -176,23 +175,27 @@ export default function App() {
 
                         canvas.fetchedRootTrackIds.add(trackId);
 
-                        const lineagePromise = trackManager.fetchLineageForTrack(trackId).then(async ([lineage, trackData]) => {
-                            const relatedTrackPromises: Promise<void>[] = [];
+                        const lineagePromise = trackManager
+                            .fetchLineageForTrack(trackId)
+                            .then(async ([lineage, trackData]) => {
+                                const relatedTrackPromises: Promise<void>[] = [];
 
-                            for (const [index, relatedTrackId] of lineage.entries()) {
-                                if (canvas.tracks.has(relatedTrackId)) continue;
+                                for (const [index, relatedTrackId] of lineage.entries()) {
+                                    if (canvas.tracks.has(relatedTrackId)) continue;
 
-                                const pointsPromise = trackManager.fetchPointsForTrack(relatedTrackId).then(([pos, ids]) => {
-                                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                                    dispatchCanvas({ type: ActionType.REFRESH });
-                                });
+                                    const pointsPromise = trackManager
+                                        .fetchPointsForTrack(relatedTrackId)
+                                        .then(([pos, ids]) => {
+                                            canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                                            dispatchCanvas({ type: ActionType.REFRESH });
+                                        });
 
-                                relatedTrackPromises.push(pointsPromise);
-                            }
+                                    relatedTrackPromises.push(pointsPromise);
+                                }
 
-                            // Wait for all related tracks to be fetched and rendered in parallel
-                            await Promise.all(relatedTrackPromises);
-                        });
+                                // Wait for all related tracks to be fetched and rendered in parallel
+                                await Promise.all(relatedTrackPromises);
+                            });
 
                         lineagePromises.push(lineagePromise);
                     }
@@ -216,10 +219,7 @@ export default function App() {
         };
 
         updateTracks();
-
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
-
-
 
     // playback time points
     // TODO: this is basic and may drop frames
