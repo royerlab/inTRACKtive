@@ -9,6 +9,9 @@
  *  https://github.com/mrdoob/three.js/blob/5ed5417d63e4eeba5087437cc27ab1e3d0813aea/examples/jsm/lines/LineMaterial.js
  */
 
+import config from "../../../CONFIG.ts";
+const colormapTracks = config.settings.colormap_tracks || 'viridis-inferno';
+
 import {
     DataTexture,
     RGBAFormat,
@@ -25,53 +28,55 @@ import { Lut } from "three/examples/jsm/Addons.js";
 
 export const highlightLUT = new Lut();
 // generated using https://waldyrious.net/viridis-palette-generator/
-// highlightLUT.addColorMap("plasma", [    // magma_inverse + inferno
-//     [0.0, 0x000004],
-//     [0.05, 0x140e36],
-//     [0.1, 0x3b0f70],
-//     [0.15, 0x641a80],
-//     [0.2, 0x8c2981],
-//     [0.25, 0xb73779],
-//     [0.3, 0xde4968],
-//     [0.35, 0xf7705c],
-//     [0.4, 0xfe9f6d],
-//     [0.45, 0xfecf92],
-//     [0.5, 0xfcffa4], //bright center
-//     [0.55, 0xf6d746],
-//     [0.6, 0xfca50a],
-//     [0.65, 0xf37819],
-//     [0.7, 0xdd513a],
-//     [0.75, 0xbc3754],
-//     [0.8, 0x932667],
-//     [0.85, 0x6a176e],
-//     [0.9, 0x420a68],
-//     [0.95, 0x160b39],
-//     [1.0, 0x000004],
-// ]);
-// highlightLUT.addColorMap("plasma", [    // viridis_inverse + inferno
-//     [0.0, 0x440154],
-//     [0.05, 0x482475],
-//     [0.1, 0x414487],
-//     [0.15, 0x355f8d],
-//     [0.2, 0x2a788e],
-//     [0.25, 0x21918c],
-//     [0.3, 0x22a884],
-//     [0.35, 0x44bf70],
-//     [0.4, 0x7ad151],
-//     [0.45, 0xbddf26],
-//     [0.5, 0xfcffa4], //bright center
-//     [0.55, 0xf6d746],
-//     [0.6, 0xfca50a],
-//     [0.65, 0xf37819],
-//     [0.7, 0xdd513a],
-//     [0.75, 0xbc3754],
-//     [0.8, 0x932667],
-//     [0.85, 0x6a176e],
-//     [0.9, 0x420a68],
-//     [0.95, 0x160b39],
-//     [1.0, 0x000004],
-// ]);
-highlightLUT.addColorMap("plasma", [
+highlightLUT.addColorMap("magma-inferno", [
+    // magma_inverse + inferno
+    [0.0, 0x000004],
+    [0.05, 0x140e36],
+    [0.1, 0x3b0f70],
+    [0.15, 0x641a80],
+    [0.2, 0x8c2981],
+    [0.25, 0xb73779],
+    [0.3, 0xde4968],
+    [0.35, 0xf7705c],
+    [0.4, 0xfe9f6d],
+    [0.45, 0xfecf92],
+    [0.5, 0xfcffa4], // bright center
+    [0.55, 0xf6d746],
+    [0.6, 0xfca50a],
+    [0.65, 0xf37819],
+    [0.7, 0xdd513a],
+    [0.75, 0xbc3754],
+    [0.8, 0x932667],
+    [0.85, 0x6a176e],
+    [0.9, 0x420a68],
+    [0.95, 0x160b39],
+    [1.0, 0x000004],
+]);
+highlightLUT.addColorMap("viridis-inferno", [
+    // viridis_inverse + inferno
+    [0.0, 0x440154],
+    [0.05, 0x482475],
+    [0.1, 0x414487],
+    [0.15, 0x355f8d],
+    [0.2, 0x2a788e],
+    [0.25, 0x21918c],
+    [0.3, 0x22a884],
+    [0.35, 0x44bf70],
+    [0.4, 0x7ad151],
+    [0.45, 0xbddf26],
+    [0.5, 0xfcffa4], // bright center
+    [0.55, 0xf6d746],
+    [0.6, 0xfca50a],
+    [0.65, 0xf37819],
+    [0.7, 0xdd513a],
+    [0.75, 0xbc3754],
+    [0.8, 0x932667],
+    [0.85, 0x6a176e],
+    [0.9, 0x420a68],
+    [0.95, 0x160b39],
+    [1.0, 0x000004],
+]);
+highlightLUT.addColorMap("inferno-inferno", [
     // inferno_inverse + inferno
     [0.0, 0x000004],
     [0.05, 0x160b39],
@@ -95,33 +100,8 @@ highlightLUT.addColorMap("plasma", [
     [0.95, 0x160b39],
     [1.0, 0x000004],
 ]);
-// highlightLUT.addColorMap("plasma", [    // viridis
-//     [0.0, 0x440154],
-//     [0.1, 0x482475],
-//     [0.2, 0x414487],
-//     [0.3, 0x355f8d],
-//     [0.4, 0x2a788e],
-//     [0.5, 0x21918c],
-//     [0.6, 0x22a884],
-//     [0.7, 0x44bf70],
-//     [0.8, 0x7ad151],
-//     [0.9, 0xbddf26],
-//     [1.0, 0xfde725],
-// ]);
-// highlightLUT.addColorMap("plasma", [     //the original plasma from Ashley (which is actually "inferno")
-//     [0.0, 0x000004],
-//     [0.1, 0x160b39],
-//     [0.2, 0x420a68],
-//     [0.3, 0x6a176e],
-//     [0.4, 0x932667],
-//     [0.5, 0xbc3754],
-//     [0.6, 0xdd513a],
-//     [0.7, 0xf37819],
-//     [0.8, 0xfca50a],
-//     [0.9, 0xf6d746],
-//     [1.0, 0xfcffa4],
-// ]);
-highlightLUT.setColorMap("plasma");
+
+highlightLUT.setColorMap(colormapTracks);
 const lutArray = new Uint8Array(128 * 4);
 for (let i = 0; i < 128; i++) {
     const color = highlightLUT.getColor(i / 128);
