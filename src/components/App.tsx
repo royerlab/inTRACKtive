@@ -40,7 +40,8 @@ export default function App() {
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
-    const numTracksLoaded = canvas.tracks.size;
+    const numSelectedCells = canvas.selectedPointIds.size;
+    const numSelectedTracks = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
     // this state is pure React
@@ -289,7 +290,8 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
                             getTrackDownloadData={getTrackDownloadData}
-                            numSelectedCells={numTracksLoaded}
+                            numSelectedCells={numSelectedCells}
+                            numSelectedTracks={numSelectedTracks}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
                             setPointBrightness={(brightness: number) => {
@@ -304,7 +306,7 @@ export default function App() {
                     <Divider />
                     <Box flexGrow={4} padding="2em">
                         <LeftSidebarWrapper
-                            hasTracks={numTracksLoaded > 0}
+                            hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             selectionMode={canvas.selector.selectionMode}
