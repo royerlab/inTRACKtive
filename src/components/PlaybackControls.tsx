@@ -15,16 +15,14 @@ interface PlaybackControlsProps {
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
-            <Tooltip title="Play/Pause">
-                <ButtonIcon
-                    icon="Play"
-                    sdsSize="large"
-                    sdsType="primary"
-                    on={props.playing}
-                    disabled={!props.enabled}
-                    onClick={() => props.setPlaying(!props.playing)}
-                />
-            </Tooltip>
+            <ButtonIcon
+                icon="Play"
+                sdsSize="large"
+                sdsType="primary"
+                on={props.playing}
+                disabled={!props.enabled}
+                onClick={() => props.setPlaying(!props.playing)}
+            />
 
             <InputSlider
                 id="time-frame-slider"

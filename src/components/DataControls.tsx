@@ -91,7 +91,7 @@ export default function DataControls(props: DataControlsProps) {
                     }}
                 />
             </Tooltip>
-            <Tooltip title="Copy a shareable URL for this exact view to your clipboard">
+            <Tooltip title="Copy a shareable URL for this view to your clipboard">
                 <ButtonIcon
                     icon="Share"
                     sdsSize="large"
@@ -119,7 +119,7 @@ export default function DataControls(props: DataControlsProps) {
                 </Alert>
             </Snackbar>
 
-            <Tooltip title="Add link to other dataset">
+            <Tooltip title="Change link to another dataset">
                 <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
             </Tooltip>
 
