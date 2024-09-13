@@ -7,7 +7,7 @@ import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import PlaybackControls from "@/components/PlaybackControls";
-import WarningDialog from "../components/WarningDialog";
+import WarningDialog from "@/components/WarningDialog";
 
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
@@ -95,7 +95,7 @@ export default function App() {
 
     // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
     const removeLastSelectedPoints = async () => {
-        canvas.selectedPointIds = canvas.fetchedPointIds;
+        dispatchCanvas({ type: ActionType.REMOVE_LAST_SELECTION });
         dispatchCanvas({ type: ActionType.RESET_POINTS_COLORS });
     };
 
@@ -188,7 +188,7 @@ export default function App() {
 
         // check how many new points are selected
         let numUnfetchedPoints = 0;
-        canvas.selectedPointIds.forEach(async (pointId) => {
+        canvas.selectedPointIds.forEach((pointId) => {
             if (!canvas.fetchedPointIds.has(pointId)) {
                 numUnfetchedPoints = numUnfetchedPoints + 1;
             }

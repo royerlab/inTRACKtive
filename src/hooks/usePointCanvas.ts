@@ -11,6 +11,7 @@ enum ActionType {
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
     RESET_POINTS_COLORS = "POINT_COLORS",
+    REMOVE_LAST_SELECTION = "REMOVE_LAST_SELECTION",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -49,6 +50,10 @@ interface PointsPositions {
 
 interface PointColors {
     type: ActionType.RESET_POINTS_COLORS;
+}
+
+interface RemoveLastSelection {
+    type: ActionType.REMOVE_LAST_SELECTION;
 }
 
 interface Refresh {
@@ -105,6 +110,7 @@ type PointCanvasAction =
     | PointBrightness
     | PointsPositions
     | PointColors
+    | RemoveLastSelection
     | Refresh
     | RemoveAllTracks
     | SelectionMode
@@ -148,6 +154,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.RESET_POINTS_COLORS:
             newCanvas.resetPointColors();
+            break;
+        case ActionType.REMOVE_LAST_SELECTION:
+            newCanvas.removeLastSelection();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
