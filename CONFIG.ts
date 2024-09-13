@@ -16,7 +16,9 @@ const config = {
     // Default settings for certain parameters
     settings:{
         // Maximum number of cells a user can select without getting a warning
-        max_num_selected_cells: 100
+        max_num_selected_cells: 100,
+        // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno
+        colormap_tracks: "viridis-inferno"
     }
 }
 
