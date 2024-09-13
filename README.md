@@ -96,7 +96,7 @@ cd tools
 python serve_directory_http path/to/data
 ```
 
-where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open](https://points-web-viewer.vercel.app/) the viewer, paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and vizualize your own data!
+where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open](https://points-web-viewer-rust.vercel.app/) the viewer, paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and vizualize your own data!
 
 ([↑go up↑](#table-of-content))
 
