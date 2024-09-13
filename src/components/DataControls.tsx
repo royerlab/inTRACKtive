@@ -87,7 +87,9 @@ export default function DataControls(props: DataControlsProps) {
                     sdsSize="large"
                     sdsType="secondary"
                     onClick={() => {
-                        window.alert("Not implemented :)");
+                        if (window.confirm("For documentation go to Github (click OK to open Github in a new tab)")) {
+                            window.open("https://github.com/royerlab/points-web-viewer", "_blank");
+                        }
                     }}
                 />
             </Tooltip>
