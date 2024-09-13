@@ -10,7 +10,7 @@
  */
 
 import config from "../../../CONFIG.ts";
-const colormapTracks = config.settings.colormap_tracks || 'viridis-inferno';
+const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
 
 import {
     DataTexture,
