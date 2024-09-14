@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, Box, Popover, Snackbar, Stack } from "@mui/material";
+import { Alert, Box, Popover, Snackbar, Stack, Tooltip } from "@mui/material";
 
 import { Button, ButtonIcon, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
@@ -11,6 +11,7 @@ interface DataControlsProps {
     initialDataUrl: string;
     setDataUrl: (dataUrl: string) => void;
     copyShareableUrlToClipboard: () => void;
+    removeTracksUponNewData: () => void;
     trackManager: TrackManager | null;
 }
 
@@ -44,18 +45,20 @@ export default function DataControls(props: DataControlsProps) {
     }, [setUrlPopoverAnchor]);
 
     const setDataUrl = props.setDataUrl;
+    const removeTracksUponNewData = props.removeTracksUponNewData;
     const handleDataUrlSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             const urlInput = document.getElementById("data-url-input") as HTMLInputElement;
             if (urlInput && urlInput.value) {
                 setDataUrl(urlInput.value);
+                removeTracksUponNewData();
             } else {
                 // set to the initial URL if the input is empty or can't be found
                 setDataUrl(props.initialDataUrl);
             }
         },
-        [props.initialDataUrl, setDataUrl],
+        [props.initialDataUrl, setDataUrl, removeTracksUponNewData],
     );
 
     // only close the popover if the URL gives a valid track manager
@@ -78,22 +81,27 @@ export default function DataControls(props: DataControlsProps) {
             }}
         >
             {/* TODO: make this do something */}
-            <ButtonIcon
-                icon="InfoCircle"
-                sdsSize="large"
-                sdsType="secondary"
-                onClick={() => {
-                    window.alert("Not implemented :)");
-                }}
-            />
-
-            <ButtonIcon
-                icon="Share"
-                sdsSize="large"
-                sdsType="secondary"
-                disabled={!props.trackManager}
-                onClick={copyShareableUrlToClipBoard}
-            />
+            <Tooltip title="More info">
+                <ButtonIcon
+                    icon="InfoCircle"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    onClick={() => {
+                        if (window.confirm("For documentation go to Github (click OK to open Github in a new tab)")) {
+                            window.open("https://github.com/royerlab/points-web-viewer", "_blank");
+                        }
+                    }}
+                />
+            </Tooltip>
+            <Tooltip title="Copy a shareable URL for this view to your clipboard">
+                <ButtonIcon
+                    icon="Share"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    disabled={!props.trackManager}
+                    onClick={copyShareableUrlToClipBoard}
+                />
+            </Tooltip>
             <Snackbar
                 open={copyUrlSnackBarOpen}
                 anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
@@ -113,7 +121,10 @@ export default function DataControls(props: DataControlsProps) {
                 </Alert>
             </Snackbar>
 
-            <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+            <Tooltip title="Change link to another dataset">
+                <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+            </Tooltip>
+
             <Popover
                 open={!!urlPopoverAnchor}
                 anchorEl={urlPopoverAnchor}

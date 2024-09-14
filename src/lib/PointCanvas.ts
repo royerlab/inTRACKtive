@@ -177,7 +177,7 @@ export class PointCanvas {
         state.pointBrightness = this.pointBrightness;
         state.showTracks = this.showTracks;
         state.showTrackHighlights = this.showTrackHighlights;
-        state.selectedPointIds = new Array(...this.selectedPointIds);
+        state.selectedPointIds = Array.from(this.selectedPointIds);
         state.cameraPosition = this.camera.position.toArray();
         state.cameraTarget = this.controls.target.toArray();
         return state;

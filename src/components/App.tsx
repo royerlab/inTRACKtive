@@ -18,6 +18,10 @@ import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
+import config from "../../CONFIG.ts";
+const brandingName = config.branding.name || undefined;
+const brandingLogoPath = config.branding.logo_path || undefined;
+
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
@@ -36,7 +40,8 @@ export default function App() {
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
-    const numTracksLoaded = canvas.tracks.size;
+    const numSelectedCells = canvas.selectedPointIds.size;
+    const numSelectedTracks = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
     // this state is pure React
@@ -60,6 +65,9 @@ export default function App() {
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
+    const removeTracksUponNewData = () => {
+        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+    };
 
     // update the state when the hash changes, but only register the listener once
     useEffect(() => {
@@ -273,9 +281,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src="/zebrahub-favicon-60x60.png" alt="logo" />
-                        <Divider orientation="vertical" flexItem />
-                        <h2>ZEBRAHUB</h2>
+                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
+                        {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
+                        {brandingName && <h2>{brandingName}</h2>}{" "}
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
@@ -283,7 +291,8 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
                             getTrackDownloadData={getTrackDownloadData}
-                            numSelectedCells={numTracksLoaded}
+                            numSelectedCells={numSelectedCells}
+                            numSelectedTracks={numSelectedTracks}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
                             setPointBrightness={(brightness: number) => {
@@ -298,7 +307,7 @@ export default function App() {
                     <Divider />
                     <Box flexGrow={4} padding="2em">
                         <LeftSidebarWrapper
-                            hasTracks={numTracksLoaded > 0}
+                            hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             selectionMode={canvas.selector.selectionMode}
@@ -325,6 +334,7 @@ export default function App() {
                             dataUrl={dataUrl}
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
+                            removeTracksUponNewData={removeTracksUponNewData}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                             trackManager={trackManager}
                         />

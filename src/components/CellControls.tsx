@@ -10,6 +10,7 @@ interface CellControlsProps {
     clearTracks: () => void;
     getTrackDownloadData: () => string[][];
     numSelectedCells?: number;
+    numSelectedTracks?: number;
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
@@ -34,6 +35,9 @@ export default function CellControls(props: CellControlsProps) {
             </Box>
             <FontS>
                 <strong>{props.numSelectedCells ?? 0}</strong> cells selected
+            </FontS>
+            <FontS>
+                <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
             <label htmlFor="selection-mode-control">
