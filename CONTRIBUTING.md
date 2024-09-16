@@ -2,6 +2,8 @@
 
 Thank you for wanting to contribute! Here is information on making pull requests, reporting bugs, and licensing.
 
+**Note that this repository is an experimental prototype that is still actively undergoing updates and restructruring**
+
 ## Proposing changes
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests.
 
