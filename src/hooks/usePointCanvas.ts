@@ -144,6 +144,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
+            newCanvas.clearPointIndicesCache();
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             break;
@@ -168,13 +169,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.ADD_SELECTED_POINT_IDS: {
             newCanvas.pointBrightness = 0.8;
-            // newCanvas.resetPointColors();
-            newCanvas.highlightPoints(action.selectedPointIndices);
+            newCanvas.resetPointColors();
+            // newCanvas.highlightPoints(action.selectedPointIndices);
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
             newCanvas.selectedPointIds = newSelectedPointIds;
+            newCanvas.highlightPoints(action.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:
