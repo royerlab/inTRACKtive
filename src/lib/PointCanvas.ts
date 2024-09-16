@@ -26,6 +26,9 @@ import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
+import config from "../../CONFIG.ts";
+const pointSize = config.settings.point_size;
+
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
     threeTrack: Track;
@@ -314,7 +317,7 @@ export class PointCanvas {
             if (num == 4) {
                 sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
             } else {
-                sizes.setX(i, 30);
+                sizes.setX(i, pointSize);
             }
         }
         positions.needsUpdate = true;

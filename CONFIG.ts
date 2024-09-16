@@ -18,7 +18,9 @@ const config = {
         // Maximum number of cells a user can select without getting a warning
         max_num_selected_cells: 100,
         // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno
-        colormap_tracks: "viridis-inferno"
+        colormap_tracks: "viridis-inferno",
+        // Point size (arbitrary units)
+        point_size: 30
     }
 }
 
