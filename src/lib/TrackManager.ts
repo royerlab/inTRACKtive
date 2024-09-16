@@ -1,6 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
-export let numberOfValuesPerPoint = 3; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
+import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
+export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 class SparseZarrArray {
     store: string;
@@ -145,35 +145,21 @@ export class TrackManager {
 export async function loadTrackManager(url: string) {
     let trackManager;
     try {
-        // initialize variables
-        let pathName = "...";
-        let numValues = 0;
-
-        // very suboptimal way of checking whether the zarr store has a path "points" or "points_with_radius":
-        try {
-            await openArray({
-                store: url,
-                path: "points",
-                mode: "r",
-            });
-            pathName = "points";
-            numValues = 3;
-            console.log("succeeded - points loaded");
-        } catch (error) {
-            pathName = "points_with_radius";
-            numValues = 4;
-            console.log("not succeeded - point_with_radius loaded");
-        }
-
-        // set the global variable 'numberOfValuesPerPoint' to either 3 or 4, dependent on the data
-        numberOfValuesPerPoint = numValues;
-
-        // load the actual points, dependent on "pathName"
         const points = await openArray({
             store: url,
-            path: pathName,
+            path: "points",
             mode: "r",
         });
+
+        // load the zarr metadata (to know is radius is included)
+        try {
+            const store = new HTTPStore(url);
+            const zattrsResponse = await store.getItem("points/.zattrs");
+            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            numberOfValuesPerPoint = zattrs["values_per_point"];
+        } catch (error) {
+            numberOfValuesPerPoint = 3;
+        }
 
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);

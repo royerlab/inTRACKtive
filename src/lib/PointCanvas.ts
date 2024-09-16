@@ -312,12 +312,10 @@ export class PointCanvas {
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
             if (num == 4) {
-                sizes.setX(i, 28 * data[4 * i + 3]);
+                sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
             } else {
                 sizes.setX(i, 30);
             }
-            // factor of 21 used to match the desired size of the points
-            // console.log("plotted point %d on (%d,%d,%d) with size %d (=21 * %d)", i,data[4 * i], data[4 * i + 1], data[4 * i + 2],11*data[4 * i + 3],data[4 * i + 3]);
         }
         positions.needsUpdate = true;
         sizes.needsUpdate = true;
