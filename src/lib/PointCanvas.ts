@@ -25,7 +25,6 @@ import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
-import { cache } from "@emotion/css";
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -236,9 +235,9 @@ export class PointCanvas {
 
     private createCacheKey(): number {
         let hash = 0;
-        const trackIds = Array.from(this.tracks.keys()).join(',');
+        const trackIds = Array.from(this.tracks.keys()).join(",");
         const keyString = `${this.curTime}:${trackIds}`;
-        
+
         for (let i = 0; i < keyString.length; i++) {
             const char = keyString.charCodeAt(i);
             hash = (hash << 5) - hash + char;
@@ -357,7 +356,7 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
-        console.log('removeAllTracks!')
+        console.log("removeAllTracks!");
         this.selectedPointIds = new Set();
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();
