@@ -174,6 +174,7 @@ export default function App() {
                         // adding the track *in* the dispatcher creates issues with duplicate fetching
                         // but we refresh so the selected/loaded count is updated
                         canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                        canvas.clearPointIndicesCache;
                         dispatchCanvas({ type: ActionType.REFRESH });
                     });
                 });

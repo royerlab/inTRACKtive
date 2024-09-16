@@ -1,14 +1,14 @@
 import {
-    AdditiveBlending,
     AxesHelper,
     BufferGeometry,
     Color,
     Float32BufferAttribute,
     FogExp2,
+    NormalBlending,
     PerspectiveCamera,
     Points,
-    PointsMaterial,
     Scene,
+    ShaderMaterial,
     SRGBColorSpace,
     TextureLoader,
     Vector2,
@@ -23,6 +23,10 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
+import { numberOfValuesPerPoint } from "./TrackManager";
+
+import config from "../../CONFIG.ts";
+const pointSize = config.settings.point_size;
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -51,6 +55,7 @@ export class PointCanvas {
     readonly fetchedRootTrackIds = new Set<number>();
     // Needed to skip fetches for point IDs that been selected.
     readonly fetchedPointIds = new Set<number>();
+    selectedPointIndices: number[] = [];
 
     // All the point IDs that have been selected.
     // PointCanvas.selector.selection is the transient array of selected
@@ -67,6 +72,7 @@ export class PointCanvas {
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
+    private pointIndicesCache: Map<number, number[]> = new Map();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -80,16 +86,44 @@ export class PointCanvas {
         );
 
         const pointsGeometry = new BufferGeometry();
-        const pointsMaterial = new PointsMaterial({
-            size: 16.0,
-            map: new TextureLoader().load("/spark1.png"),
-            vertexColors: true,
-            blending: AdditiveBlending,
-            depthTest: true,
-            alphaTest: 0.1,
-            transparent: true,
+        const pointVertexShader = `
+            attribute float size;
+            attribute vec3 color; //Declare the color attribute
+            varying vec3 vColor;
+
+            void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * (300.0 / -mvPosition.z); // Adjust scaling factor
+            gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+        const pointFragmentShader = `
+            varying vec3 vColor;
+            uniform sampler2D pointTexture;
+
+            void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+            gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+            if (gl_FragColor.a < .5) discard;
+            }
+        `;
+
+        const shaderMaterial = new ShaderMaterial({
+            uniforms: {
+                color: { value: new Color(0xffffff) },
+                pointTexture: { value: new TextureLoader().load("/spark1.png") },
+            },
+            vertexShader: pointVertexShader,
+            fragmentShader: pointFragmentShader,
+
+            blending: NormalBlending,
+            depthTest: true, // true
+            // alphaTest: 0.1, //no effect
+            depthWrite: true, // true
+            transparent: false, // false
         });
-        this.points = new Points(pointsGeometry, pointsMaterial);
+        this.points = new Points(pointsGeometry, shaderMaterial);
 
         this.scene.add(new AxesHelper(128));
         this.scene.add(this.points);
@@ -101,7 +135,7 @@ export class PointCanvas {
             new Vector2(width, height), // resolution
             0.4, // strength
             0, // radius
-            0, // threshold
+            0.2, // threshold
         );
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
@@ -165,6 +199,47 @@ export class PointCanvas {
         this.controls.update();
     };
 
+    updateSelectedPointIndices() {
+        const cacheKey = this.createCacheKey();
+
+        // Check if the result is already cached
+        if (this.pointIndicesCache.has(cacheKey)) {
+            this.selectedPointIndices = this.pointIndicesCache.get(cacheKey)!;
+            this.highlightPoints(this.selectedPointIndices);
+            return;
+        }
+
+        // If not cached: find selectedPointIndices
+        const idOffset = this.curTime * this.maxPointsPerTimepoint;
+        this.selectedPointIndices = [];
+        for (const track of this.tracks.values()) {
+            if (this.curTime < track.threeTrack.startTime || this.curTime > track.threeTrack.endTime) continue;
+            const timeIndex = this.curTime - track.threeTrack.startTime;
+            const pointId = track.threeTrack.pointIds[timeIndex];
+            this.selectedPointIndices.push(pointId - idOffset);
+        }
+
+        this.pointIndicesCache.set(cacheKey, this.selectedPointIndices);
+        this.highlightPoints(this.selectedPointIndices);
+    }
+
+    private createCacheKey(): number {
+        let hash = 0;
+        const trackIds = Array.from(this.tracks.keys()).join(",");
+        const keyString = `${this.curTime}:${trackIds}`;
+
+        for (let i = 0; i < keyString.length; i++) {
+            const char = keyString.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return hash;
+    }
+
+    clearPointIndicesCache() {
+        this.pointIndicesCache.clear();
+    }
+
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
@@ -211,18 +286,29 @@ export class PointCanvas {
         if (!geometry.hasAttribute("color") || geometry.getAttribute("color").count !== maxPointsPerTimepoint) {
             geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(3 * maxPointsPerTimepoint), 3));
         }
+        if (!geometry.hasAttribute("size") || geometry.getAttribute("size").count !== maxPointsPerTimepoint) {
+            geometry.setAttribute("size", new Float32BufferAttribute(new Float32Array(maxPointsPerTimepoint), 1));
+        }
         // Initialize all the colors immediately.
         this.resetPointColors();
     }
 
     setPointsPositions(data: Float32Array) {
-        const numPoints = data.length / 3;
+        const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
+        const sizes = geometry.getAttribute("size");
+        const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[3 * i], data[3 * i + 1], data[3 * i + 2]);
+            positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
+            if (num == 4) {
+                sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
+            } else {
+                sizes.setX(i, pointSize);
+            }
         }
         positions.needsUpdate = true;
+        sizes.needsUpdate = true;
         geometry.setDrawRange(0, numPoints);
         this.points.geometry.computeBoundingSphere();
     }
@@ -258,6 +344,7 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
+        console.log("removeAllTracks!");
         this.selectedPointIds = new Set();
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();

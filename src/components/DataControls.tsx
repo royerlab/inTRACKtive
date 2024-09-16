@@ -94,13 +94,15 @@ export default function DataControls(props: DataControlsProps) {
                 />
             </Tooltip>
             <Tooltip title="Copy a shareable URL for this view to your clipboard">
-                <ButtonIcon
-                    icon="Share"
-                    sdsSize="large"
-                    sdsType="secondary"
-                    disabled={!props.trackManager}
-                    onClick={copyShareableUrlToClipBoard}
-                />
+                <span>
+                    <ButtonIcon
+                        icon="Share"
+                        sdsSize="large"
+                        sdsType="secondary"
+                        disabled={!props.trackManager}
+                        onClick={copyShareableUrlToClipBoard}
+                    />
+                </span>
             </Tooltip>
             <Snackbar
                 open={copyUrlSnackBarOpen}
