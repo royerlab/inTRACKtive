@@ -20,6 +20,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 // import { SAOPass } from 'three/addons/postprocessing/SAOPass.js';
+import { AdditiveBlending } from 'three';
 
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
@@ -87,16 +88,6 @@ export class PointCanvas {
         );
 
         const pointsGeometry = new BufferGeometry();
-        // const pointsMaterial = new PointsMaterial({
-        //     size: 100.0,
-        //     map: new TextureLoader().load("/spark1.png"),
-        //     vertexColors: true,
-        //     blending: NormalBlending,
-        //     depthTest: false,
-        //     alphaTest: 0.1,
-        //     depthWrite: true,
-        //     transparent: true,
-        // });
         const pointVertexShader = `
             attribute float size;
             attribute vec3 color; //Declare the color attribute
@@ -119,7 +110,7 @@ export class PointCanvas {
             if (gl_FragColor.a < .5) discard;
             }
         `;
-
+        
         const shaderMaterial = new ShaderMaterial({
             uniforms: {
                 color: { value: new Color(0xffffff) },
@@ -129,10 +120,10 @@ export class PointCanvas {
             fragmentShader: pointFragmentShader,
 
             blending: NormalBlending,
-            depthTest: true,
+            depthTest: true, //true
             // alphaTest: 0.1, //no effect
-            depthWrite: true, // true by default
-            transparent: false,
+            depthWrite: true, // true
+            transparent: false, //false
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
@@ -144,7 +135,7 @@ export class PointCanvas {
         const renderModel = new RenderPass(this.scene, this.camera);
         this.bloomPass = new UnrealBloomPass(
             new Vector2(width, height), // resolution
-            0.4, // strength
+            0., // strength
             0, // radius
             0.2, // threshold
         );
