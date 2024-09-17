@@ -65,7 +65,7 @@ export default function CellControls(props: CellControlsProps) {
                 min={20}
                 max={50}
                 valueLabelDisplay="on"
-                valueLabelFormat={(value) => `${Math.floor(value)}%`}
+                valueLabelFormat={(value) => `${Math.floor(value)}`}
                 onChange={(_, value) => {
                     props.setPointSize(value as number);
                 }}

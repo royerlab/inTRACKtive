@@ -294,8 +294,16 @@ export class PointCanvas {
         this.resetPointColors();
     }
 
-    setSizes() {
+    setPointsSizes() {
         console.log("size %d", this.pointSize);
+
+        const geometry = this.points.geometry;
+        const sizes = geometry.getAttribute("size");
+
+        for (let i = 0; i < sizes.count; i++) {
+            sizes.setX(i, this.pointSize);
+        }
+        sizes.needsUpdate = true;
     }
 
     setPointsPositions(data: Float32Array) {

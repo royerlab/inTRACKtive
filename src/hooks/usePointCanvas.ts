@@ -146,7 +146,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.POINT_SIZES:
             newCanvas.pointSize = action.pointSize;
-            newCanvas.setSizes();
+            newCanvas.setPointsSizes();
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
