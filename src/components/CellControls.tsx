@@ -14,6 +14,8 @@ interface CellControlsProps {
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
+    pointSize: number;
+    setPointSize: (value: number) => void;
     selectionMode: PointSelectionMode;
     setSelectionMode: (value: PointSelectionMode) => void;
 }
@@ -53,6 +55,22 @@ export default function CellControls(props: CellControlsProps) {
                     value={props.selectionMode}
                 />
             </Box>
+            <label htmlFor="points-sizes-slider">
+                <ControlLabel id="input-slider-points-sizes-slider">Point Size</ControlLabel>
+            </label>
+            <InputSlider
+                id="points-sizes-slider"
+                aria-labelledby="input-slider-points-sizes-slider"
+                // disabled={!props.numSelectedCells}
+                min={20}
+                max={50}
+                valueLabelDisplay="on"
+                valueLabelFormat={(value) => `${Math.floor(value)}%`}
+                onChange={(_, value) => {
+                    props.setPointSize(value as number);
+                }}
+                value={props.pointSize}
+            />
             <label htmlFor="points-brightness-slider">
                 <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
             </label>

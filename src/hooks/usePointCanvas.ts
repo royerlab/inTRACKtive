@@ -10,6 +10,7 @@ enum ActionType {
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
+    POINT_SIZES = "POINT_SIZES",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -39,6 +40,11 @@ interface InitPointsGeometry {
 interface PointBrightness {
     type: ActionType.POINT_BRIGHTNESS;
     brightness: number;
+}
+
+interface PointSizes {
+    type: ActionType.POINT_SIZES;
+    pointSize: number;
 }
 
 interface PointsPositions {
@@ -98,6 +104,7 @@ type PointCanvasAction =
     | CurTime
     | InitPointsGeometry
     | PointBrightness
+    | PointSizes
     | PointsPositions
     | Refresh
     | RemoveAllTracks
@@ -136,6 +143,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            break;
+        case ActionType.POINT_SIZES:
+            newCanvas.pointSize = action.pointSize;
+            newCanvas.setSizes();
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);

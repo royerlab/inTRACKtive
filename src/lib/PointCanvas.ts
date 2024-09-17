@@ -69,6 +69,7 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
+    pointSize = 30;
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -291,6 +292,10 @@ export class PointCanvas {
         }
         // Initialize all the colors immediately.
         this.resetPointColors();
+    }
+
+    setSizes() {
+        console.log("size %d", this.pointSize);
     }
 
     setPointsPositions(data: Float32Array) {
