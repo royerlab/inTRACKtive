@@ -295,8 +295,6 @@ export class PointCanvas {
     }
 
     setPointsSizes() {
-        console.log("size %d", this.pointSize);
-
         const geometry = this.points.geometry;
         const sizes = geometry.getAttribute("size");
 
