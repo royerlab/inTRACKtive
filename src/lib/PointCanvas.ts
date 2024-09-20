@@ -304,8 +304,8 @@ export class PointCanvas {
         sizes.needsUpdate = true;
 
         for (const track of this.tracks.values()) {
-            track.threeTrack.material.trackwidth = this.pointSize / 100; //initial size of 30 > trackWidth = 0.3
-            track.threeTrack.material.highlightwidth = this.pointSize / 15; 
+            track.threeTrack.material.trackwidth = this.pointSize / 100;
+            track.threeTrack.material.highlightwidth = this.pointSize / 15;
         }
     }
 
@@ -336,7 +336,7 @@ export class PointCanvas {
             return null;
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime, this.pointSize/100, this.pointSize/15);
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
@@ -344,7 +344,7 @@ export class PointCanvas {
 
     updateAllTrackHighlights() {
         this.tracks.forEach((track) => {
-            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime, this.pointSize/100, this.pointSize/15);
         });
     }
 
