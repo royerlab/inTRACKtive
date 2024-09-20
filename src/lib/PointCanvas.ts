@@ -26,7 +26,7 @@ import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
 import config from "../../CONFIG.ts";
-const initial_pointSize = config.settings.point_size;
+const initialPointSize = config.settings.point_size;
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -69,7 +69,7 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
-    pointSize = initial_pointSize;
+    pointSize = initialPointSize;
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -336,7 +336,14 @@ export class PointCanvas {
             return null;
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime, this.pointSize/100, this.pointSize/15);
+        threeTrack.updateAppearance(
+            this.showTracks,
+            this.showTrackHighlights,
+            this.minTime,
+            this.maxTime,
+            this.pointSize / 100,
+            this.pointSize / 15,
+        );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
@@ -344,7 +351,14 @@ export class PointCanvas {
 
     updateAllTrackHighlights() {
         this.tracks.forEach((track) => {
-            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime, this.pointSize/100, this.pointSize/15);
+            track.threeTrack.updateAppearance(
+                this.showTracks,
+                this.showTrackHighlights,
+                this.minTime,
+                this.maxTime,
+                this.pointSize / 100,
+                this.pointSize / 15,
+            );
         });
     }
 

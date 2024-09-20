@@ -58,23 +58,23 @@ export default function CellControls(props: CellControlsProps) {
             <label htmlFor="points-sizes-slider">
                 <ControlLabel id="input-slider-points-sizes-slider">Point Size</ControlLabel>
             </label>
-            <Tooltip 
-            title="Point size set by data"
-            disableHoverListener={numberOfValuesPerPoint === 3} // Tooltip only works when the slider is disabled
+            <Tooltip
+                title="Point size set by data"
+                disableHoverListener={numberOfValuesPerPoint === 3} // Tooltip only works when the slider is disabled
             >
                 <div>
                     <InputSlider
-                    id="points-sizes-slider"
-                    aria-labelledby="input-slider-points-sizes-slider"
-                    disabled={!(numberOfValuesPerPoint === 3)}
-                    min={20}
-                    max={50}
-                    valueLabelDisplay="on"
-                    valueLabelFormat={(value) => `${Math.floor(value)}`}
-                    onChange={(_, value) => {
-                        props.setPointSize(value as number);
-                    }}
-                    value={props.pointSize}
+                        id="points-sizes-slider"
+                        aria-labelledby="input-slider-points-sizes-slider"
+                        disabled={!(numberOfValuesPerPoint === 3)}
+                        min={20}
+                        max={50}
+                        valueLabelDisplay="on"
+                        valueLabelFormat={(value) => `${Math.floor(value)}`}
+                        onChange={(_, value) => {
+                            props.setPointSize(value as number);
+                        }}
+                        value={props.pointSize}
                     />
                 </div>
             </Tooltip>

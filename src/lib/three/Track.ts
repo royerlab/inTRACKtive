@@ -65,7 +65,14 @@ export class Track extends Mesh {
         return track;
     }
 
-    updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number, trackWidth: number, highlightWidth: number) {
+    updateAppearance(
+        showTrack: boolean,
+        showHighlight: boolean,
+        minTime: number,
+        maxTime: number,
+        trackWidth: number,
+        highlightWidth: number,
+    ) {
         this.material.showtrack = showTrack;
         this.material.showhighlight = showHighlight;
         this.material.minTime = minTime;
