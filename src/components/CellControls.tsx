@@ -68,7 +68,7 @@ export default function CellControls(props: CellControlsProps) {
                         aria-labelledby="input-slider-points-sizes-slider"
                         disabled={!(numberOfValuesPerPoint === 3)}
                         min={20}
-                        max={50}
+                        max={100}
                         valueLabelDisplay="on"
                         valueLabelFormat={(value) => `${Math.floor(value)}`}
                         onChange={(_, value) => {
