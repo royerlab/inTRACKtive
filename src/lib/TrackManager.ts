@@ -118,17 +118,7 @@ export class TrackManager {
         }
 
         // scale the data to fit in the viewer (center around 370, extend of 100)
-        const array = points.subarray(0, endIndex);
-        const step = 4;
-        const meanX = this.scaleSettings.meanX ?? 0;
-        const meanY = this.scaleSettings.meanY ?? 0;
-        const meanZ = this.scaleSettings.meanX ?? 0;
-        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
-        for (let i = 0; i < array.length; i += step) {
-            array[i] = ((array[i] - meanZ) / extendXYZ) * 100 + 370;
-            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * 100 + 370;
-            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * 100 + 370;
-        }
+        const array = this.applyScale(points.subarray(0, endIndex), numberOfValuesPerPoint);
         return array;
     }
 
@@ -149,11 +139,13 @@ export class TrackManager {
         }
 
         // flatten the resulting n x 3 array in to a 1D [xyzxyzxyz...] array
-        const flatPoints = new Float32Array(points.length * 3);
+        let flatPoints = new Float32Array(points.length * 3);
         for (let i = 0; i < points.length; i++) {
             flatPoints.set(points[i], i * 3);
         }
 
+        // scale the data to fit in the viewer (center around 370, extend of 100)
+        flatPoints = this.applyScale(flatPoints, 3);
         return [flatPoints, pointIDs];
     }
 
@@ -177,6 +169,19 @@ export class TrackManager {
         } else {
             return pointSizeDefault;
         }
+    }
+
+    applyScale(array: Float32Array, stride: number): Float32Array {
+        const meanX = this.scaleSettings.meanX ?? 0;
+        const meanY = this.scaleSettings.meanY ?? 0;
+        const meanZ = this.scaleSettings.meanX ?? 0;
+        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
+        for (let i = 0; i < array.length; i += stride) {
+            array[i] = ((array[i] - meanZ) / extendXYZ) * 100 + 370;
+            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * 100 + 370;
+            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * 100 + 370;
+        }
+        return array;
     }
 }
 

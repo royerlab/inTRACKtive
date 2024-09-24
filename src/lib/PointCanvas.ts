@@ -303,7 +303,7 @@ export class PointCanvas {
             positions.setXYZ(i, xPos, yPos, zPos);
 
             if (num == 4) {
-                sizes.setX(i, pointSize * data[num * i + 3]); // factor of 14 used to match the desired size of the points (using center 370, extend 100)
+                sizes.setX(i, pointSize * data[num * i + 3]);
             } else {
                 sizes.setX(i, pointSize);
             }
