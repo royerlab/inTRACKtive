@@ -300,9 +300,13 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
         const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
+            const xPos = data[num * i];
+            const yPos = data[num * i + 1];
+            const zPos = data[num * i + 2];
+            positions.setXYZ(i, xPos, yPos, zPos);
+
             if (num == 4) {
-                sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
+                sizes.setX(i, 14 * data[num * i + 3]); // factor of 14 used to match the desired size of the points (using center 370, extend 100)
             } else {
                 sizes.setX(i, pointSize);
             }

@@ -37,6 +37,14 @@ class SparseZarrArray {
     }
 }
 
+// class that contains the settings to "scale" the data, i.e., scale and center the dataset to fit nicely in the viewer
+class scaleSettings {
+    meanX?: number;
+    meanY?: number;
+    meanZ?: number;
+    extendXYZ?: number;
+}
+
 export async function openSparseZarrArray(store: string, groupPath: string, hasData = true): Promise<SparseZarrArray> {
     // TODO: check for sparse_format in group .zattrs
     const indptr = await openArray({
@@ -70,6 +78,7 @@ export class TrackManager {
     tracksToTracks: SparseZarrArray;
     numTimes: number;
     maxPointsPerTimepoint: number;
+    scaleSettings: scaleSettings;
 
     constructor(
         store: string,
@@ -77,6 +86,7 @@ export class TrackManager {
         pointsToTracks: SparseZarrArray,
         tracksToPoints: SparseZarrArray,
         tracksToTracks: SparseZarrArray,
+        scaleSettings: scaleSettings,
     ) {
         this.store = store;
         this.points = points;
@@ -85,6 +95,7 @@ export class TrackManager {
         this.tracksToTracks = tracksToTracks;
         this.numTimes = points.shape[0];
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
+        this.scaleSettings = scaleSettings;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -102,7 +113,20 @@ export class TrackManager {
             console.error("invalid points - %d not divisible by %d", endIndex, numberOfValuesPerPoint);
             endIndex -= endIndex % numberOfValuesPerPoint;
         }
-        return points.subarray(0, endIndex);
+
+        // scale the data to fit in the viewer (center around 370, extend of 100)
+        const array = points.subarray(0, endIndex);
+        const step = 4;
+        const meanX = this.scaleSettings.meanX ?? 0;
+        const meanY = this.scaleSettings.meanY ?? 0;
+        const meanZ = this.scaleSettings.meanX ?? 0;
+        const extendXYZ = this.scaleSettings.extendXYZ ?? 1;
+        for (let i = 0; i < array.length; i += step) {
+            array[i] = ((array[i] - meanZ) / extendXYZ) * 100 + 370;
+            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * 100 + 370;
+            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * 100 + 370;
+        }
+        return array;
     }
 
     async fetchTrackIDsForPoint(pointID: number): Promise<Int32Array> {
@@ -152,11 +176,17 @@ export async function loadTrackManager(url: string) {
         });
 
         // load the zarr metadata (to know is radius is included)
+        const scaleSettings: scaleSettings = {};
         try {
             const store = new HTTPStore(url);
             const zattrsResponse = await store.getItem("points/.zattrs");
             const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
             numberOfValuesPerPoint = zattrs["values_per_point"];
+
+            scaleSettings.meanX = zattrs["mean_x"];
+            scaleSettings.meanY = zattrs["mean_y"];
+            scaleSettings.meanZ = zattrs["mean_z"];
+            scaleSettings.extendXYZ = zattrs["extend_xyz"];
         } catch (error) {
             numberOfValuesPerPoint = 3;
         }
@@ -166,7 +196,7 @@ export async function loadTrackManager(url: string) {
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
         // make trackManager, and reset "maxPointsPerTimepoint", because tm constructor does points/3
-        trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks);
+        trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks, scaleSettings);
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
         }

@@ -245,6 +245,16 @@ export default function App() {
             }
         });
 
+        // Sort the trackData by track ID (first column) and then by time (second column)
+        trackData.sort((a, b) => {
+            // First compare by trackID (a[0], b[0])
+            if (a[0] !== b[0]) {
+                return a[0] - b[0];
+            }
+            // If trackID is the same, compare by time (a[1], b[1])
+            return a[1] - b[1];
+        });
+
         // Round to 3 decimal places
         const formatter = Intl.NumberFormat("en-US", { useGrouping: false });
         return trackData.map((row) => row.map(formatter.format));
