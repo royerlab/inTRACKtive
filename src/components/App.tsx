@@ -119,6 +119,7 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
+                const pointSize = trackManager.getPointSize();
                 console.debug("got %d points for time %d", data.length / 3, time);
 
                 if (ignore) {
@@ -129,7 +130,7 @@ export default function App() {
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, pointSize: pointSize });
             };
             getPoints(canvas.curTime);
         } else {

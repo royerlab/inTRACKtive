@@ -2,6 +2,9 @@
 import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
+import config from "../../CONFIG.ts";
+const pointSizeDefault = config.settings.point_size;
+
 class SparseZarrArray {
     store: string;
     groupPath: string;
@@ -120,7 +123,7 @@ export class TrackManager {
         const meanX = this.scaleSettings.meanX ?? 0;
         const meanY = this.scaleSettings.meanY ?? 0;
         const meanZ = this.scaleSettings.meanX ?? 0;
-        const extendXYZ = this.scaleSettings.extendXYZ ?? 1;
+        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
         for (let i = 0; i < array.length; i += step) {
             array[i] = ((array[i] - meanZ) / extendXYZ) * 100 + 370;
             array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * 100 + 370;
@@ -163,6 +166,17 @@ export class TrackManager {
             .get([slice(rowStartEnd[0], rowStartEnd[1])])
             .then((trackData: SparseZarrArray) => trackData.data);
         return Promise.all([lineage, trackData]);
+    }
+
+    getPointSize(): number {
+        const num = numberOfValuesPerPoint;
+        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
+
+        if (num == 4) {
+            return (27 * 100) / extendXYZ; // 27 is the factor to match actual distances in tracks.csv to distances in the viewer
+        } else {
+            return pointSizeDefault;
+        }
     }
 }
 
