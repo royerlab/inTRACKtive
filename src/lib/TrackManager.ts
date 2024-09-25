@@ -1,8 +1,10 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
+const aimExtent = 350; // extend of the rescaled data to -350:350 around the pointcloud mean position
 
 import config from "../../CONFIG.ts";
+import { ViewerState } from "./ViewerState.ts";
 const pointSizeDefault = config.settings.point_size;
 
 class SparseZarrArray {
@@ -165,7 +167,7 @@ export class TrackManager {
         const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
 
         if (num == 4) {
-            return (27 * 100) / extendXYZ; // 27 is the factor to match actual distances in tracks.csv to distances in the viewer
+            return (27 * aimExtent) / extendXYZ; // 27 is the factor to match actual distances in tracks.csv to distances in the viewer
         } else {
             return pointSizeDefault;
         }
@@ -175,11 +177,12 @@ export class TrackManager {
         const meanX = this.scaleSettings.meanX ?? 0;
         const meanY = this.scaleSettings.meanY ?? 0;
         const meanZ = this.scaleSettings.meanX ?? 0;
-        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
+        const cameraTarget = new ViewerState().cameraTarget;
+        const extendXYZ = this.scaleSettings.extendXYZ ?? aimExtent;
         for (let i = 0; i < array.length; i += stride) {
-            array[i] = ((array[i] - meanZ) / extendXYZ) * 100 + 370;
-            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * 100 + 370;
-            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * 100 + 370;
+            array[i] = ((array[i] - meanZ) / extendXYZ) * aimExtent + cameraTarget[0];
+            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * aimExtent + cameraTarget[1];
+            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * aimExtent + cameraTarget[2];
         }
         return array;
     }
