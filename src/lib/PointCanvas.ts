@@ -243,7 +243,17 @@ export class PointCanvas {
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
-        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
+        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace); // pink
+        for (const i of points) {
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+    }
+
+    highlightPreviewPoints(points: number[]) {
+        const colorAttribute = this.points.geometry.getAttribute("color");
+        const color = new Color();
+        color.setRGB(0.9, 0.9, 0.0, SRGBColorSpace); // yellow
         for (const i of points) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
@@ -255,7 +265,7 @@ export class PointCanvas {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.setRGB(0, 0.8, 0.8, SRGBColorSpace); // cyan/turquoise
         color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
@@ -344,8 +354,8 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
-        console.log("removeAllTracks!");
         this.selectedPointIds = new Set();
+        this.selectedPointIndices = [];
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();
         for (const trackID of this.tracks.keys()) {
