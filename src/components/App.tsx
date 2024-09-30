@@ -30,7 +30,7 @@ clearUrlHash();
 function isMobileDevice(): boolean {
     return /Mobi|Android|iPad|iPhone/i.test(navigator.userAgent);
 }
-export const isMobile = !isMobileDevice();
+export const isMobile = isMobileDevice();
 console.log("isMobileDevice", isMobile);
 
 const drawerWidth = 256;
