@@ -28,8 +28,21 @@ console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
 function isMobileDevice(): boolean {
-    return /Mobi|Android|iPad|iPhone/i.test(navigator.userAgent);
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+    // Detect Android, iPhone, or iPod
+    if (/Mobi|Android|iPhone|iPod/i.test(ua)) {
+        return true;
+    }
+
+    // Detect iPads in iPadOS, where Safari identifies the device as a Mac
+    if (/Macintosh/i.test(ua) && "ontouchend" in document) {
+        return true;
+    }
+
+    return false;
 }
+
 export const isMobile = isMobileDevice();
 window.alert("Mobile device detected: " + isMobile);
 console.log("isMobileDevice", isMobile);
