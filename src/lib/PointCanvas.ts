@@ -25,6 +25,7 @@ import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
+import { isMobile } from "@/components/App.tsx";
 import config from "../../CONFIG.ts";
 const pointSize = config.settings.point_size;
 
@@ -149,7 +150,11 @@ export class PointCanvas {
 
         // Set up selection
         this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
-        this.setSelectionMode(PointSelectionMode.BOX);
+        if (isMobile) {
+            this.setSelectionMode(PointSelectionMode.SPHERE);
+        } else {
+            this.setSelectionMode(PointSelectionMode.BOX);
+        }
     }
 
     shallowCopy(): PointCanvas {

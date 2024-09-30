@@ -27,6 +27,12 @@ const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
+function isMobileDevice(): boolean {
+    return /Mobi|Android|iPad|iPhone/i.test(navigator.userAgent);
+}
+export const isMobile = !isMobileDevice();
+console.log("isMobileDevice", isMobile);
+
 const drawerWidth = 256;
 const playbackFPS = 16;
 const playbackIntervalMs = 1000 / playbackFPS;
@@ -302,6 +308,7 @@ export default function App() {
                             setSelectionMode={(value: PointSelectionMode) => {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
+                            isMobile={isMobile}
                         />
                     </Box>
                     <Divider />

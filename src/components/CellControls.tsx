@@ -16,6 +16,7 @@ interface CellControlsProps {
     setPointBrightness: (value: number) => void;
     selectionMode: PointSelectionMode;
     setSelectionMode: (value: PointSelectionMode) => void;
+    isMobile: boolean;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -24,6 +25,20 @@ export default function CellControls(props: CellControlsProps) {
         { icon: "Starburst", tooltipText: "Spherical cursor", value: PointSelectionMode.SPHERICAL_CURSOR },
         { icon: "Globe", tooltipText: "Sphere", value: PointSelectionMode.SPHERE },
     ];
+
+    // Intercept onChange of selection buttons to prevent the first two buttons from being selected on mobile devices
+    const handleSegmentedControlChange = (_e: React.MouseEvent<HTMLElement>, newValue: PointSelectionMode | null) => {
+        // If isMobile is true and the selected value corresponds to the first or second button, do nothing
+        if (
+            props.isMobile &&
+            (newValue === PointSelectionMode.BOX || newValue === PointSelectionMode.SPHERICAL_CURSOR)
+        ) {
+            window.alert("This selection mode is not available on mobile devices.");
+            console.log("Mobile device detected, preventing selection of box or spherical cursor");
+            return; // Prevent selection
+        }
+        props.setSelectionMode(newValue!); // Otherwise, update the selection mode
+    };
 
     return (
         <Stack spacing="1em">
@@ -47,9 +62,10 @@ export default function CellControls(props: CellControlsProps) {
                 <SegmentedControl
                     id="selection-mode-control"
                     buttonDefinition={buttonDefinition}
-                    onChange={(_e, v) => {
-                        props.setSelectionMode(v);
-                    }}
+                    onChange={handleSegmentedControlChange}
+                    // onChange={(_e, v) => {
+                    //     props.setSelectionMode(v);
+                    // }}
                     value={props.selectionMode}
                 />
             </Box>
