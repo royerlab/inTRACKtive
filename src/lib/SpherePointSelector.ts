@@ -15,6 +15,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/Addons.js";
 
 import { SelectionChanged } from "@/lib/PointSelector";
+import { ViewerState } from "./ViewerState.ts";
 
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
@@ -63,6 +64,9 @@ export class SpherePointSelector {
 
         this.draggingChanged = this.draggingChanged.bind(this);
         this.cursorControl.addEventListener("dragging-changed", this.draggingChanged);
+
+        const cameraTarget = new ViewerState().cameraTarget;
+        this.cursor.position.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
     }
 
     dispose() {

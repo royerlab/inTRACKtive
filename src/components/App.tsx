@@ -43,7 +43,6 @@ function isMobileDevice(): boolean {
     return false;
 }
 export const isMobile = isMobileDevice();
-window.alert("Mobile device detected: " + isMobile);
 console.log("isMobileDevice", isMobile);
 
 const drawerWidth = 256;
