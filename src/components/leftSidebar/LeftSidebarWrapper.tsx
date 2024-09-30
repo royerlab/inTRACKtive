@@ -28,7 +28,7 @@ export default function LeftSidebarWrapper({
 }: LeftSidebarWrapperProps) {
     return (
         <>
-            {hasTracks ? (
+            {hasTracks && (
                 <TrackControls
                     trackManager={trackManager}
                     trackHighlightLength={trackHighlightLength}
@@ -38,9 +38,8 @@ export default function LeftSidebarWrapper({
                     setShowTrackHighlights={setShowTrackHighlights}
                     setTrackHighlightLength={setTrackHighlightLength}
                 />
-            ) : (
-                <ControlInstructions selectionMode={selectionMode} />
             )}
+            <ControlInstructions selectionMode={selectionMode} />
         </>
     );
 }
