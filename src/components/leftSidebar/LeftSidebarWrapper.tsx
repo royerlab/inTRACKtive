@@ -39,7 +39,7 @@ export default function LeftSidebarWrapper({
                     setTrackHighlightLength={setTrackHighlightLength}
                 />
             )}
-            <ControlInstructions selectionMode={selectionMode} />
+            {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} />}
         </>
     );
 }
