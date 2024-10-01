@@ -43,14 +43,14 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
     const isSmallScreen = window.screen.width <= 768;
 
     // Determine if it's a phone, tablet, or desktop
-    // const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
-    // const isTablet = isiPad || isAndroidTablet || (!isPhone && isSmallScreen && window.screen.width > 600); // Optional: Add a threshold for larger screens
-    // const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
+    const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
+    const isTablet = isiPad || isAndroidTablet || (!isPhone && isSmallScreen && window.screen.width > 600); // Optional: Add a threshold for larger screens
+    const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
 
-    const isPhone = false;
-    const isTablet = true; 
-    const isDesktop = false; // It's a desktop if it's neither a phone nor a tablet
-    console.log("isPhone: ", isPhone);
+    // manually asign labels for debugging
+    // const isPhone = false;
+    // const isTablet = true;
+    // const isDesktop = false;
 
     return {
         isPhone: isPhone,
@@ -446,8 +446,6 @@ export default function App() {
                     />
                 </Box>
             </Box> */}
-        
-
 
             {/* <Box
                 ref={sceneDivRef}
@@ -485,7 +483,7 @@ export default function App() {
                         dispatchCanvas({ type: ActionType.CUR_TIME, curTime });
                     }}
                 />
-            </Box> */} 
+            </Box> */}
 
             <Box
                 sx={{
@@ -544,7 +542,6 @@ export default function App() {
                     />
                 </Box>
             </Box>
-
         </Box>
     );
 }
