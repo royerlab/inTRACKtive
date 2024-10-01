@@ -23,8 +23,8 @@ interface CellControlsProps {
 export default function CellControls(props: CellControlsProps) {
     const buttonDefinition: SingleButtonDefinition[] = [
         { icon: "Cube", tooltipText: "Box", value: PointSelectionMode.BOX },
-        { icon: "Starburst", tooltipText: "Spherical cursor", value: PointSelectionMode.SPHERICAL_CURSOR },
-        { icon: "Globe", tooltipText: "Sphere", value: PointSelectionMode.SPHERE },
+        { icon: "Starburst", tooltipText: "Sphere", value: PointSelectionMode.SPHERICAL_CURSOR },
+        { icon: "Globe", tooltipText: "Adjustable sphere", value: PointSelectionMode.SPHERE },
     ];
 
     // Intercept onChange of selection buttons to prevent the first two buttons from being selected on mobile devices
@@ -64,9 +64,6 @@ export default function CellControls(props: CellControlsProps) {
                     id="selection-mode-control"
                     buttonDefinition={buttonDefinition}
                     onChange={handleSegmentedControlChange}
-                    // onChange={(_e, v) => {
-                    //     props.setSelectionMode(v);
-                    // }}
                     value={props.selectionMode}
                 />
             </Box>
