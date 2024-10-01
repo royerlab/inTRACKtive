@@ -68,7 +68,7 @@ export default function CellControls(props: CellControlsProps) {
                 />
             </Box>
             <Box>
-                {props.isMobile && (
+                {props.isMobile && props.selectionMode === PointSelectionMode.SPHERE && (
                     <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
                         Select cells
                     </Button>
