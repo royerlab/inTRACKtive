@@ -295,28 +295,7 @@ export default function App() {
         return trackData.map((row) => row.map(formatter.format));
     };
 
-    // Resize the canvas dynamically based on window size
-    const updateCanvasSize = useCallback(() => {
-        const sceneElement = sceneDivRef.current;
-        if (sceneElement) {
-            const windowHeight = window.innerHeight;
-            const playbackHeight = 100; // Assume playback controls take around 100px of height
-            const availableHeight = windowHeight - playbackHeight;
-
-            sceneElement.style.height = `${availableHeight}px`; // Set the canvas height dynamically
-        }
-    }, [sceneDivRef]);
-
-    useEffect(() => {
-        window.addEventListener("resize", updateCanvasSize);
-        updateCanvasSize(); // Call it initially
-        return () => {
-            window.removeEventListener("resize", updateCanvasSize);
-        };
-    }, [updateCanvasSize]);
-
     return (
-        // <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
         <Box sx={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", overflow: "hidden" }}>
             {/* TODO: components *could* go deeper still for organization */}
             {!detectedDevice.isPhone && (
@@ -416,83 +395,9 @@ export default function App() {
                     </Box>
                 </Drawer>
             )}
-
-            {/* <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    height: "100%",
-                    overflow: "hidden",
-                }}
-            >
-                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || numLoadingTracks > 0} />
-                <Box flexGrow={0} padding="1em">
-                    <TimestampOverlay timestamp={canvas.curTime} />
-                    <ColorMap />
-                    <PlaybackControls
-                        enabled={true}
-                        autoRotate={canvas.controls.autoRotate}
-                        playing={playing}
-                        curTime={canvas.curTime}
-                        numTimes={numTimes}
-                        setAutoRotate={(autoRotate: boolean) => {
-                            dispatchCanvas({ type: ActionType.AUTO_ROTATE, autoRotate });
-                        }}
-                        setPlaying={setPlaying}
-                        setCurTime={(curTime: number) => {
-                            dispatchCanvas({ type: ActionType.CUR_TIME, curTime });
-                        }}
-                    />
-                </Box>
-            </Box> */}
-
-            {/* <Box
-                ref={sceneDivRef}
-                sx={{
-                    flexGrow: 1,
-                    width: "100%",
-                    height: "calc(100vh - 100px)", // Ensure canvas does not fill entire screen
-                    overflow: "hidden",
-                }}
-            >
-                <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
-            </Box>
-
-            {/* The playback controls */}
-            {/* <Box
-                sx={{
-                    flexGrow: 0,
-                    padding: "1em",
-                    height: "100px", // Set a fixed height for the playback controls
-                }}
-            >
-                <TimestampOverlay timestamp={canvas.curTime} />
-                <ColorMap />
-                <PlaybackControls
-                    enabled={true}
-                    autoRotate={canvas.controls.autoRotate}
-                    playing={playing}
-                    curTime={canvas.curTime}
-                    numTimes={numTimes}
-                    setAutoRotate={(autoRotate: boolean) => {
-                        dispatchCanvas({ type: ActionType.AUTO_ROTATE, autoRotate });
-                    }}
-                    setPlaying={setPlaying}
-                    setCurTime={(curTime: number) => {
-                        dispatchCanvas({ type: ActionType.CUR_TIME, curTime });
-                    }}
-                />
-            </Box> */}
-
+            {/* Box for Scene + playBackControls */}
             <Box
                 sx={{
-                    // display: "flex",
-                    // flexDirection: "column",
-                    // width: `calc(100% - ${!detectedDevice.isMobile ? drawerWidth : 0}px)`, // Adjust based on sidebar
-                    // height: "100%",
-                    // overflow: "hidden",
-                    // marginLeft: !detectedDevice.isMobile ? `${drawerWidth}px` : 0, // Add margin if sidebar exists
                     display: "flex",
                     flexDirection: "column",
                     flexGrow: 1,
@@ -501,7 +406,7 @@ export default function App() {
                     overflow: "hidden",
                 }}
             >
-                {/* The canvas (Scene component) */}
+                {/* The canvas (Scene + colormap + timestamp) */}
                 <Box
                     ref={sceneDivRef}
                     sx={{
@@ -522,7 +427,7 @@ export default function App() {
                     sx={{
                         flexGrow: 0,
                         padding: ".5em",
-                        height: "100px",
+                        height: detectedDevice.isMobile ? "150px" : "50px",
                         paddingLeft: !detectedDevice.isPhone ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
                     }}
                 >
