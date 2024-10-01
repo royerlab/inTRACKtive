@@ -418,7 +418,7 @@ export default function App() {
                     }}
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
-                    <TimestampOverlay timestamp={canvas.curTime} />
+                    {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
                     <ColorMap />
                 </Box>
 
