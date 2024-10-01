@@ -48,8 +48,8 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
     const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
 
     // manually asign labels for debugging
-    // const isPhone = false;
-    // const isTablet = true;
+    // const isPhone = true;
+    // const isTablet = false;
     // const isDesktop = false;
 
     return {

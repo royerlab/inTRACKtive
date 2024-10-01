@@ -150,8 +150,10 @@ export class PointCanvas {
 
         // Set up selection
         this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
-        if (detectedDevice.isMobile) {
+        if (detectedDevice.isTablet) {
             this.setSelectionMode(PointSelectionMode.SPHERE);
+        } else if (detectedDevice.isPhone) {
+            this.setSelectionMode(null); // no selection functionality on phone
         } else {
             this.setSelectionMode(PointSelectionMode.BOX);
         }
@@ -191,7 +193,7 @@ export class PointCanvas {
         this.controls.target.fromArray(state.cameraTarget);
     }
 
-    setSelectionMode(mode: PointSelectionMode) {
+    setSelectionMode(mode: PointSelectionMode | null) {
         this.selector.setSelectionMode(mode);
     }
 

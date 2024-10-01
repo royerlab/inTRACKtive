@@ -3,7 +3,7 @@ import { Callout } from "@czi-sds/components";
 import { PointSelectionMode } from "@/lib/PointSelector";
 
 interface ControlInstructionsProps {
-    selectionMode: PointSelectionMode;
+    selectionMode: PointSelectionMode | null;
 }
 
 export default function ControlInstructions(props: ControlInstructionsProps) {

@@ -14,7 +14,7 @@ interface CellControlsProps {
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
-    selectionMode: PointSelectionMode;
+    selectionMode: PointSelectionMode | null;
     setSelectionMode: (value: PointSelectionMode) => void;
     isMobile: boolean;
     MobileSelectCells: () => void;
