@@ -174,13 +174,15 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.ADD_SELECTED_POINT_IDS: {
-            newCanvas.pointBrightness = 0.8;
-            newCanvas.resetPointColors();
-            // newCanvas.highlightPoints(action.selectedPointIndices);
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
+            if (action.selectedPointIds.size !== 0) {
+                // only reduce pointBrightness if there are selected points
+                newCanvas.pointBrightness = 0.8;
+            }
+            newCanvas.resetPointColors();
             newCanvas.selectedPointIds = newSelectedPointIds;
             newCanvas.highlightPoints(action.selectedPointIndices);
             break;
