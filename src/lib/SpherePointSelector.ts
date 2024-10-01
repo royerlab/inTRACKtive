@@ -184,4 +184,28 @@ export class SpherePointSelector {
     pointerDown(_event: MouseEvent) {}
 
     pointerCancel(_event: MouseEvent) {}
+
+    MobileFindAndSelect() {
+        // if used on Mobile Device, this will select the cells upon button click
+        const radius = this.cursor.geometry.parameters.radius;
+        const normalMatrix = new Matrix3();
+        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
+        normalMatrix.invert();
+        const center = this.cursor.position;
+        const geometry = this.points.geometry;
+        const positions = geometry.getAttribute("position");
+        const numPoints = positions.count;
+        const selected = [];
+        for (let i = 0; i < numPoints; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i);
+            const z = positions.getZ(i);
+            const vecToCenter = new Vector3(x, y, z).sub(center);
+            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
+            if (scaledVecToCenter.length() < radius) {
+                selected.push(i);
+            }
+        }
+        this.selectionChanged(selected);
+    }
 }

@@ -372,4 +372,9 @@ export class PointCanvas {
             this.points.material.dispose();
         }
     }
+
+    MobileSelectCells() {
+        // if used on Mobile Device, this will select the cells upon button click
+        this.selector.sphereSelector.MobileFindAndSelect();
+    }
 }

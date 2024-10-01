@@ -321,6 +321,9 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
                             isMobile={isMobile}
+                            MobileSelectCells={() => {
+                                dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
+                            }}
                         />
                     </Box>
                     <Divider />

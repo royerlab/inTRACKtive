@@ -1,5 +1,5 @@
 import { Box, Stack } from "@mui/material";
-import { InputSlider, SegmentedControl, SingleButtonDefinition } from "@czi-sds/components";
+import { InputSlider, SegmentedControl, SingleButtonDefinition, Button } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
 import { PointSelectionMode } from "@/lib/PointSelector";
@@ -17,6 +17,7 @@ interface CellControlsProps {
     selectionMode: PointSelectionMode;
     setSelectionMode: (value: PointSelectionMode) => void;
     isMobile: boolean;
+    MobileSelectCells: () => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -69,8 +70,15 @@ export default function CellControls(props: CellControlsProps) {
                     value={props.selectionMode}
                 />
             </Box>
+            <Box>
+                {props.isMobile && (
+                    <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
+                        Select cells
+                    </Button>
+                )}
+            </Box>
             <label htmlFor="points-brightness-slider">
-                <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
+                <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
             </label>
             <InputSlider
                 id="points-brightness-slider"
