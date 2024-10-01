@@ -43,9 +43,14 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
     const isSmallScreen = window.screen.width <= 768;
 
     // Determine if it's a phone, tablet, or desktop
-    const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
-    const isTablet = isiPad || isAndroidTablet || (!isPhone && isSmallScreen && window.screen.width > 600); // Optional: Add a threshold for larger screens
-    const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
+    // const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
+    // const isTablet = isiPad || isAndroidTablet || (!isPhone && isSmallScreen && window.screen.width > 600); // Optional: Add a threshold for larger screens
+    // const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
+
+    const isPhone = false;
+    const isTablet = true; 
+    const isDesktop = false; // It's a desktop if it's neither a phone nor a tablet
+    console.log("isPhone: ", isPhone);
 
     return {
         isPhone: isPhone,
@@ -519,8 +524,8 @@ export default function App() {
                     sx={{
                         flexGrow: 0,
                         padding: ".5em",
-                        height: "50px",
-                        paddingLeft: !detectedDevice.isMobile ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
+                        height: "100px",
+                        paddingLeft: !detectedDevice.isPhone ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
                     }}
                 >
                     <PlaybackControls
