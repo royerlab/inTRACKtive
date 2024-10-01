@@ -11,7 +11,7 @@ export const ColorMap = () => {
         <Box
             sx={{
                 position: "absolute",
-                bottom: "5.0rem",
+                bottom: "0.5rem",
                 right: "0.5rem",
                 width: "2.5rem",
                 height: "6.5rem",
