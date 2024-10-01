@@ -97,7 +97,7 @@ export class PointSelector {
     setSelectionMode(mode: PointSelectionMode) {
         console.debug("PointSelector.setSelectionMode: ", mode);
         this.selectionMode = mode;
-        this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX, mode === PointSelectionMode.SPHERE);
+        this.sphereSelector.setVisible((mode === PointSelectionMode.SPHERICAL_CURSOR || mode === PointSelectionMode.SPHERE), mode === PointSelectionMode.SPHERE);
     }
 
     handleEvent(event: Event) {
