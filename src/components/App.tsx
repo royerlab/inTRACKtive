@@ -56,15 +56,16 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
 
 export const detectedDevice = detectDeviceType();
 console.log("detectDeviceType: ", detectDeviceType());
-window.alert(
-    "detected device type (desktop | tablet | phone) = (" +
-        !detectDeviceType().isMobile +
-        " | " +
-        detectDeviceType().isTablet +
-        " | " +
-        detectDeviceType().isPhone +
-        ")",
-);
+// for debugging: show the detected device type in an alert
+// window.alert(
+//     "detected device type (desktop | tablet | phone) = (" +
+//         !detectDeviceType().isMobile +
+//         " | " +
+//         detectDeviceType().isTablet +
+//         " | " +
+//         detectDeviceType().isPhone +
+//         ")",
+// );
 
 const drawerWidth = 256;
 const playbackFPS = 16;
