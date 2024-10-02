@@ -26,7 +26,7 @@ import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
 import config from "../../CONFIG.ts";
-const pointSize = config.settings.point_size;
+const initialPointSize = config.settings.point_size;
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -69,6 +69,7 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
+    pointSize = initialPointSize;
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -293,6 +294,21 @@ export class PointCanvas {
         this.resetPointColors();
     }
 
+    setPointsSizes() {
+        const geometry = this.points.geometry;
+        const sizes = geometry.getAttribute("size");
+
+        for (let i = 0; i < sizes.count; i++) {
+            sizes.setX(i, this.pointSize);
+        }
+        sizes.needsUpdate = true;
+
+        for (const track of this.tracks.values()) {
+            track.threeTrack.material.trackwidth = this.pointSize / 100;
+            track.threeTrack.material.highlightwidth = this.pointSize / 15;
+        }
+    }
+
     setPointsPositions(data: Float32Array) {
         const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
@@ -304,7 +320,7 @@ export class PointCanvas {
             if (num == 4) {
                 sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
             } else {
-                sizes.setX(i, pointSize);
+                sizes.setX(i, this.pointSize);
             }
         }
         positions.needsUpdate = true;
@@ -320,7 +336,14 @@ export class PointCanvas {
             return null;
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+        threeTrack.updateAppearance(
+            this.showTracks,
+            this.showTrackHighlights,
+            this.minTime,
+            this.maxTime,
+            this.pointSize / 100,
+            this.pointSize / 15,
+        );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
@@ -328,7 +351,14 @@ export class PointCanvas {
 
     updateAllTrackHighlights() {
         this.tracks.forEach((track) => {
-            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+            track.threeTrack.updateAppearance(
+                this.showTracks,
+                this.showTrackHighlights,
+                this.minTime,
+                this.maxTime,
+                this.pointSize / 100,
+                this.pointSize / 15,
+            );
         });
     }
 
