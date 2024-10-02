@@ -18,6 +18,7 @@ interface CellControlsProps {
     setSelectionMode: (value: PointSelectionMode) => void;
     isMobile: boolean;
     MobileSelectCells: () => void;
+    setSelectorScale: (value: number) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -74,6 +75,21 @@ export default function CellControls(props: CellControlsProps) {
                     </Button>
                 )}
             </Box>
+            <label htmlFor="selector-radius-slider">
+                <ControlLabel id="input-selector-radius-slider">selector radius</ControlLabel>
+            </label>
+            <InputSlider
+                id="selector-radius-slider"
+                aria-labelledby="input-selector-radius-slider"
+                min={0.5}
+                max={5}
+                step={0.1}
+                // valueLabelDisplay="on"
+                valueLabelFormat={(value) => `${value}`}
+                onChange={(_, value) => {
+                    props.setSelectorScale(value as number);
+                }}
+            />
             <label htmlFor="points-brightness-slider">
                 <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
             </label>

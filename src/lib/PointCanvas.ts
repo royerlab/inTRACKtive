@@ -376,7 +376,12 @@ export class PointCanvas {
     }
 
     MobileSelectCells() {
-        // if used on Mobile Device, this will select the cells upon button click
+        // if used on tablet, this will select the cells upon button click
         this.selector.sphereSelector.MobileFindAndSelect();
+    }
+
+    setSelectorScale(scale: number) {
+        // on tablet: this will set the size of the sphere selector upon the user using the slider
+        this.selector.sphereSelector.cursor.scale.set(scale, scale, scale);
     }
 }

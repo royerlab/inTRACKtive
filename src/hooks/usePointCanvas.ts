@@ -20,6 +20,7 @@ enum ActionType {
     ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
+    SELECTOR_SCALE = "SELECTOR_SCALE",
 }
 
 interface AutoRotate {
@@ -97,6 +98,11 @@ interface MobileSelectCells {
     type: ActionType.MOBILE_SELECT_CELLS;
 }
 
+interface SelectorScale {
+    type: ActionType.SELECTOR_SCALE;
+    scale: number;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -113,7 +119,8 @@ type PointCanvasAction =
     | MinMaxTime
     | AddSelectedPointIds
     | UpdateWithState
-    | MobileSelectCells;
+    | MobileSelectCells
+    | SelectorScale;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -192,6 +199,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.MOBILE_SELECT_CELLS:
             newCanvas.MobileSelectCells();
+            break;
+        case ActionType.SELECTOR_SCALE:
+            newCanvas.setSelectorScale(action.scale);
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

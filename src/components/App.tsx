@@ -352,6 +352,9 @@ export default function App() {
                                 MobileSelectCells={() => {
                                     dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
                                 }}
+                                setSelectorScale={(scale: number) => {
+                                    dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
+                                }}
                             />
                         </Box>
                         <Divider />
