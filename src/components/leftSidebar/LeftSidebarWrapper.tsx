@@ -13,6 +13,7 @@ interface LeftSidebarWrapperProps {
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
     selectionMode: PointSelectionMode | null;
+    isTablet: boolean;
 }
 
 export default function LeftSidebarWrapper({
@@ -25,6 +26,7 @@ export default function LeftSidebarWrapper({
     setShowTrackHighlights,
     setTrackHighlightLength,
     selectionMode,
+    isTablet,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -39,7 +41,7 @@ export default function LeftSidebarWrapper({
                     setTrackHighlightLength={setTrackHighlightLength}
                 />
             )}
-            {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} />}
+            {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}
         </>
     );
 }

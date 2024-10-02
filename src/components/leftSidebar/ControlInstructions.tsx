@@ -4,6 +4,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 
 interface ControlInstructionsProps {
     selectionMode: PointSelectionMode | null;
+    isTablet: boolean;
 }
 
 export default function ControlInstructions(props: ControlInstructionsProps) {
@@ -36,6 +37,9 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
         case PointSelectionMode.SPHERE:
             instructionText = (
                 <>
+                    {props.isTablet && (
+                        <p>If using a tablet without keyboard, use the UI controls above to scale the selector</p>
+                    )}
                     <p>
                         <strong>Shift-click</strong> to select cells within the selector.
                     </p>

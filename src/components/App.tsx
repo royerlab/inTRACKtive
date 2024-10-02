@@ -383,6 +383,7 @@ export default function App() {
                                         maxTime: canvas.curTime + length / 2,
                                     });
                                 }}
+                                isTablet={detectedDevice.isTablet}
                             />
                         </Box>
                         <Divider />

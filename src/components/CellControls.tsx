@@ -31,7 +31,7 @@ export default function CellControls(props: CellControlsProps) {
 
     // Intercept onChange of selection buttons to prevent the first two buttons from being selected on mobile devices
     const handleSegmentedControlChange = (_e: React.MouseEvent<HTMLElement>, newValue: PointSelectionMode | null) => {
-        // If isMobile is true and the selected value corresponds to the first or second button, do nothing
+        // If isTablet is true and the selected value corresponds to the first or second button, do nothing
         if (
             props.isTablet &&
             (newValue === PointSelectionMode.BOX || newValue === PointSelectionMode.SPHERICAL_CURSOR)
