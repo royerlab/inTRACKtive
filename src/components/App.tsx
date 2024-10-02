@@ -348,13 +348,14 @@ export default function App() {
                                 setSelectionMode={(value: PointSelectionMode) => {
                                     dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                                 }}
-                                isMobile={detectedDevice.isMobile}
+                                isTablet={detectedDevice.isTablet}
                                 MobileSelectCells={() => {
                                     dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
                                 }}
                                 setSelectorScale={(scale: number) => {
                                     dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
                                 }}
+                                selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
                             />
                         </Box>
                         <Divider />

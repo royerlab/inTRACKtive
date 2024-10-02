@@ -16,9 +16,10 @@ interface CellControlsProps {
     setPointBrightness: (value: number) => void;
     selectionMode: PointSelectionMode | null;
     setSelectionMode: (value: PointSelectionMode) => void;
-    isMobile: boolean;
+    isTablet: boolean;
     MobileSelectCells: () => void;
     setSelectorScale: (value: number) => void;
+    selectorScale: number;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -32,7 +33,7 @@ export default function CellControls(props: CellControlsProps) {
     const handleSegmentedControlChange = (_e: React.MouseEvent<HTMLElement>, newValue: PointSelectionMode | null) => {
         // If isMobile is true and the selected value corresponds to the first or second button, do nothing
         if (
-            props.isMobile &&
+            props.isTablet &&
             (newValue === PointSelectionMode.BOX || newValue === PointSelectionMode.SPHERICAL_CURSOR)
         ) {
             window.alert("This selection mode is not available on mobile devices.");
@@ -69,27 +70,36 @@ export default function CellControls(props: CellControlsProps) {
                 />
             </Box>
             <Box display="flex" justifyContent="center" alignItems="center">
-                {props.isMobile && props.selectionMode === PointSelectionMode.SPHERE && (
+                {props.isTablet && props.selectionMode === PointSelectionMode.SPHERE && (
                     <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
                         Select cells
                     </Button>
                 )}
             </Box>
-            <label htmlFor="selector-radius-slider">
-                <ControlLabel id="input-selector-radius-slider">selector radius</ControlLabel>
-            </label>
-            <InputSlider
-                id="selector-radius-slider"
-                aria-labelledby="input-selector-radius-slider"
-                min={0.5}
-                max={5}
-                step={0.1}
-                // valueLabelDisplay="on"
-                valueLabelFormat={(value) => `${value}`}
-                onChange={(_, value) => {
-                    props.setSelectorScale(value as number);
-                }}
-            />
+            {(props.selectionMode === PointSelectionMode.SPHERICAL_CURSOR ||
+                props.selectionMode === PointSelectionMode.SPHERE) &&
+                props.isTablet && (
+                    <>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                            <label htmlFor="selector-radius-slider">
+                                <FontS id="input-selector-radius-slider">selector radius:</FontS>
+                            </label>
+                        </div>
+                        <InputSlider
+                            id="selector-radius-slider"
+                            aria-labelledby="input-selector-radius-slider"
+                            min={0.5}
+                            max={5}
+                            step={0.1}
+                            // valueLabelDisplay="on"
+                            valueLabelFormat={(value) => `${value}`}
+                            onChange={(_, value) => {
+                                props.setSelectorScale(value as number);
+                            }}
+                            value={props.selectorScale}
+                        />
+                    </>
+                )}
             <label htmlFor="points-brightness-slider">
                 <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
             </label>
