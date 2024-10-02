@@ -41,15 +41,16 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
 
     // Screen size check (tablets typically have a wider screen)
     const isSmallScreen = window.screen.width <= 768;
+    const hasTouch = navigator.maxTouchPoints > 1;
 
     // Determine if it's a phone, tablet, or desktop
     const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
-    const isTablet = isiPad || isAndroidTablet || (!isPhone && isSmallScreen && window.screen.width > 600); // Optional: Add a threshold for larger screens
+    const isTablet = isiPad || isAndroidTablet || hasTouch;
     const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
 
     // manually asign labels for debugging
-    // const isPhone = false;
-    // const isTablet = true;
+    // const isPhone = true;
+    // const isTablet = false;
     // const isDesktop = false;
 
     return {
@@ -60,7 +61,11 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
 }
 
 export const detectedDevice = detectDeviceType();
-console.log("detectDeviceType: ", detectDeviceType());
+console.debug("detectDeviceType: ", detectedDevice);
+if (detectedDevice.isPhone) {
+    window.alert("Note: for full functionality, please use a tablet or desktop device.");
+}
+
 // for debugging: show the detected device type in an alert
 // window.alert(
 //     "detected device type (desktop | tablet | phone) = (" +

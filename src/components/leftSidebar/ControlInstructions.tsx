@@ -40,7 +40,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
                     {props.isTablet && (
                         <p>
                             If using a tablet without keyboard, use the UI controls above to select cells and scale the
-                            selector
+                            selector (use keyboard for full functionality)
                         </p>
                     )}
                     <p>
