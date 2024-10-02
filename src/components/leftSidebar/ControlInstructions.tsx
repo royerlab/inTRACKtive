@@ -38,7 +38,10 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
             instructionText = (
                 <>
                     {props.isTablet && (
-                        <p>If using a tablet without keyboard, use the UI controls above to select cells and scale the selector</p>
+                        <p>
+                            If using a tablet without keyboard, use the UI controls above to select cells and scale the
+                            selector
+                        </p>
                     )}
                     <p>
                         <strong>Shift-click</strong> to select cells within the selector.
