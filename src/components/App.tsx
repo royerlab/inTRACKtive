@@ -63,11 +63,11 @@ function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: bo
 export const detectedDevice = detectDeviceType();
 console.debug("detectDeviceType: ", detectedDevice);
 if (detectedDevice.isPhone) {
-    window.alert("Note: for full functionality, please use a tablet or desktop device.");
+    window.confirm("Note: for full functionality, please use a tablet or desktop device.");
 }
 
 // for debugging: show the detected device type in an alert
-// window.alert(
+// window.confirm(
 //     "detected device type (desktop | tablet | phone) = (" +
 //         !detectDeviceType().isMobile +
 //         " | " +
