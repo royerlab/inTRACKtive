@@ -14,7 +14,7 @@ This tool was originally built to explore the light-sheet 3D cell tracking resul
   </p>
 </p>
 
-**[ToDo: Video demo]**
+**[ToDo: Replace image with demo video]**
 
 <br/>
 
@@ -77,6 +77,8 @@ In order to view your own cell tracking data in the `points-web-viewer`, you nee
 ```
 
 where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is continuously and starts from `1`.
+
+**add explanation of add/not adding radius**
 
 This `tracks.csv` file can be converted to our zarr format using the following command-line function (found in [/tools/convert_tracks_csv_to_sparse_zarr.py](tools/convert_tracks_csv_to_sparse_zarr.py)):
 

@@ -1,5 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
+import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
+export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 class SparseZarrArray {
     store: string;
@@ -83,7 +84,7 @@ export class TrackManager {
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
         this.numTimes = points.shape[0];
-        this.maxPointsPerTimepoint = points.shape[1] / 3;
+        this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -97,9 +98,9 @@ export class TrackManager {
         let endIndex = points.findIndex((value) => value <= -127);
         if (endIndex === -1) {
             endIndex = points.length;
-        } else if (endIndex % 3 !== 0) {
-            console.error("invalid points - %d not divisible by 3", endIndex);
-            endIndex -= endIndex % 3;
+        } else if (endIndex % numberOfValuesPerPoint !== 0) {
+            console.error("invalid points - %d not divisible by %d", endIndex, numberOfValuesPerPoint);
+            endIndex -= endIndex % numberOfValuesPerPoint;
         }
         return points.subarray(0, endIndex);
     }
@@ -149,10 +150,26 @@ export async function loadTrackManager(url: string) {
             path: "points",
             mode: "r",
         });
+
+        // load the zarr metadata (to know is radius is included)
+        try {
+            const store = new HTTPStore(url);
+            const zattrsResponse = await store.getItem("points/.zattrs");
+            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            numberOfValuesPerPoint = zattrs["values_per_point"];
+        } catch (error) {
+            numberOfValuesPerPoint = 3;
+        }
+
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
+
+        // make trackManager, and reset "maxPointsPerTimepoint", because tm constructor does points/3
         trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks);
+        if (numberOfValuesPerPoint == 4) {
+            trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
+        }
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);
         trackManager = null;
