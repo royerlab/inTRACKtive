@@ -253,7 +253,7 @@ export class PointCanvas {
     highlightPreviewPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
-        color.setRGB(0.9, 0.9, 0.0, SRGBColorSpace); // yellow
+        color.setRGB(0.8, 0.8, 0.0, SRGBColorSpace); // yellow
         for (const i of points) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
