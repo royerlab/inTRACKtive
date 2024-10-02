@@ -1,4 +1,4 @@
-import { Box, Stack, Tooltip } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
@@ -55,18 +55,15 @@ export default function CellControls(props: CellControlsProps) {
                     value={props.selectionMode}
                 />
             </Box>
-            <label htmlFor="points-sizes-slider">
-                <ControlLabel id="input-slider-points-sizes-slider">Point Size</ControlLabel>
-            </label>
-            <Tooltip
-                title="Point size set by data"
-                disableHoverListener={numberOfValuesPerPoint === 3} // Tooltip only works when the slider is disabled
-            >
-                <div>
+            {numberOfValuesPerPoint !== 4 && (
+                <>
+                    <label htmlFor="points-sizes-slider">
+                        <ControlLabel id="input-slider-points-sizes-slider">Cell Size</ControlLabel>
+                    </label>
                     <InputSlider
                         id="points-sizes-slider"
                         aria-labelledby="input-slider-points-sizes-slider"
-                        disabled={!(numberOfValuesPerPoint === 3)}
+                        disabled={numberOfValuesPerPoint === 4}
                         min={20}
                         max={100}
                         valueLabelDisplay="on"
@@ -76,10 +73,10 @@ export default function CellControls(props: CellControlsProps) {
                         }}
                         value={props.pointSize}
                     />
-                </div>
-            </Tooltip>
+                </>
+            )}
             <label htmlFor="points-brightness-slider">
-                <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
+                <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
             </label>
             <InputSlider
                 id="points-brightness-slider"
