@@ -13,7 +13,7 @@ export default function WarningDialog(props: WarningDialogProps) {
             <Dialog open={props.open} onClose={props.onCloseAction}>
                 <DialogTitle>Warning</DialogTitle>
                 <DialogContent>
-                    {`You have selected ${props.numUnfetchedPoints} new cells, which might take longer to load. Continue?`}
+                    {`You have selected ${props.numUnfetchedPoints} new cells, which might take a long time to load. Continue?`}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={props.onCloseAction} color="primary">
