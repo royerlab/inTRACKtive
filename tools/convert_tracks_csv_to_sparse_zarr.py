@@ -115,17 +115,17 @@ tracks_to_children = tracks_to_children.tocsr()
 mean_x = np.mean(vector_x)
 mean_y = np.mean(vector_y)
 mean_z = np.mean(vector_z)
-extend_x = np.max(np.abs(vector_x - mean_x))
-extend_y = np.max(np.abs(vector_y - mean_y))
-extend_z = np.max(np.abs(vector_z - mean_z))
-extend_xyz = np.max([extend_x, extend_y, extend_z])
+extent_x = np.max(np.abs(vector_x - mean_x))
+extent_y = np.max(np.abs(vector_y - mean_y))
+extent_z = np.max(np.abs(vector_z - mean_z))
+extent_xyz = np.max([extent_x, extent_y, extent_z])
 print(f'{mean_x=}')
-print('mean_y',mean_y)
-print('mean_z',mean_z)
-print('extend_x',extend_x)
-print('extend_y',extend_y)
-print('extend_z',extend_z)
-print('extend_data',extend_xyz)
+print(f'{mean_y=}')
+print(f'{mean_z=}')
+print(f'{extent_x=}')
+print(f'{extent_z=}')
+print(f'{extent_z=}')
+print(f'{extent_xyz=}')
 
 start = time.monotonic()
 iter = 0
@@ -180,7 +180,7 @@ points.attrs["values_per_point"] = num_values_per_point
 points.attrs["mean_x"] = mean_x
 points.attrs["mean_y"] = mean_y
 points.attrs["mean_z"] = mean_z
-points.attrs["extend_xyz"] = extend_xyz
+points.attrs["extent_xyz"] = extent_xyz
 points.attrs["fields"] = ['z', 'y', 'x', 'radius'][:num_values_per_point]
 
 

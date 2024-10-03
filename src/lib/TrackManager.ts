@@ -1,7 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
-const aimExtent = 350; // extend of the rescaled data to -350:350 around the pointcloud mean position
 
 import config from "../../CONFIG.ts";
 import { ViewerState } from "./ViewerState.ts";
@@ -43,11 +42,11 @@ class SparseZarrArray {
 }
 
 // class that contains the settings to "scale" the data, i.e., scale and center the dataset to fit nicely in the viewer
-class scaleSettings {
+class ScaleSettings {
     meanX?: number;
     meanY?: number;
     meanZ?: number;
-    extendXYZ?: number;
+    extentXYZ?: number;
 }
 
 export async function openSparseZarrArray(store: string, groupPath: string, hasData = true): Promise<SparseZarrArray> {
@@ -83,7 +82,8 @@ export class TrackManager {
     tracksToTracks: SparseZarrArray;
     numTimes: number;
     maxPointsPerTimepoint: number;
-    scaleSettings: scaleSettings;
+    scaleSettings: ScaleSettings;
+    defaultExtent: number;
 
     constructor(
         store: string,
@@ -91,7 +91,7 @@ export class TrackManager {
         pointsToTracks: SparseZarrArray,
         tracksToPoints: SparseZarrArray,
         tracksToTracks: SparseZarrArray,
-        scaleSettings: scaleSettings,
+        scaleSettings: ScaleSettings,
     ) {
         this.store = store;
         this.points = points;
@@ -101,6 +101,7 @@ export class TrackManager {
         this.numTimes = points.shape[0];
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
         this.scaleSettings = scaleSettings;
+        this.defaultExtent = 350;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -119,7 +120,7 @@ export class TrackManager {
             endIndex -= endIndex % numberOfValuesPerPoint;
         }
 
-        // scale the data to fit in the viewer (center around 370, extend of 100)
+        // scale the data to fit in the viewer
         const array = this.applyScale(points.subarray(0, endIndex), numberOfValuesPerPoint);
         return array;
     }
@@ -146,7 +147,7 @@ export class TrackManager {
             flatPoints.set(points[i], i * 3);
         }
 
-        // scale the data to fit in the viewer (center around 370, extend of 100)
+        // scale the data to fit in the viewer
         flatPoints = this.applyScale(flatPoints, 3);
         return [flatPoints, pointIDs];
     }
@@ -163,11 +164,10 @@ export class TrackManager {
     }
 
     getPointSize(): number {
-        const num = numberOfValuesPerPoint;
-        const extendXYZ = this.scaleSettings.extendXYZ ?? 100;
+        const extentXYZ = this.scaleSettings.extentXYZ ?? this.defaultExtent;
 
-        if (num == 4) {
-            return (27 * aimExtent) / extendXYZ; // 27 is the factor to match actual distances in tracks.csv to distances in the viewer
+        if (numberOfValuesPerPoint == 4) {
+            return (27 * this.defaultExtent) / extentXYZ; // 27 is the factor to match actual distances in tracks.csv to distances in the viewer
         } else {
             return pointSizeDefault;
         }
@@ -178,11 +178,11 @@ export class TrackManager {
         const meanY = this.scaleSettings.meanY ?? 0;
         const meanZ = this.scaleSettings.meanX ?? 0;
         const cameraTarget = new ViewerState().cameraTarget;
-        const extendXYZ = this.scaleSettings.extendXYZ ?? aimExtent;
+        const extentXYZ = this.scaleSettings.extentXYZ ?? this.defaultExtent;
         for (let i = 0; i < array.length; i += stride) {
-            array[i] = ((array[i] - meanZ) / extendXYZ) * aimExtent + cameraTarget[0];
-            array[i + 1] = ((array[i + 1] - meanY) / extendXYZ) * aimExtent + cameraTarget[1];
-            array[i + 2] = ((array[i + 2] - meanX) / extendXYZ) * aimExtent + cameraTarget[2];
+            array[i] = ((array[i] - meanZ) / extentXYZ) * this.defaultExtent + cameraTarget[0];
+            array[i + 1] = ((array[i + 1] - meanY) / extentXYZ) * this.defaultExtent + cameraTarget[1];
+            array[i + 2] = ((array[i + 2] - meanX) / extentXYZ) * this.defaultExtent + cameraTarget[2];
         }
         return array;
     }
@@ -198,7 +198,7 @@ export async function loadTrackManager(url: string) {
         });
 
         // load the zarr metadata (to know is radius is included)
-        const scaleSettings: scaleSettings = {};
+        const scaleSettings: ScaleSettings = {};
         try {
             const store = new HTTPStore(url);
             const zattrsResponse = await store.getItem("points/.zattrs");
@@ -208,10 +208,11 @@ export async function loadTrackManager(url: string) {
             scaleSettings.meanX = zattrs["mean_x"];
             scaleSettings.meanY = zattrs["mean_y"];
             scaleSettings.meanZ = zattrs["mean_z"];
-            scaleSettings.extendXYZ = zattrs["extend_xyz"];
+            scaleSettings.extentXYZ = zattrs["extent_xyz"];
         } catch (error) {
             numberOfValuesPerPoint = 3;
         }
+        console.log("scaleSettings", scaleSettings);
 
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
