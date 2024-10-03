@@ -1,5 +1,3 @@
-import { loadTrackManager, TrackManager } from "./TrackManager";
-
 export const DEFAULT_ZARR_URL =
     "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
     "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
@@ -47,17 +45,6 @@ export class ViewerState {
         } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }
-        // ViewerState.fromUrlHash is called without a urlHash (only the case for making initialViewerState),
-        // then we need to set the maxPointsPerTimePoints manually. Because this field is necessary when refreshing the page.
-        // Naturally, initialViewerState.maxPointsPerTimepoint is never updated, because initialViewerState is not used
-        const tm = loadTrackManager(state.dataUrl);
-        tm.then((tm: TrackManager | null) => {
-            if (tm != null) {
-                state.maxPointsPerTimepoint = tm.maxPointsPerTimepoint;
-            } else {
-                console.error("TrackManager is null in Viewerstate.fromUrlHash!");
-            }
-        });
         return state;
     }
 }

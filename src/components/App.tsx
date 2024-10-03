@@ -46,8 +46,12 @@ export default function App() {
 
     // refresh window to initial staet
     const refreshPage = () => {
-        const state = initialViewerState; // needs maxPointsPerTimepoint!!
-        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
+        // maxPointsPerTimepoint is only updated once the TrackManager is loaded, but we
+        // need to update the value in initialViewerState because that is used by the reset button
+        // which may not change the dataUrl and thus may not load a new TrackManager.
+        initialViewerState.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
+        dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: initialViewerState });
+        // dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     };
 
     // Manage shareable state that can persist across sessions.
