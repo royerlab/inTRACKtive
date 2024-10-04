@@ -190,7 +190,7 @@ export class PointCanvas {
     }
 
     removeLastSelection() {
-        this.selectedPointIds = this.fetchedPointIds;
+        this.selectedPointIds = new Set(this.fetchedPointIds);
     }
 
     setSize(width: number, height: number) {
