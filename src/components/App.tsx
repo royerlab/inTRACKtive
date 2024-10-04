@@ -22,6 +22,7 @@ import { TrackDownloadData } from "./DownloadButton";
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
 const brandingLogoPath = config.branding.logo_path || undefined;
+const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -203,7 +204,7 @@ export default function App() {
         });
 
         // if many cells are selected, let the user decide whether to fetch or cancel
-        if (numUnfetchedPoints > 100) {
+        if (numUnfetchedPoints > maxNumSelectedCells) {
             setNumUnfetchedPoints(numUnfetchedPoints);
             setShowWarningDialog(true);
         } else {
