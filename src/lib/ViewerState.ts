@@ -1,6 +1,6 @@
-export const DEFAULT_ZARR_URL =
-    "https://sci-imaging-vis-public-demo-data.s3.us-west-2.amazonaws.com" +
-    "/points-web-viewer/sparse-zarr-v2/ZSNS001_tracks_bundle.zarr";
+import config from "../../CONFIG.ts";
+
+const DEFAULT_ZARR_URL = config.data.default_dataset;
 
 const HASH_KEY = "viewerState";
 
@@ -23,9 +23,9 @@ export class ViewerState {
     selectedPointIds: Array<number> = [];
     showTracks = true;
     showTrackHighlights = true;
-    // Default position and target from interacting with ZSNS001.
-    cameraPosition = [500, 500, -1250];
-    cameraTarget = [500, 500, 250];
+    // Default position and target for the camera
+    cameraPosition = [0, 0, -4]; // was  [500, 500, -1250];
+    cameraTarget = [0, 0, 0]; // was  [500, 500, 500];
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.

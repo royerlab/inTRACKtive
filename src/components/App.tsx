@@ -19,6 +19,10 @@ import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
+import config from "../../CONFIG.ts";
+const brandingName = config.branding.name || undefined;
+const brandingLogoPath = config.branding.logo_path || undefined;
+
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
@@ -37,7 +41,8 @@ export default function App() {
 
     // PointCanvas is a Three.js canvas, updated via reducer
     const [canvas, dispatchCanvas, sceneDivRef] = usePointCanvas(initialViewerState);
-    const numTracksLoaded = canvas.tracks.size;
+    const numSelectedCells = canvas.selectedPointIds.size;
+    const numSelectedTracks = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
     // this state is pure React
@@ -65,6 +70,9 @@ export default function App() {
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
     }, [dispatchCanvas]);
+    const removeTracksUponNewData = () => {
+        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+    };
 
     // this function fetches the entire lineage for each track
     const updateTracks = async () => {
@@ -112,7 +120,6 @@ export default function App() {
         console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
-        dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
         trackManager.then((tm: TrackManager | null) => {
             setTrackManager(tm);
             // Defend against the case when a curTime valid for previous data
@@ -150,6 +157,7 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
+                const pointSize = trackManager.getPointSize();
                 console.debug("got %d points for time %d", data.length / 3, time);
 
                 if (ignore) {
@@ -160,7 +168,7 @@ export default function App() {
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, pointSize: pointSize });
             };
             getPoints(canvas.curTime);
         } else {
@@ -201,6 +209,34 @@ export default function App() {
         } else {
             updateTracks();
         }
+        // this fetches the entire lineage for each track
+        const updateTracks = async () => {
+            console.debug("updateTracks: ", canvas.selectedPointIds);
+            canvas.selectedPointIds.forEach(async (pointId) => {
+                if (canvas.fetchedPointIds.has(pointId)) return;
+                setNumLoadingTracks((n) => n + 1);
+                canvas.fetchedPointIds.add(pointId);
+                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                trackIds.forEach(async (trackId) => {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
+                    canvas.fetchedRootTrackIds.add(trackId);
+                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                    lineage.forEach(async (relatedTrackId: number, index) => {
+                        if (canvas.tracks.has(relatedTrackId)) return;
+                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
+                        // adding the track *in* the dispatcher creates issues with duplicate fetching
+                        // but we refresh so the selected/loaded count is updated
+                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                        canvas.clearPointIndicesCache;
+                        dispatchCanvas({ type: ActionType.REFRESH });
+                    });
+                });
+                setNumLoadingTracks((n) => n - 1);
+            });
+        };
+        updateTracks();
+        // TODO: add missing dependencies
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
     // playback time points
@@ -263,6 +299,16 @@ export default function App() {
             }
         });
 
+        // Sort the trackData by track ID (first column) and then by time (second column)
+        trackData.sort((a, b) => {
+            // First compare by trackID (a[0], b[0])
+            if (a[0] !== b[0]) {
+                return a[0] - b[0];
+            }
+            // If trackID is the same, compare by time (a[1], b[1])
+            return a[1] - b[1];
+        });
+
         // Round to 3 decimal places
         const formatter = Intl.NumberFormat("en-US", { useGrouping: false });
         return trackData.map((row) => row.map(formatter.format));
@@ -299,9 +345,9 @@ export default function App() {
                             justifyContent: "space-between",
                         }}
                     >
-                        <img src="/zebrahub-favicon-60x60.png" alt="logo" />
-                        <Divider orientation="vertical" flexItem />
-                        <h2>ZEBRAHUB</h2>
+                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
+                        {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
+                        {brandingName && <h2>{brandingName}</h2>}{" "}
                     </Box>
                     <Box flexGrow={0} padding="2em">
                         <CellControls
@@ -309,11 +355,16 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
                             }}
                             getTrackDownloadData={getTrackDownloadData}
-                            numSelectedCells={numTracksLoaded}
+                            numSelectedCells={numSelectedCells}
+                            numSelectedTracks={numSelectedTracks}
                             trackManager={trackManager}
                             pointBrightness={canvas.pointBrightness}
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
+                            }}
+                            pointSize={canvas.pointSize}
+                            setPointSize={(pointSize: number) => {
+                                dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
                             }}
                             selectionMode={canvas.selector.selectionMode}
                             setSelectionMode={(value: PointSelectionMode) => {
@@ -324,7 +375,7 @@ export default function App() {
                     <Divider />
                     <Box flexGrow={4} padding="2em">
                         <LeftSidebarWrapper
-                            hasTracks={numTracksLoaded > 0}
+                            hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
                             trackHighlightLength={trackHighlightLength}
                             selectionMode={canvas.selector.selectionMode}
@@ -351,6 +402,7 @@ export default function App() {
                             dataUrl={dataUrl}
                             initialDataUrl={initialViewerState.dataUrl}
                             setDataUrl={setDataUrl}
+                            removeTracksUponNewData={removeTracksUponNewData}
                             copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                             trackManager={trackManager}
                         />

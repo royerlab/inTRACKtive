@@ -1,4 +1,5 @@
 import { Button } from "@czi-sds/components";
+import { Tooltip } from "@mui/material";
 
 // TrackDownloadData is a list for each point
 // It contains trackID, time, x, y, z, parentTrackID
@@ -7,7 +8,7 @@ interface DownloadButtonProps {
     getDownloadData: () => string[][];
 }
 
-const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
+const dataHeaders = ["track_id", "t", "z", "y", "x", "parent_track_id"];
 
 const convertToCSV = (nestedArray: string[][]) => {
     return nestedArray.map((row) => row.join(",")).join("\r\n");
@@ -27,8 +28,10 @@ export const DownloadButton = (props: DownloadButtonProps) => {
     };
 
     return (
-        <Button sdsStyle="square" sdsType="primary" onClick={downloadCSV}>
-            Export Cell Tracks
-        </Button>
+        <Tooltip title="Play/Pause">
+            <Button sdsStyle="square" sdsType="primary" onClick={downloadCSV}>
+                Export Cell Tracks
+            </Button>
+        </Tooltip>
     );
 };

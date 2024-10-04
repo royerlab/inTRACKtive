@@ -16,13 +16,16 @@ export class Track extends Mesh {
     type = "Track";
     declare geometry: TrackGeometry;
     declare material: TrackMaterial;
+    pointIds: Int32Array = new Int32Array(0);
+    startTime: number = -1;
+    endTime: number = -1;
 
     static new(positions: Float32Array, pointIDs: Int32Array, maxPointsPerTimepoint: number) {
         const geometry = new TrackGeometry();
         const material = new TrackMaterial({
             vertexColors: true,
-            trackwidth: 0.3,
-            highlightwidth: 2.0,
+            trackwidth: 0.001,
+            highlightwidth: 0.006,
             showtrack: true,
             showhighlight: true,
             transparent: true,
@@ -53,15 +56,30 @@ export class Track extends Mesh {
         track.geometry.setColors(colors);
         track.geometry.setTime(time);
         track.geometry.computeBoundingSphere();
+
+        track.pointIds = pointIDs;
+        if (time.length > 0) {
+            track.startTime = time[0];
+            track.endTime = time[time.length - 1];
+        }
         return track;
     }
 
-    updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
+    updateAppearance(
+        showTrack: boolean,
+        showHighlight: boolean,
+        minTime: number,
+        maxTime: number,
+        trackWidth: number,
+        highlightWidth: number,
+    ) {
         this.material.showtrack = showTrack;
         this.material.showhighlight = showHighlight;
         this.material.minTime = minTime;
         this.material.maxTime = maxTime;
         this.material.needsUpdate = true;
+        this.material.trackwidth = trackWidth;
+        this.material.highlightwidth = highlightWidth;
     }
 
     dispose() {
