@@ -20,7 +20,7 @@ const config = {
         // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
         colormap_tracks: "cividis-inferno",
         // Point size (arbitrary units), if cell sizes not provided in zarr attributes
-        point_size: 30
+        point_size: 0.1,
     }
 }
 

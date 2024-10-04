@@ -23,9 +23,9 @@ export class ViewerState {
     selectedPointIds: Array<number> = [];
     showTracks = true;
     showTrackHighlights = true;
-    // Default position and target from interacting with ZSNS001.
-    cameraPosition = [500, 500, -1250];
-    cameraTarget = [500, 500, 500];
+    // Default position and target for the camera
+    cameraPosition = [0, 0, -4]; // was  [500, 500, -1250];
+    cameraTarget = [0, 0, 0]; // was  [500, 500, 500];
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.
