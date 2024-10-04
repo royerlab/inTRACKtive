@@ -265,6 +265,10 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
+    removeLastSelection() {
+        this.selectedPointIds = new Set(this.fetchedPointIds);
+    }
+
     setSize(width: number, height: number) {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();

@@ -7,6 +7,7 @@ import Scene from "@/components/Scene";
 import CellControls from "@/components/CellControls";
 import DataControls from "@/components/DataControls";
 import PlaybackControls from "@/components/PlaybackControls";
+import WarningDialog from "@/components/WarningDialog";
 
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
@@ -21,6 +22,7 @@ import { TrackDownloadData } from "./DownloadButton";
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
 const brandingLogoPath = config.branding.logo_path || undefined;
+const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
@@ -49,6 +51,10 @@ export default function App() {
     const [isLoadingPoints, setIsLoadingPoints] = useState(false);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
+    // show a warning dialog before fetching lots of tracks
+    const [showWarningDialog, setShowWarningDialog] = useState(false);
+    const [numUnfetchedPoints, setNumUnfetchedPoints] = useState(0);
+
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
         console.log("copy shareable URL to clipboard");
@@ -67,6 +73,39 @@ export default function App() {
     }, [dispatchCanvas]);
     const removeTracksUponNewData = () => {
         dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+    };
+
+    // this function fetches the entire lineage for each track
+    const updateTracks = async () => {
+        if (!trackManager) return;
+        console.debug("updateTracks: ", canvas.selectedPointIds);
+        canvas.selectedPointIds.forEach(async (pointId) => {
+            if (canvas.fetchedPointIds.has(pointId)) return;
+            setNumLoadingTracks((n) => n + 1);
+            canvas.fetchedPointIds.add(pointId);
+            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
+            // TODO: points actually only belong to one track, so can get rid of the outer loop
+            trackIds.forEach(async (trackId) => {
+                if (canvas.fetchedRootTrackIds.has(trackId)) return;
+                canvas.fetchedRootTrackIds.add(trackId);
+                const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
+                lineage.forEach(async (relatedTrackId: number, index) => {
+                    if (canvas.tracks.has(relatedTrackId)) return;
+                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
+                    // adding the track *in* the dispatcher creates issues with duplicate fetching
+                    // but we refresh so the selected/loaded count is updated
+                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                    dispatchCanvas({ type: ActionType.REFRESH });
+                });
+            });
+            setNumLoadingTracks((n) => n - 1);
+        });
+    }; // TODO: add missing dependencies
+
+    // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
+    const removeLastSelectedPoints = async () => {
+        dispatchCanvas({ type: ActionType.REMOVE_LAST_SELECTION });
+        dispatchCanvas({ type: ActionType.RESET_POINTS_COLORS });
     };
 
     // update the state when the hash changes, but only register the listener once
@@ -156,33 +195,22 @@ export default function App() {
         if (!trackManager) return;
         if (canvas.selectedPointIds.size == 0) return;
 
-        // this fetches the entire lineage for each track
-        const updateTracks = async () => {
-            console.debug("updateTracks: ", canvas.selectedPointIds);
-            canvas.selectedPointIds.forEach(async (pointId) => {
-                if (canvas.fetchedPointIds.has(pointId)) return;
-                setNumLoadingTracks((n) => n + 1);
-                canvas.fetchedPointIds.add(pointId);
-                const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-                // TODO: points actually only belong to one track, so can get rid of the outer loop
-                trackIds.forEach(async (trackId) => {
-                    if (canvas.fetchedRootTrackIds.has(trackId)) return;
-                    canvas.fetchedRootTrackIds.add(trackId);
-                    const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                    lineage.forEach(async (relatedTrackId: number, index) => {
-                        if (canvas.tracks.has(relatedTrackId)) return;
-                        const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                        // adding the track *in* the dispatcher creates issues with duplicate fetching
-                        // but we refresh so the selected/loaded count is updated
-                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                        canvas.clearPointIndicesCache;
-                        dispatchCanvas({ type: ActionType.REFRESH });
-                    });
-                });
-                setNumLoadingTracks((n) => n - 1);
-            });
-        };
-        updateTracks();
+        // check how many new points are selected
+        let numUnfetchedPoints = 0;
+        canvas.selectedPointIds.forEach((pointId) => {
+            if (!canvas.fetchedPointIds.has(pointId)) {
+                numUnfetchedPoints = numUnfetchedPoints + 1;
+            }
+        });
+
+        // if many cells are selected, let the user decide whether to fetch or cancel
+        if (numUnfetchedPoints > maxNumSelectedCells) {
+            setNumUnfetchedPoints(numUnfetchedPoints);
+            setShowWarningDialog(true);
+        } else {
+            updateTracks();
+        }
+
         // TODO: add missing dependencies
     }, [trackManager, dispatchCanvas, canvas.selectedPointIds]);
 
@@ -385,6 +413,18 @@ export default function App() {
                     />
                 </Box>
             </Box>
+            <WarningDialog
+                open={showWarningDialog}
+                numUnfetchedPoints={numUnfetchedPoints}
+                onCloseAction={() => {
+                    setShowWarningDialog(false);
+                    removeLastSelectedPoints(); // no fetching, remove selection
+                }}
+                onContinueAction={() => {
+                    setShowWarningDialog(false);
+                    updateTracks(); // Continue loading tracks
+                }}
+            />
         </Box>
     );
 }
