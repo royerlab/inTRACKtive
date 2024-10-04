@@ -11,7 +11,6 @@ const config = {
     data:{
         // Default dataset URL (must be publically accessible)
         default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_centered_bundle.zarr/"
-        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/Ascidian/tracks_withSize2_bundle.zarr/"
     },
   
     // Default settings for certain parameters
