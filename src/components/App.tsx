@@ -309,6 +309,10 @@ export default function App() {
                             setPointBrightness={(brightness: number) => {
                                 dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
                             }}
+                            pointSize={canvas.pointSize}
+                            setPointSize={(pointSize: number) => {
+                                dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
+                            }}
                             selectionMode={canvas.selector.selectionMode}
                             setSelectionMode={(value: PointSelectionMode) => {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
