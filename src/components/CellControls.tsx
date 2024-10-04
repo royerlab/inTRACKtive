@@ -64,10 +64,11 @@ export default function CellControls(props: CellControlsProps) {
                         id="points-sizes-slider"
                         aria-labelledby="input-slider-points-sizes-slider"
                         disabled={numberOfValuesPerPoint === 4}
-                        min={20}
-                        max={100}
+                        min={0.05}
+                        max={1}
+                        step={0.01}
                         valueLabelDisplay="on"
-                        valueLabelFormat={(value) => `${Math.floor(value)}`}
+                        valueLabelFormat={(value) => `${value}`}
                         onChange={(_, value) => {
                             props.setPointSize(value as number);
                         }}

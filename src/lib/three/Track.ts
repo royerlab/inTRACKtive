@@ -24,8 +24,8 @@ export class Track extends Mesh {
         const geometry = new TrackGeometry();
         const material = new TrackMaterial({
             vertexColors: true,
-            trackwidth: 0.3,
-            highlightwidth: 2.0,
+            trackwidth: 0.001,
+            highlightwidth: 0.006,
             showtrack: true,
             showhighlight: true,
             transparent: true,

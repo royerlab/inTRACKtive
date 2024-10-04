@@ -8,7 +8,7 @@ interface DownloadButtonProps {
     getDownloadData: () => string[][];
 }
 
-const dataHeaders = ["track_id", "t", "x", "y", "z", "parent_track_id"];
+const dataHeaders = ["track_id", "t", "z", "y", "x", "parent_track_id"];
 
 const convertToCSV = (nestedArray: string[][]) => {
     return nestedArray.map((row) => row.join(",")).join("\r\n");

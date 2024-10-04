@@ -126,7 +126,7 @@ export class PointCanvas {
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
-        this.scene.add(new AxesHelper(128));
+        this.scene.add(new AxesHelper(0.2));
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
@@ -309,7 +309,7 @@ export class PointCanvas {
         }
     }
 
-    setPointsPositions(data: Float32Array) {
+    setPointsPositions(data: Float32Array, pointSize: number) {
         const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -318,7 +318,7 @@ export class PointCanvas {
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
             if (num == 4) {
-                sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
+                sizes.setX(i, pointSize * data[num * i + 3]);
             } else {
                 sizes.setX(i, this.pointSize);
             }
