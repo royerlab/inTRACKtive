@@ -99,7 +99,7 @@ export default function DataControls(props: DataControlsProps) {
                     }}
                 />
             </Tooltip>
-        
+
             <Tooltip title="Refresh page to initial settings">
                 <ButtonIcon icon="Refresh" sdsSize="large" sdsType="secondary" onClick={refreshPageCallBack} />
             </Tooltip>
