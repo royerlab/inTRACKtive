@@ -24,8 +24,8 @@ export class Track extends Mesh {
         const geometry = new TrackGeometry();
         const material = new TrackMaterial({
             vertexColors: true,
-            trackwidth: 0.3,
-            highlightwidth: 2.0,
+            trackwidth: 0.001,
+            highlightwidth: 0.006,
             showtrack: true,
             showhighlight: true,
             transparent: true,
@@ -65,12 +65,21 @@ export class Track extends Mesh {
         return track;
     }
 
-    updateAppearance(showTrack: boolean, showHighlight: boolean, minTime: number, maxTime: number) {
+    updateAppearance(
+        showTrack: boolean,
+        showHighlight: boolean,
+        minTime: number,
+        maxTime: number,
+        trackWidth: number,
+        highlightWidth: number,
+    ) {
         this.material.showtrack = showTrack;
         this.material.showhighlight = showHighlight;
         this.material.minTime = minTime;
         this.material.maxTime = maxTime;
         this.material.needsUpdate = true;
+        this.material.trackwidth = trackWidth;
+        this.material.highlightwidth = highlightWidth;
     }
 
     dispose() {

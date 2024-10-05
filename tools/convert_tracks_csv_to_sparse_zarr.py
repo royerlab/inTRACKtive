@@ -76,6 +76,10 @@ tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 # track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
 direct_parent_index_map = {}  
 
+vector_x = []
+vector_y = []
+vector_z = []
+
 for point in points:
     if add_radius:
         track_id, t, z, y, x, parent_track_id, radius,  n = point # n is the nth point in this timepoint
@@ -83,6 +87,10 @@ for point in points:
     else: 
         track_id, t, z, y, x, parent_track_id,          n = point # n is the nth point in this timepoint
         points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)] = [z, y, x]
+
+    vector_x.append(x)
+    vector_y.append(y)
+    vector_z.append(z)
 
     point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
 
@@ -103,6 +111,21 @@ tracks_to_parents.setdiag(1)
 tracks_to_children.setdiag(1)
 tracks_to_parents = tracks_to_parents.tocsr()
 tracks_to_children = tracks_to_children.tocsr()
+
+mean_x = np.mean(vector_x)
+mean_y = np.mean(vector_y)
+mean_z = np.mean(vector_z)
+extent_x = np.max(np.abs(vector_x - mean_x))
+extent_y = np.max(np.abs(vector_y - mean_y))
+extent_z = np.max(np.abs(vector_z - mean_z))
+extent_xyz = np.max([extent_x, extent_y, extent_z])
+print(f'{mean_x=}')
+print(f'{mean_y=}')
+print(f'{mean_z=}')
+print(f'{extent_x=}')
+print(f'{extent_z=}')
+print(f'{extent_z=}')
+print(f'{extent_xyz=}')
 
 start = time.monotonic()
 iter = 0
@@ -154,6 +177,10 @@ points = top_level_group.create_dataset(
     dtype=np.float32,
 )
 points.attrs["values_per_point"] = num_values_per_point
+points.attrs["mean_x"] = mean_x
+points.attrs["mean_y"] = mean_y
+points.attrs["mean_z"] = mean_z
+points.attrs["extent_xyz"] = extent_xyz
 points.attrs["fields"] = ['z', 'y', 'x', 'radius'][:num_values_per_point]
 
 
