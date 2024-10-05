@@ -253,17 +253,14 @@ function usePointCanvas(
         [canvas.curTime, canvas.maxPointsPerTimepoint],
     );
 
-    canvas.selector.selectionPreviewChanged = useCallback(
-        (pointIndices: number[]) => {
-            console.debug("selectionPreviewChanged:", pointIndices);
-            // const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
-            dispatchCanvas({
-                type: ActionType.SHOW_PREVIEW_POINTS,
-                selectedPointIndices: pointIndices,
-            });
-        },
-        [canvas.curTime, canvas.maxPointsPerTimepoint],
-    );
+    canvas.selector.selectionPreviewChanged = useCallback((pointIndices: number[]) => {
+        console.debug("selectionPreviewChanged:", pointIndices);
+        // const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
+        dispatchCanvas({
+            type: ActionType.SHOW_PREVIEW_POINTS,
+            selectedPointIndices: pointIndices,
+        });
+    }, []);
 
     // set up the canvas when the div is available
     // this is an effect because:

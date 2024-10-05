@@ -134,7 +134,8 @@ export class SpherePointSelector {
         if (event.ctrlKey) {
             event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
-            this.findPointsWithinSelector();
+            const selected = this.findPointsWithinSelector();
+            this.selectionPreviewChanged(selected);
         }
     }
 
@@ -149,7 +150,8 @@ export class SpherePointSelector {
         const intersects = this.raycaster.intersectObject(this.points);
         if (intersects.length > 0) {
             this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
-            this.findPointsWithinSelector();
+            const selected = this.findPointsWithinSelector();
+            this.selectionPreviewChanged(selected);
         }
     }
 
@@ -158,27 +160,8 @@ export class SpherePointSelector {
         if (!event.shiftKey || !this.cursor.visible) {
             return;
         }
-        // return list of points inside cursor sphere
-        const radius = this.cursor.geometry.parameters.radius;
-        const normalMatrix = new Matrix3();
-        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
-        normalMatrix.invert();
-        const center = this.cursor.position;
-        const geometry = this.points.geometry;
-        const positions = geometry.getAttribute("position");
-        const numPoints = positions.count;
-        const selected = [];
-        for (let i = 0; i < numPoints; i++) {
-            const x = positions.getX(i);
-            const y = positions.getY(i);
-            const z = positions.getZ(i);
-            const vecToCenter = new Vector3(x, y, z).sub(center);
-            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
-            if (scaledVecToCenter.length() < radius) {
-                selected.push(i);
-            }
-        }
-        console.log("selected points:", selected);
+        const selected = this.findPointsWithinSelector();
+
         this.selectionChanged(selected);
     }
 
@@ -186,7 +169,7 @@ export class SpherePointSelector {
 
     pointerCancel(_event: MouseEvent) {}
 
-    findPointsWithinSelector() {
+    findPointsWithinSelector(): number[] {
         // find the points within the cursor sphere
         const radius = this.cursor.geometry.parameters.radius;
         const normalMatrix = new Matrix3();
@@ -207,6 +190,6 @@ export class SpherePointSelector {
                 selected.push(i);
             }
         }
-        this.selectionPreviewChanged(selected);
+        return selected;
     }
 }
