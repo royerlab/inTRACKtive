@@ -18,7 +18,7 @@ import { SelectionChanged, SelectionPreviewChanged } from "@/lib/PointSelector";
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
     readonly cursor = new Mesh(
-        new SphereGeometry(25, 16, 8),
+        new SphereGeometry(0.07, 16, 8),
         new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 }),
     );
     readonly raycaster = new Raycaster();
@@ -52,9 +52,7 @@ export class SpherePointSelector {
         this.selectionChanged = selectionChanged;
         this.selectionPreviewChanged = selectionPreviewChanged;
 
-        // Value of 10 arbitrarily chosen for a decent experience,
-        // compared to 1 which can be sluggish.
-        this.raycaster.params.Points.threshold = 10;
+        this.raycaster.params.Points.threshold = 0.1;
 
         this.cursorControl = new TransformControls(camera, renderer.domElement);
         this.cursorControl.size = 0.5;
@@ -134,8 +132,7 @@ export class SpherePointSelector {
         if (event.ctrlKey) {
             event.preventDefault();
             this.cursor.scale.multiplyScalar(1 + event.deltaY * 0.001);
-            const selected = this.findPointsWithinSelector();
-            this.selectionPreviewChanged(selected);
+            this.findPointsWithinSelector();
         }
     }
 
@@ -150,8 +147,7 @@ export class SpherePointSelector {
         const intersects = this.raycaster.intersectObject(this.points);
         if (intersects.length > 0) {
             this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
-            const selected = this.findPointsWithinSelector();
-            this.selectionPreviewChanged(selected);
+            this.findPointsWithinSelector();
         }
     }
 
@@ -161,7 +157,6 @@ export class SpherePointSelector {
             return;
         }
         const selected = this.findPointsWithinSelector();
-
         this.selectionChanged(selected);
     }
 
@@ -190,6 +185,7 @@ export class SpherePointSelector {
                 selected.push(i);
             }
         }
+        this.selectionPreviewChanged(selected);
         return selected;
     }
 }
