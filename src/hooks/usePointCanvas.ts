@@ -10,6 +10,9 @@ enum ActionType {
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
+    RESET_POINTS_COLORS = "POINT_COLORS",
+    REMOVE_LAST_SELECTION = "REMOVE_LAST_SELECTION",
+    POINT_SIZES = "POINT_SIZES",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -41,9 +44,23 @@ interface PointBrightness {
     brightness: number;
 }
 
+interface PointSizes {
+    type: ActionType.POINT_SIZES;
+    pointSize: number;
+}
+
 interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
+    pointSize: number;
+}
+
+interface PointColors {
+    type: ActionType.RESET_POINTS_COLORS;
+}
+
+interface RemoveLastSelection {
+    type: ActionType.REMOVE_LAST_SELECTION;
 }
 
 interface Refresh {
@@ -98,7 +115,10 @@ type PointCanvasAction =
     | CurTime
     | InitPointsGeometry
     | PointBrightness
+    | PointSizes
     | PointsPositions
+    | PointColors
+    | RemoveLastSelection
     | Refresh
     | RemoveAllTracks
     | SelectionMode
@@ -136,13 +156,26 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
+            break;
+        case ActionType.POINT_SIZES:
+            newCanvas.pointSize = action.pointSize;
+            newCanvas.setPointsSizes();
             break;
         case ActionType.POINTS_POSITIONS:
-            newCanvas.setPointsPositions(action.positions);
+            newCanvas.setPointsPositions(action.positions, action.pointSize);
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
+            break;
+        case ActionType.RESET_POINTS_COLORS:
+            newCanvas.resetPointColors();
+            break;
+        case ActionType.REMOVE_LAST_SELECTION:
+            newCanvas.removeLastSelection();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
+            newCanvas.clearPointIndicesCache();
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             break;
@@ -168,14 +201,13 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.ADD_SELECTED_POINT_IDS: {
             newCanvas.pointBrightness = 0.8;
             newCanvas.resetPointColors();
-            // TODO: only highlight the indices if the canvas is at the same time
-            // point as when it was selected.
-            newCanvas.highlightPoints(action.selectedPointIndices);
+            // newCanvas.highlightPoints(action.selectedPointIndices);
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
             newCanvas.selectedPointIds = newSelectedPointIds;
+            newCanvas.highlightPoints(action.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:

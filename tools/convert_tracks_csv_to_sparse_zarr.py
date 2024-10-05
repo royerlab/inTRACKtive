@@ -10,6 +10,7 @@ from scipy.sparse import lil_matrix
 
 parser = argparse.ArgumentParser(description="Convert a CSV of tracks to a sparse Zarr store")
 parser.add_argument("csv_file", type=str, help="Path to the CSV file")
+parser.add_argument("--add_radius",action="store_true",help="Boolean indicating whether to include the column radius as cell size")
 parser.add_argument(
     "out_dir",
     type=str,
@@ -25,18 +26,37 @@ else:
     out_dir = Path(args.out_dir)
 zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
+add_radius = args.add_radius
+print('add_radius',add_radius)
+if add_radius == True:
+    num_values_per_point = 4
+else:
+    num_values_per_point = 3
+print('num_values_per_point',num_values_per_point)
+
+
 start = time.monotonic()
 points = []
 points_in_timepoint = Counter()
 with open(csv_file, "r") as f:
     reader = csv.reader(f)
-    next(reader)  # Skip the header
-    # TrackID,t,z,y,x,parent_track_id
+    header = next(reader)  # Skip the header
+
+    assert header[0] == 'track_id',         "Error: first columns name in csv must be track_id"
+    assert header[1] == 't',                "Error: second columns name in csv must be t"
+    assert header[2] == 'z',                "Error: third columns name in csv must be z"
+    assert header[3] == 'y',                "Error: fourth columns name in csv must be y"
+    assert header[4] == 'x',                "Error: fifth columns name in csv must be x"
+    assert header[5] == 'parent_track_id',  "Error: sixth columns name in csv must be parent_track_id"
+    if add_radius:
+        assert header[6] == 'radius',           "Error: seventh columns name in csv must be radius"    # TrackID,t,z,y,x,parent_track_id
+
     for row in reader:
         t = int(row[1])
-        points.append(
-            (int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), points_in_timepoint[t])
-        )
+        if add_radius:
+            points.append((int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), float(row[6]), points_in_timepoint[t]))
+        else:
+            points.append((int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), points_in_timepoint[t]))
         points_in_timepoint[t] += 1
 
 print(f"Read {len(points)} points in {time.monotonic() - start} seconds")
@@ -47,7 +67,7 @@ timepoints = len(points_in_timepoint)
 tracks = len(set(p[0] for p in points))
 
 # store the points in an array
-points_array = np.ones((timepoints, 3 * max_points_in_timepoint), dtype=np.float32) * -9999.9
+points_array = np.ones((timepoints, num_values_per_point * max_points_in_timepoint), dtype=np.float32) * -9999.9
 points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
 tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
 tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
@@ -56,16 +76,28 @@ tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 # track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
 direct_parent_index_map = {}  
 
+vector_x = []
+vector_y = []
+vector_z = []
+
 for point in points:
-    track_id, t, z, y, x, parent_track_id, n = point # n is the nth point in this timepoint
+    if add_radius:
+        track_id, t, z, y, x, parent_track_id, radius,  n = point # n is the nth point in this timepoint
+        points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)] = [z, y, x, radius]
+    else: 
+        track_id, t, z, y, x, parent_track_id,          n = point # n is the nth point in this timepoint
+        points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)] = [z, y, x]
+
+    vector_x.append(x)
+    vector_y.append(y)
+    vector_z.append(z)
+
     point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
 
     track_index = track_id - 1
     if track_index not in direct_parent_index_map:
       # maps the track_index to the parent_track_index
       direct_parent_index_map[track_id - 1] = parent_track_id - 1
-
-    points_array[t, 3 * n:3 * (n + 1)] = [z, y, x]
 
     points_to_tracks[point_id, track_id - 1] = 1
 
@@ -79,6 +111,21 @@ tracks_to_parents.setdiag(1)
 tracks_to_children.setdiag(1)
 tracks_to_parents = tracks_to_parents.tocsr()
 tracks_to_children = tracks_to_children.tocsr()
+
+mean_x = np.mean(vector_x)
+mean_y = np.mean(vector_y)
+mean_z = np.mean(vector_z)
+extent_x = np.max(np.abs(vector_x - mean_x))
+extent_y = np.max(np.abs(vector_y - mean_y))
+extent_z = np.max(np.abs(vector_z - mean_z))
+extent_xyz = np.max([extent_x, extent_y, extent_z])
+print(f'{mean_x=}')
+print(f'{mean_y=}')
+print(f'{mean_z=}')
+print(f'{extent_x=}')
+print(f'{extent_z=}')
+print(f'{extent_z=}')
+print(f'{extent_xyz=}')
 
 start = time.monotonic()
 iter = 0
@@ -117,18 +164,25 @@ tracks_to_tracks = tracks_to_tracks.tocsr()
 print(f"Converted to CSR in {time.monotonic() - start} seconds")
 start = time.monotonic()
 
-# save the points array (same format as ZSHS001_nodes.zarr)
+# save the points array
 top_level_group = zarr.hierarchy.group(
     zarr.storage.DirectoryStore(zarr_path.as_posix()),
     overwrite=True,
 )
 
-top_level_group.create_dataset(
+points = top_level_group.create_dataset(
     "points",
     data=points_array,
     chunks=(1, points_array.shape[1]),
     dtype=np.float32,
 )
+points.attrs["values_per_point"] = num_values_per_point
+points.attrs["mean_x"] = mean_x
+points.attrs["mean_y"] = mean_y
+points.attrs["mean_z"] = mean_z
+points.attrs["extent_xyz"] = extent_xyz
+points.attrs["fields"] = ['z', 'y', 'x', 'radius'][:num_values_per_point]
+
 
 top_level_group.create_groups("points_to_tracks", "tracks_to_points", "tracks_to_tracks")
 # TODO: tracks_to_points may want to store xyz for the points, not just the indices
@@ -141,7 +195,7 @@ tracks_to_points_zarr.create_dataset("indptr", data=tracks_to_points.indptr)
 tracks_to_points_xyz = np.zeros((len(tracks_to_points.indices), 3), dtype=np.float32)
 for i, ind in enumerate(tracks_to_points.indices):
     t, n = divmod(ind, max_points_in_timepoint)
-    tracks_to_points_xyz[i] = points_array[t, 3 * n:3 * (n + 1)]
+    tracks_to_points_xyz[i] = points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)][:3]
 # TODO: figure out better chunking?
 tracks_to_points_zarr.create_dataset(
     "data",

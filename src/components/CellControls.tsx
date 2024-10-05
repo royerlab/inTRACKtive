@@ -3,16 +3,19 @@ import { InputSlider, SegmentedControl, SingleButtonDefinition } from "@czi-sds/
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 
 import { PointSelectionMode } from "@/lib/PointSelector";
-import { TrackManager } from "@/lib/TrackManager";
+import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 
 interface CellControlsProps {
     clearTracks: () => void;
     getTrackDownloadData: () => string[][];
     numSelectedCells?: number;
+    numSelectedTracks?: number;
     trackManager: TrackManager | null;
     pointBrightness: number;
     setPointBrightness: (value: number) => void;
+    pointSize: number;
+    setPointSize: (value: number) => void;
     selectionMode: PointSelectionMode;
     setSelectionMode: (value: PointSelectionMode) => void;
 }
@@ -35,6 +38,9 @@ export default function CellControls(props: CellControlsProps) {
             <FontS>
                 <strong>{props.numSelectedCells ?? 0}</strong> cells selected
             </FontS>
+            <FontS>
+                <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
+            </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
@@ -49,13 +55,34 @@ export default function CellControls(props: CellControlsProps) {
                     value={props.selectionMode}
                 />
             </Box>
+            {numberOfValuesPerPoint !== 4 && (
+                <>
+                    <label htmlFor="points-sizes-slider">
+                        <ControlLabel id="input-slider-points-sizes-slider">Cell Size</ControlLabel>
+                    </label>
+                    <InputSlider
+                        id="points-sizes-slider"
+                        aria-labelledby="input-slider-points-sizes-slider"
+                        disabled={numberOfValuesPerPoint === 4}
+                        min={0.05}
+                        max={1}
+                        step={0.01}
+                        valueLabelDisplay="on"
+                        valueLabelFormat={(value) => `${value}`}
+                        onChange={(_, value) => {
+                            props.setPointSize(value as number);
+                        }}
+                        value={props.pointSize}
+                    />
+                </>
+            )}
             <label htmlFor="points-brightness-slider">
-                <ControlLabel id="input-slider-points-brightness-slider">Point Brightness</ControlLabel>
+                <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
             </label>
             <InputSlider
                 id="points-brightness-slider"
                 aria-labelledby="input-slider-points-brightness-slider"
-                disabled={!props.numSelectedCells}
+                // disabled={!props.numSelectedCells}
                 min={0}
                 max={100}
                 valueLabelDisplay="on"
