@@ -19,7 +19,7 @@ import { SelectionChanged } from "@/lib/PointSelector";
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
     readonly cursor = new Mesh(
-        new SphereGeometry(25, 8, 8),
+        new SphereGeometry(0.07, 8, 8),
         new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
     );
     readonly raycaster = new Raycaster();
