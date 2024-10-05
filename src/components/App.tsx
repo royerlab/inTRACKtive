@@ -194,14 +194,14 @@ export default function App() {
                                 }
 
                                 // Wait for all related tracks to be fetched and rendered in parallel
-                                await Promise.all(relatedTrackPromises);
+                                await Promise.allSettled(relatedTrackPromises);
                             });
 
                         lineagePromises.push(lineagePromise);
                     }
 
                     // Wait for all lineages to be fetched and processed in parallel
-                    await Promise.all(lineagePromises);
+                    await Promise.allSettled(lineagePromises);
                 });
 
                 // Add the track fetching promise to the promises array
@@ -214,7 +214,7 @@ export default function App() {
             });
 
             // Wait for all tracks and lineages to be fetched in parallel
-            await Promise.all(allTrackPromises);
+            await Promise.allSettled(allTrackPromises);
             console.log("All tracks have been rendered on the canvas");
         };
 
