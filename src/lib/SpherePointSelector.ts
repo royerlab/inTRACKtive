@@ -52,7 +52,7 @@ export class SpherePointSelector {
         this.selectionChanged = selectionChanged;
         this.selectionPreviewChanged = selectionPreviewChanged;
 
-        this.raycaster.params.Points.threshold = 0.1;
+        this.raycaster.params.Points.threshold = 0.05;
 
         this.cursorControl = new TransformControls(camera, renderer.domElement);
         this.cursorControl.size = 0.5;

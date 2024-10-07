@@ -251,6 +251,10 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
+    updatePreviewPoints() {
+        this.selector.sphereSelector.findPointsWithinSelector();
+    }
+
     highlightPreviewPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();

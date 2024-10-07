@@ -172,6 +172,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.setPointsPositions(action.positions, action.pointSize);
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            newCanvas.updatePreviewPoints();
             break;
         case ActionType.RESET_POINTS_COLORS:
             newCanvas.resetPointColors();
@@ -285,7 +286,6 @@ function usePointCanvas(
 
     canvas.selector.selectionPreviewChanged = useCallback((pointIndices: number[]) => {
         console.debug("selectionPreviewChanged:", pointIndices);
-        // const pointIds = new Set(pointIndices.map((p) => canvas.curTime * canvas.maxPointsPerTimepoint + p));
         dispatchCanvas({
             type: ActionType.SHOW_PREVIEW_POINTS,
             selectedPointIndices: pointIndices,
