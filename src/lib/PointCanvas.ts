@@ -27,6 +27,9 @@ import { numberOfValuesPerPoint } from "./TrackManager";
 
 import config from "../../CONFIG.ts";
 const initialPointSize = config.settings.point_size;
+const pointColor = config.settings.point_color;
+const highlightPointColor = config.settings.highlight_point_color;
+const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -245,7 +248,26 @@ export class PointCanvas {
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
-        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
+        color.setRGB(highlightPointColor[0], highlightPointColor[1], highlightPointColor[2], SRGBColorSpace); // pink
+        for (const i of points) {
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+    }
+
+    updatePreviewPoints() {
+        this.selector.sphereSelector.findPointsWithinSelector();
+    }
+
+    highlightPreviewPoints(points: number[]) {
+        const colorAttribute = this.points.geometry.getAttribute("color");
+        const color = new Color();
+        color.setRGB(
+            previewHighlightPointColor[0],
+            previewHighlightPointColor[1],
+            previewHighlightPointColor[2],
+            SRGBColorSpace,
+        ); // yellow
         for (const i of points) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
@@ -257,7 +279,7 @@ export class PointCanvas {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
         color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
@@ -379,8 +401,8 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
-        console.log("removeAllTracks!");
         this.selectedPointIds = new Set();
+        this.selectedPointIndices = [];
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();
         for (const trackID of this.tracks.keys()) {

@@ -21,6 +21,7 @@ enum ActionType {
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
     ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
+    SHOW_PREVIEW_POINTS = "SHOW_PREVIEW_POINTS",
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
 }
 
@@ -104,6 +105,11 @@ interface AddSelectedPointIds {
     selectedPointIds: Set<number>;
 }
 
+interface ShowPreviewPoints {
+    type: ActionType.SHOW_PREVIEW_POINTS;
+    selectedPointIndices: number[];
+}
+
 interface UpdateWithState {
     type: ActionType.UPDATE_WITH_STATE;
     state: ViewerState;
@@ -127,6 +133,7 @@ type PointCanvasAction =
     | Size
     | MinMaxTime
     | AddSelectedPointIds
+    | ShowPreviewPoints
     | UpdateWithState;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
@@ -166,6 +173,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.setPointsPositions(action.positions, action.pointSize);
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            newCanvas.updatePreviewPoints();
             break;
         case ActionType.RESET_POINTS_COLORS:
             newCanvas.resetPointColors();
@@ -179,9 +187,22 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             break;
-        case ActionType.SELECTION_MODE:
+        case ActionType.SELECTION_MODE: {
+            const modeOld: PointSelectionMode = canvas.selector.selectionMode;
+            const modeNew: PointSelectionMode = action.selectionMode;
             newCanvas.setSelectionMode(action.selectionMode);
+
+            // reset the preview highlights when switching between box and spherical cursors (not when switching between spheres)
+            if (modeOld == PointSelectionMode.BOX && modeNew !== PointSelectionMode.BOX) {
+                newCanvas.resetPointColors();
+                newCanvas.highlightPoints(newCanvas.selectedPointIndices);
+            }
+            if (modeOld !== PointSelectionMode.BOX && modeNew == PointSelectionMode.BOX) {
+                newCanvas.resetPointColors();
+                newCanvas.highlightPoints(newCanvas.selectedPointIndices);
+            }
             break;
+        }
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
             newCanvas.updateAllTrackHighlights();
@@ -201,13 +222,21 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.ADD_SELECTED_POINT_IDS: {
             newCanvas.pointBrightness = 0.8;
             newCanvas.resetPointColors();
-            // newCanvas.highlightPoints(action.selectedPointIndices);
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
             newCanvas.selectedPointIds = newSelectedPointIds;
+            newCanvas.updateSelectedPointIndices();
             newCanvas.highlightPoints(action.selectedPointIndices);
+            break;
+        }
+        case ActionType.SHOW_PREVIEW_POINTS: {
+            newCanvas.resetPointColors();
+            if (canvas.selector.selectionMode !== PointSelectionMode.BOX) {
+                newCanvas.highlightPreviewPoints(action.selectedPointIndices);
+            }
+            newCanvas.highlightPoints(newCanvas.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:
@@ -255,6 +284,14 @@ function usePointCanvas(
         },
         [canvas.curTime, canvas.maxPointsPerTimepoint],
     );
+
+    canvas.selector.selectionPreviewChanged = useCallback((pointIndices: number[]) => {
+        console.debug("selectionPreviewChanged:", pointIndices);
+        dispatchCanvas({
+            type: ActionType.SHOW_PREVIEW_POINTS,
+            selectedPointIndices: pointIndices,
+        });
+    }, []);
 
     // set up the canvas when the div is available
     // this is an effect because:
