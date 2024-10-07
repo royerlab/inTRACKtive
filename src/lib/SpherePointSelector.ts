@@ -19,7 +19,7 @@ import { SelectionChanged, SelectionPreviewChanged } from "@/lib/PointSelector";
 export class SpherePointSelector {
     readonly cursor = new Mesh(
         new SphereGeometry(0.07, 16, 8),
-        new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 }),
+        new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }),
     );
     readonly raycaster = new Raycaster();
     readonly scene: Scene;

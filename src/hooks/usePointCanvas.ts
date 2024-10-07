@@ -142,6 +142,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
+
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
             if (typeof action.curTime === "function") {
