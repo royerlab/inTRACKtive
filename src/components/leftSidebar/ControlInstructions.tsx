@@ -38,7 +38,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
             break;
     }
     return (
-        <Callout title="Select Cells" intent="info" sx={{ width: "auto" }}>
+        <Callout intent="info" sx={{ width: "auto" }}>
             {instructionText}
         </Callout>
     );
