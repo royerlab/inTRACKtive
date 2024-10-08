@@ -263,7 +263,6 @@ export class PointCanvas {
     }
 
     updatePreviewPoints() {
-        console.log("line 266 in PointCanvas.ts");
         this.selector.sphereSelector.findPointsWithinSelector();
     }
 

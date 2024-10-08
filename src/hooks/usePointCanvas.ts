@@ -177,6 +177,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            newCanvas.updatePreviewPoints();
             break;
         case ActionType.POINT_SIZES:
             newCanvas.pointSize = action.pointSize;
@@ -263,6 +264,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.SELECTOR_SCALE:
             newCanvas.setSelectorScale(action.scale);
+            newCanvas.updatePreviewPoints();
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
