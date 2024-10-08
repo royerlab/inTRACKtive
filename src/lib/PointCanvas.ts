@@ -25,6 +25,7 @@ import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 
+import { detectedDevice } from "@/components/App.tsx";
 import config from "../../CONFIG.ts";
 const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
@@ -153,7 +154,13 @@ export class PointCanvas {
 
         // Set up selection
         this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
-        this.setSelectionMode(PointSelectionMode.BOX);
+        if (detectedDevice.isTablet) {
+            this.setSelectionMode(PointSelectionMode.SPHERE);
+        } else if (detectedDevice.isPhone) {
+            this.setSelectionMode(null); // no selection functionality on phone
+        } else {
+            this.setSelectionMode(PointSelectionMode.BOX);
+        }
     }
 
     shallowCopy(): PointCanvas {
@@ -191,7 +198,7 @@ export class PointCanvas {
         this.controls.target.fromArray(state.cameraTarget);
     }
 
-    setSelectionMode(mode: PointSelectionMode) {
+    setSelectionMode(mode: PointSelectionMode | null) {
         this.selector.setSelectionMode(mode);
     }
 
@@ -423,5 +430,15 @@ export class PointCanvas {
         } else {
             this.points.material.dispose();
         }
+    }
+
+    MobileSelectCells() {
+        // if used on tablet, this will select the cells upon button click
+        this.selector.sphereSelector.MobileFindAndSelect();
+    }
+
+    setSelectorScale(scale: number) {
+        // on tablet: this will set the size of the sphere selector upon the user using the slider
+        this.selector.sphereSelector.cursor.scale.set(scale, scale, scale);
     }
 }

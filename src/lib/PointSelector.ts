@@ -33,7 +33,7 @@ export class PointSelector {
     readonly boxSelector: BoxPointSelector;
     readonly sphereSelector: SpherePointSelector;
 
-    selectionMode: PointSelectionMode = PointSelectionMode.BOX;
+    selectionMode: PointSelectionMode | null = PointSelectionMode.BOX;
     // To notify external observers about changes to the current selection.
     selectionChanged: SelectionChanged = (_selection: number[]) => {};
     selectionPreviewChanged: SelectionPreviewChanged = (_selection: number[]) => {};
@@ -102,10 +102,13 @@ export class PointSelector {
         this.selectionPreviewChanged(selection);
     }
 
-    setSelectionMode(mode: PointSelectionMode) {
+    setSelectionMode(mode: PointSelectionMode | null) {
         console.debug("PointSelector.setSelectionMode: ", mode);
         this.selectionMode = mode;
-        this.sphereSelector.setVisible(mode !== PointSelectionMode.BOX, mode === PointSelectionMode.SPHERE);
+        this.sphereSelector.setVisible(
+            mode === PointSelectionMode.SPHERICAL_CURSOR || mode === PointSelectionMode.SPHERE,
+            mode === PointSelectionMode.SPHERE,
+        );
         if (mode == PointSelectionMode.SPHERICAL_CURSOR || mode == PointSelectionMode.SPHERE) {
             this.sphereSelector.findPointsWithinSelector();
         }

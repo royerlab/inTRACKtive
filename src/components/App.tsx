@@ -15,7 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
-import { TimestampOverlay } from "./overlays/TimestampOverlay";
+// import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
@@ -28,6 +28,56 @@ const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
+
+function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: boolean } {
+    const ua = navigator.userAgent || navigator.vendor;
+
+    // Detect iPads, iPhones, and iPods based on the user agent string
+    const isiPad =
+        /iPad/.test(ua) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+    const isiPhoneOrIPod = /iPhone|iPod/.test(ua);
+
+    // Detect Android phones and tablets
+    const isAndroidPhone = /Android/.test(ua) && /Mobile/.test(ua);
+    const isAndroidTablet = /Android/.test(ua) && !/Mobile/.test(ua);
+
+    // Screen size check (tablets typically have a wider screen)
+    const isSmallScreen = window.screen.width <= 768;
+    const hasTouch = navigator.maxTouchPoints > 1;
+
+    // Determine if it's a phone, tablet, or desktop
+    const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
+    const isTablet = isiPad || isAndroidTablet || hasTouch;
+    const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
+
+    // manually asign labels for debugging
+    // const isPhone = false;
+    // const isTablet = true;
+    // const isDesktop = false;
+
+    return {
+        isPhone: isPhone,
+        isTablet: isTablet && !isPhone, // To avoid small phones being miscategorized as tablets
+        isMobile: !isDesktop,
+    };
+}
+
+export const detectedDevice = detectDeviceType();
+console.debug("detectDeviceType: ", detectedDevice);
+if (detectedDevice.isPhone) {
+    window.confirm("Note: for full functionality, please use a tablet or desktop device. Press 'OK' to continue ");
+}
+
+// for debugging: show the detected device type in an alert
+// window.confirm(
+//     "detected device type (desktop | tablet | phone) = (" +
+//         !detectDeviceType().isMobile +
+//         " | " +
+//         detectDeviceType().isTablet +
+//         " | " +
+//         detectDeviceType().isPhone +
+//         ")",
+// );
 
 const drawerWidth = 256;
 const playbackFPS = 16;
@@ -298,128 +348,155 @@ export default function App() {
     };
 
     return (
-        <Box sx={{ display: "flex", width: "100%", height: "100%" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", overflow: "hidden" }}>
             {/* TODO: components *could* go deeper still for organization */}
-            <Drawer
-                anchor="left"
-                variant="permanent"
-                sx={{
-                    "width": drawerWidth,
-                    "flexShrink": 0,
-                    "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
-                }}
-            >
-                <Box
+            {!detectedDevice.isPhone && (
+                <Drawer
+                    anchor="left"
+                    variant="permanent"
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        height: "100%",
+                        "width": drawerWidth,
+                        "flexShrink": 0,
+                        "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
                     }}
                 >
                     <Box
                         sx={{
-                            flexGrow: 0,
-                            padding: "1em 1.5em",
                             display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
+                            flexDirection: "column",
                             justifyContent: "space-between",
+                            width: "100%",
+                            height: "100%",
                         }}
                     >
-                        {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
-                        {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
-                        {brandingName && <h2>{brandingName}</h2>}{" "}
+                        <Box
+                            sx={{
+                                flexGrow: 0,
+                                padding: "1em 1.5em",
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                            }}
+                        >
+                            {brandingLogoPath && <img src={brandingLogoPath} alt="" />}
+                            {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
+                            {brandingName && <h2>{brandingName}</h2>}{" "}
+                        </Box>
+                        <Box
+                            sx={{
+                                flexGrow: 1, // CHANGED: Allows the middle section to expand
+                                overflowY: "auto", // CHANGED: Makes this section scrollable
+                                padding: "2em",
+                            }}
+                        >
+                            <CellControls
+                                clearTracks={() => {
+                                    dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+                                }}
+                                getTrackDownloadData={getTrackDownloadData}
+                                numSelectedCells={numSelectedCells}
+                                numSelectedTracks={numSelectedTracks}
+                                trackManager={trackManager}
+                                pointBrightness={canvas.pointBrightness}
+                                setPointBrightness={(brightness: number) => {
+                                    dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
+                                }}
+                                pointSize={canvas.pointSize}
+                                setPointSize={(pointSize: number) => {
+                                    dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
+                                }}
+                                selectionMode={canvas.selector.selectionMode}
+                                setSelectionMode={(value: PointSelectionMode) => {
+                                    dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
+                                }}
+                                isTablet={detectedDevice.isTablet}
+                                MobileSelectCells={() => {
+                                    dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
+                                }}
+                                setSelectorScale={(scale: number) => {
+                                    dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
+                                }}
+                                selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
+                            />
+                            <Divider sx={{ marginY: "1em" }} />
+                            <LeftSidebarWrapper
+                                hasTracks={numSelectedCells > 0}
+                                trackManager={trackManager}
+                                trackHighlightLength={trackHighlightLength}
+                                selectionMode={canvas.selector.selectionMode}
+                                showTracks={canvas.showTracks}
+                                setShowTracks={(show: boolean) => {
+                                    dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
+                                }}
+                                showTrackHighlights={canvas.showTrackHighlights}
+                                setShowTrackHighlights={(show: boolean) => {
+                                    dispatchCanvas({
+                                        type: ActionType.SHOW_TRACK_HIGHLIGHTS,
+                                        showTrackHighlights: show,
+                                    });
+                                }}
+                                setTrackHighlightLength={(length: number) => {
+                                    dispatchCanvas({
+                                        type: ActionType.MIN_MAX_TIME,
+                                        minTime: canvas.curTime - length / 2,
+                                        maxTime: canvas.curTime + length / 2,
+                                    });
+                                }}
+                                isTablet={detectedDevice.isTablet}
+                            />
+                        </Box>
+                        <Divider />
+                        <Box flexGrow={0} padding="1em">
+                            <DataControls
+                                dataUrl={dataUrl}
+                                initialDataUrl={initialViewerState.dataUrl}
+                                setDataUrl={setDataUrl}
+                                removeTracksUponNewData={removeTracksUponNewData}
+                                copyShareableUrlToClipboard={copyShareableUrlToClipboard}
+                                refreshPage={refreshPage}
+                                trackManager={trackManager}
+                            />
+                        </Box>
                     </Box>
-
-                    {/* Scrollable section for other controls */}
-                    <Box
-                        sx={{
-                            flexGrow: 1, // CHANGED: Allows the middle section to expand
-                            overflowY: "auto", // CHANGED: Makes this section scrollable
-                            padding: "2em",
-                        }}
-                    >
-                        <CellControls
-                            clearTracks={() => {
-                                dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
-                            }}
-                            getTrackDownloadData={getTrackDownloadData}
-                            numSelectedCells={numSelectedCells}
-                            numSelectedTracks={numSelectedTracks}
-                            trackManager={trackManager}
-                            pointBrightness={canvas.pointBrightness}
-                            setPointBrightness={(brightness: number) => {
-                                dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
-                            }}
-                            pointSize={canvas.pointSize}
-                            setPointSize={(pointSize: number) => {
-                                dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
-                            }}
-                            selectionMode={canvas.selector.selectionMode}
-                            setSelectionMode={(value: PointSelectionMode) => {
-                                dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
-                            }}
-                        />
-                        <Divider sx={{ marginY: "1em" }} />
-                        <LeftSidebarWrapper
-                            hasTracks={numSelectedCells > 0}
-                            trackManager={trackManager}
-                            trackHighlightLength={trackHighlightLength}
-                            selectionMode={canvas.selector.selectionMode}
-                            showTracks={canvas.showTracks}
-                            setShowTracks={(show: boolean) => {
-                                dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
-                            }}
-                            showTrackHighlights={canvas.showTrackHighlights}
-                            setShowTrackHighlights={(show: boolean) => {
-                                dispatchCanvas({ type: ActionType.SHOW_TRACK_HIGHLIGHTS, showTrackHighlights: show });
-                            }}
-                            setTrackHighlightLength={(length: number) => {
-                                dispatchCanvas({
-                                    type: ActionType.MIN_MAX_TIME,
-                                    minTime: canvas.curTime - length / 2,
-                                    maxTime: canvas.curTime + length / 2,
-                                });
-                            }}
-                        />
-                    </Box>
-                    <Divider />
-                    <Box
-                        sx={{
-                            flexGrow: 0,
-                            padding: "1em",
-                            position: "sticky",
-                            bottom: 0,
-                            backgroundColor: "#fff",
-                        }}
-                    >
-                        <DataControls
-                            dataUrl={dataUrl}
-                            initialDataUrl={initialViewerState.dataUrl}
-                            setDataUrl={setDataUrl}
-                            removeTracksUponNewData={removeTracksUponNewData}
-                            copyShareableUrlToClipboard={copyShareableUrlToClipboard}
-                            refreshPage={refreshPage}
-                            trackManager={trackManager}
-                        />
-                    </Box>
-                </Box>
-            </Drawer>
+                </Drawer>
+            )}
+            {/* Box for Scene + playBackControls */}
             <Box
                 sx={{
                     display: "flex",
                     flexDirection: "column",
+                    flexGrow: 1,
                     width: "100%",
                     height: "100%",
                     overflow: "hidden",
                 }}
             >
-                <Scene ref={sceneDivRef} isLoading={isLoadingPoints || numLoadingTracks > 0} />
-                <Box flexGrow={0} padding="1em">
-                    <TimestampOverlay timestamp={canvas.curTime} />
+                {/* The canvas (Scene + colormap + timestamp) */}
+                <Box
+                    ref={sceneDivRef}
+                    sx={{
+                        flexGrow: 1,
+                        width: "100%",
+                        height: "calc(100vh - 100px)", // Ensure canvas does not fill entire screen
+                        overflow: "hidden",
+                        position: "relative", // Add this to make ColorMap and TimestampOverlay relative to the canvas
+                    }}
+                >
+                    <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
+                    {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
                     <ColorMap />
+                </Box>
+
+                {/* The playback controls */}
+                <Box
+                    sx={{
+                        flexGrow: 0,
+                        padding: ".5em",
+                        height: detectedDevice.isMobile ? "150px" : "50px", // leaving extra space for mobile
+                        paddingLeft: !detectedDevice.isPhone ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
+                    }}
+                >
                     <PlaybackControls
                         enabled={true}
                         autoRotate={canvas.controls.autoRotate}

@@ -23,6 +23,8 @@ enum ActionType {
     ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
     SHOW_PREVIEW_POINTS = "SHOW_PREVIEW_POINTS",
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
+    MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
+    SELECTOR_SCALE = "SELECTOR_SCALE",
 }
 
 interface AutoRotate {
@@ -115,6 +117,15 @@ interface UpdateWithState {
     state: ViewerState;
 }
 
+interface MobileSelectCells {
+    type: ActionType.MOBILE_SELECT_CELLS;
+}
+
+interface SelectorScale {
+    type: ActionType.SELECTOR_SCALE;
+    scale: number;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -134,7 +145,9 @@ type PointCanvasAction =
     | MinMaxTime
     | AddSelectedPointIds
     | ShowPreviewPoints
-    | UpdateWithState;
+    | UpdateWithState
+    | MobileSelectCells
+    | SelectorScale;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -164,6 +177,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = action.brightness;
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            newCanvas.updatePreviewPoints();
             break;
         case ActionType.POINT_SIZES:
             newCanvas.pointSize = action.pointSize;
@@ -188,7 +202,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.resetPointColors();
             break;
         case ActionType.SELECTION_MODE: {
-            const modeOld: PointSelectionMode = canvas.selector.selectionMode;
+            const modeOld: PointSelectionMode | null = canvas.selector.selectionMode;
             const modeNew: PointSelectionMode = action.selectionMode;
             newCanvas.setSelectionMode(action.selectionMode);
 
@@ -197,7 +211,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
                 newCanvas.resetPointColors();
                 newCanvas.highlightPoints(newCanvas.selectedPointIndices);
             }
-            if (modeOld !== PointSelectionMode.BOX && modeNew == PointSelectionMode.BOX) {
+            if (modeOld !== PointSelectionMode.BOX && (modeNew == PointSelectionMode.BOX || modeNew == null)) {
                 newCanvas.resetPointColors();
                 newCanvas.highlightPoints(newCanvas.selectedPointIndices);
             }
@@ -220,12 +234,15 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.ADD_SELECTED_POINT_IDS: {
-            newCanvas.pointBrightness = 0.8;
-            newCanvas.resetPointColors();
             const newSelectedPointIds = new Set(canvas.selectedPointIds);
             for (const trackId of action.selectedPointIds) {
                 newSelectedPointIds.add(trackId);
             }
+            if (action.selectedPointIds.size !== 0) {
+                // only reduce pointBrightness if there are selected points
+                newCanvas.pointBrightness = 0.8;
+            }
+            newCanvas.resetPointColors();
             newCanvas.selectedPointIds = newSelectedPointIds;
             newCanvas.updateSelectedPointIndices();
             newCanvas.highlightPoints(action.selectedPointIndices);
@@ -241,6 +258,13 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         }
         case ActionType.UPDATE_WITH_STATE:
             newCanvas.updateWithState(action.state);
+            break;
+        case ActionType.MOBILE_SELECT_CELLS:
+            newCanvas.MobileSelectCells();
+            break;
+        case ActionType.SELECTOR_SCALE:
+            newCanvas.setSelectorScale(action.scale);
+            newCanvas.updatePreviewPoints();
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

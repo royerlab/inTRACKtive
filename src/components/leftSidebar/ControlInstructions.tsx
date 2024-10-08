@@ -3,7 +3,8 @@ import { Callout } from "@czi-sds/components";
 import { PointSelectionMode } from "@/lib/PointSelector";
 
 interface ControlInstructionsProps {
-    selectionMode: PointSelectionMode;
+    selectionMode: PointSelectionMode | null;
+    isTablet: boolean;
 }
 
 export default function ControlInstructions(props: ControlInstructionsProps) {
@@ -15,24 +16,54 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
         case PointSelectionMode.SPHERICAL_CURSOR:
             instructionText = (
                 <>
-                    <p>Hold Shift and a sphere will follow your cursor, centering on nearby points.</p>
-                    <p>Shift-Click to select cells within the sphere.</p>
-                    <p>Additional controls:</p>
-                    <p>Ctrl+scroll: scale sphere</p>
-                    <p>s: show/hide sphere</p>
+                    <p>
+                        Hold <strong>Shift</strong> and the selector will follow your cursor.
+                    </p>
+                    <p>
+                        <strong>Shift-Click</strong> to select cells within the sphere.
+                    </p>
+                    <em>Additional controls:</em>
+                    <ul style={{ paddingLeft: "15px", marginLeft: "0" }}>
+                        <li>
+                            <strong>ctrl+scroll</strong>: scale sphere
+                        </li>
+                        <li>
+                            <strong>s</strong>: show/hide sphere
+                        </li>
+                    </ul>
                 </>
             );
             break;
         case PointSelectionMode.SPHERE:
             instructionText = (
                 <>
-                    <p>Shift-click to select cells within the sphere.</p>
-                    <p>Additional controls:</p>
-                    <p>w: position mode</p>
-                    <p>e: rotation mode</p>
-                    <p>r: scale mode</p>
-                    <p>Ctrl+scroll: scale</p>
-                    <p>s: show/hide sphere</p>
+                    {props.isTablet && (
+                        <p>
+                            If using a tablet without keyboard, use the UI controls above to select cells and scale the
+                            selector (use keyboard for full functionality)
+                        </p>
+                    )}
+                    <p>
+                        <strong>Shift-click</strong> to select cells within the selector.
+                    </p>
+                    <em>Additional controls:</em>
+                    <ul style={{ paddingLeft: "15px", marginLeft: "0" }}>
+                        <li>
+                            <strong>w</strong>: position
+                        </li>
+                        <li>
+                            <strong>e</strong>: rotation
+                        </li>
+                        <li>
+                            <strong>r</strong>: scale
+                        </li>
+                        <li>
+                            <strong>Ctrl+scroll</strong>: scale
+                        </li>
+                        <li>
+                            <strong>s</strong>: show/hide selector
+                        </li>
+                    </ul>
                 </>
             );
             break;

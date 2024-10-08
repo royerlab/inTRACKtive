@@ -14,6 +14,7 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/Addons.js";
 import { SelectionChanged, SelectionPreviewChanged } from "@/lib/PointSelector";
+import { ViewerState } from "./ViewerState.ts";
 
 // Selecting with a sphere, with optional transform controls.
 export class SpherePointSelector {
@@ -64,6 +65,9 @@ export class SpherePointSelector {
         this.draggingChanged = this.draggingChanged.bind(this);
         this.cursorControl.addEventListener("change", this.findPointsWithinSelector.bind(this));
         this.cursorControl.addEventListener("dragging-changed", this.draggingChanged);
+
+        const cameraTarget = new ViewerState().cameraTarget;
+        this.cursor.position.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
     }
 
     dispose() {
@@ -172,6 +176,12 @@ export class SpherePointSelector {
         normalMatrix.invert();
         const center = this.cursor.position;
         const geometry = this.points.geometry;
+
+        // Check if geometry has a valid 'position' attribute (not the case in the beginning of the app, when the eventListerer of the cursor already call this function)
+        if (!geometry || !geometry.getAttribute("position") || geometry.getAttribute("position").count === 0) {
+            return [];
+        }
+
         const positions = geometry.getAttribute("position");
         const numPoints = positions.count;
         const selected = [];
@@ -187,5 +197,29 @@ export class SpherePointSelector {
         }
         this.selectionPreviewChanged(selected);
         return selected;
+    }
+
+    MobileFindAndSelect() {
+        // if used on Mobile Device, this will select the cells upon button click
+        const radius = this.cursor.geometry.parameters.radius;
+        const normalMatrix = new Matrix3();
+        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
+        normalMatrix.invert();
+        const center = this.cursor.position;
+        const geometry = this.points.geometry;
+        const positions = geometry.getAttribute("position");
+        const numPoints = positions.count;
+        const selected = [];
+        for (let i = 0; i < numPoints; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i);
+            const z = positions.getZ(i);
+            const vecToCenter = new Vector3(x, y, z).sub(center);
+            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
+            if (scaledVecToCenter.length() < radius) {
+                selected.push(i);
+            }
+        }
+        this.selectionChanged(selected);
     }
 }

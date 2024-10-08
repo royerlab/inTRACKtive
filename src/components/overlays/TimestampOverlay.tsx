@@ -14,7 +14,7 @@ export const TimestampOverlay = (props: TimestampOverlayProps) => {
             size="small"
             sx={{
                 position: "absolute",
-                bottom: "4.75rem",
+                bottom: "0.5rem",
                 left: "16.5rem",
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 zIndex: 100,
