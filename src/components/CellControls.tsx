@@ -114,7 +114,7 @@ export default function CellControls(props: CellControlsProps) {
                         min={0.05}
                         max={1}
                         step={0.01}
-                        valueLabelDisplay="on"
+                        valueLabelDisplay="off"
                         valueLabelFormat={(value) => `${value}`}
                         onChange={(_, value) => {
                             props.setPointSize(value as number);
