@@ -383,7 +383,13 @@ export default function App() {
                             {brandingLogoPath && brandingName && <Divider orientation="vertical" flexItem />}
                             {brandingName && <h2>{brandingName}</h2>}{" "}
                         </Box>
-                        <Box flexGrow={0} padding="2em">
+                        <Box
+                            sx={{
+                                flexGrow: 1, // CHANGED: Allows the middle section to expand
+                                overflowY: "auto", // CHANGED: Makes this section scrollable
+                                padding: "2em",
+                            }}
+                        >
                             <CellControls
                                 clearTracks={() => {
                                     dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
@@ -413,9 +419,7 @@ export default function App() {
                                 }}
                                 selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
                             />
-                        </Box>
-                        <Divider />
-                        <Box flexGrow={4} padding="2em">
+                            <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper
                                 hasTracks={numSelectedCells > 0}
                                 trackManager={trackManager}
