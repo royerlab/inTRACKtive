@@ -27,7 +27,10 @@ import { numberOfValuesPerPoint } from "./TrackManager";
 
 import { detectedDevice } from "@/components/App.tsx";
 import config from "../../CONFIG.ts";
-const pointSize = config.settings.point_size;
+const initialPointSize = config.settings.point_size;
+const pointColor = config.settings.point_color;
+const highlightPointColor = config.settings.highlight_point_color;
+const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
@@ -70,6 +73,7 @@ export class PointCanvas {
     minTime: number = -6;
     maxTime: number = 5;
     pointBrightness = 1.0;
+    pointSize = initialPointSize;
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -126,7 +130,7 @@ export class PointCanvas {
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
-        this.scene.add(new AxesHelper(128));
+        this.scene.add(new AxesHelper(0.2));
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
@@ -188,6 +192,7 @@ export class PointCanvas {
         this.pointBrightness = state.pointBrightness;
         this.showTracks = state.showTracks;
         this.showTrackHighlights = state.showTrackHighlights;
+        this.removeAllTracks(); // to make sure all tracks are removed, when the tracks are loaded from a certain state
         this.selectedPointIds = new Set(state.selectedPointIds);
         this.camera.position.fromArray(state.cameraPosition);
         this.controls.target.fromArray(state.cameraTarget);
@@ -250,7 +255,27 @@ export class PointCanvas {
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
-        color.setRGB(0.9, 0.0, 0.9, SRGBColorSpace);
+        color.setRGB(highlightPointColor[0], highlightPointColor[1], highlightPointColor[2], SRGBColorSpace); // pink
+        for (const i of points) {
+            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        }
+        colorAttribute.needsUpdate = true;
+    }
+
+    updatePreviewPoints() {
+        console.log("line 266 in PointCanvas.ts");
+        this.selector.sphereSelector.findPointsWithinSelector();
+    }
+
+    highlightPreviewPoints(points: number[]) {
+        const colorAttribute = this.points.geometry.getAttribute("color");
+        const color = new Color();
+        color.setRGB(
+            previewHighlightPointColor[0],
+            previewHighlightPointColor[1],
+            previewHighlightPointColor[2],
+            SRGBColorSpace,
+        ); // yellow
         for (const i of points) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
@@ -262,13 +287,17 @@ export class PointCanvas {
             return;
         }
         const color = new Color();
-        color.setRGB(0.0, 0.8, 0.8, SRGBColorSpace);
+        color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
         color.multiplyScalar(this.pointBrightness);
         const colorAttribute = this.points.geometry.getAttribute("color");
         for (let i = 0; i < colorAttribute.count; i++) {
             colorAttribute.setXYZ(i, color.r, color.g, color.b);
         }
         colorAttribute.needsUpdate = true;
+    }
+
+    removeLastSelection() {
+        this.selectedPointIds = new Set(this.fetchedPointIds);
     }
 
     setSize(width: number, height: number) {
@@ -300,7 +329,22 @@ export class PointCanvas {
         this.resetPointColors();
     }
 
-    setPointsPositions(data: Float32Array) {
+    setPointsSizes() {
+        const geometry = this.points.geometry;
+        const sizes = geometry.getAttribute("size");
+
+        for (let i = 0; i < sizes.count; i++) {
+            sizes.setX(i, this.pointSize);
+        }
+        sizes.needsUpdate = true;
+
+        for (const track of this.tracks.values()) {
+            track.threeTrack.material.trackwidth = this.pointSize / 100;
+            track.threeTrack.material.highlightwidth = this.pointSize / 15;
+        }
+    }
+
+    setPointsPositions(data: Float32Array, pointSize: number) {
         const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -309,9 +353,9 @@ export class PointCanvas {
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
             if (num == 4) {
-                sizes.setX(i, 25 * data[num * i + 3]); // factor of 21 used to match the desired size of the points
+                sizes.setX(i, pointSize * data[num * i + 3]);
             } else {
-                sizes.setX(i, pointSize);
+                sizes.setX(i, this.pointSize);
             }
         }
         positions.needsUpdate = true;
@@ -327,7 +371,14 @@ export class PointCanvas {
             return null;
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
-        threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+        threeTrack.updateAppearance(
+            this.showTracks,
+            this.showTrackHighlights,
+            this.minTime,
+            this.maxTime,
+            this.pointSize / 100,
+            this.pointSize / 15,
+        );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
@@ -335,7 +386,14 @@ export class PointCanvas {
 
     updateAllTrackHighlights() {
         this.tracks.forEach((track) => {
-            track.threeTrack.updateAppearance(this.showTracks, this.showTrackHighlights, this.minTime, this.maxTime);
+            track.threeTrack.updateAppearance(
+                this.showTracks,
+                this.showTrackHighlights,
+                this.minTime,
+                this.maxTime,
+                this.pointSize / 100,
+                this.pointSize / 15,
+            );
         });
     }
 
@@ -351,8 +409,8 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
-        console.log("removeAllTracks!");
         this.selectedPointIds = new Set();
+        this.selectedPointIndices = [];
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();
         for (const trackID of this.tracks.keys()) {

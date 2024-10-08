@@ -10,6 +10,9 @@ enum ActionType {
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
+    RESET_POINTS_COLORS = "POINT_COLORS",
+    REMOVE_LAST_SELECTION = "REMOVE_LAST_SELECTION",
+    POINT_SIZES = "POINT_SIZES",
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
@@ -18,6 +21,7 @@ enum ActionType {
     SIZE = "SIZE",
     MIN_MAX_TIME = "MIN_MAX_TIME",
     ADD_SELECTED_POINT_IDS = "ADD_SELECTED_POINT_IDS",
+    SHOW_PREVIEW_POINTS = "SHOW_PREVIEW_POINTS",
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
     SELECTOR_SCALE = "SELECTOR_SCALE",
@@ -43,9 +47,23 @@ interface PointBrightness {
     brightness: number;
 }
 
+interface PointSizes {
+    type: ActionType.POINT_SIZES;
+    pointSize: number;
+}
+
 interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
+    pointSize: number;
+}
+
+interface PointColors {
+    type: ActionType.RESET_POINTS_COLORS;
+}
+
+interface RemoveLastSelection {
+    type: ActionType.REMOVE_LAST_SELECTION;
 }
 
 interface Refresh {
@@ -89,6 +107,11 @@ interface AddSelectedPointIds {
     selectedPointIds: Set<number>;
 }
 
+interface ShowPreviewPoints {
+    type: ActionType.SHOW_PREVIEW_POINTS;
+    selectedPointIndices: number[];
+}
+
 interface UpdateWithState {
     type: ActionType.UPDATE_WITH_STATE;
     state: ViewerState;
@@ -109,7 +132,10 @@ type PointCanvasAction =
     | CurTime
     | InitPointsGeometry
     | PointBrightness
+    | PointSizes
     | PointsPositions
+    | PointColors
+    | RemoveLastSelection
     | Refresh
     | RemoveAllTracks
     | SelectionMode
@@ -118,6 +144,7 @@ type PointCanvasAction =
     | Size
     | MinMaxTime
     | AddSelectedPointIds
+    | ShowPreviewPoints
     | UpdateWithState
     | MobileSelectCells
     | SelectorScale;
@@ -128,6 +155,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
+
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
             if (typeof action.curTime === "function") {
@@ -150,10 +178,21 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
             break;
+        case ActionType.POINT_SIZES:
+            newCanvas.pointSize = action.pointSize;
+            newCanvas.setPointsSizes();
+            break;
         case ActionType.POINTS_POSITIONS:
-            newCanvas.setPointsPositions(action.positions);
+            newCanvas.setPointsPositions(action.positions, action.pointSize);
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
+            newCanvas.updatePreviewPoints();
+            break;
+        case ActionType.RESET_POINTS_COLORS:
+            newCanvas.resetPointColors();
+            break;
+        case ActionType.REMOVE_LAST_SELECTION:
+            newCanvas.removeLastSelection();
             break;
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
@@ -161,9 +200,22 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             break;
-        case ActionType.SELECTION_MODE:
+        case ActionType.SELECTION_MODE: {
+            const modeOld: PointSelectionMode | null = canvas.selector.selectionMode;
+            const modeNew: PointSelectionMode = action.selectionMode;
             newCanvas.setSelectionMode(action.selectionMode);
+
+            // reset the preview highlights when switching between box and spherical cursors (not when switching between spheres)
+            if (modeOld == PointSelectionMode.BOX && modeNew !== PointSelectionMode.BOX) {
+                newCanvas.resetPointColors();
+                newCanvas.highlightPoints(newCanvas.selectedPointIndices);
+            }
+            if (modeOld !== PointSelectionMode.BOX && (modeNew == PointSelectionMode.BOX || modeNew == null)) {
+                newCanvas.resetPointColors();
+                newCanvas.highlightPoints(newCanvas.selectedPointIndices);
+            }
             break;
+        }
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
             newCanvas.updateAllTrackHighlights();
@@ -191,7 +243,16 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             }
             newCanvas.resetPointColors();
             newCanvas.selectedPointIds = newSelectedPointIds;
+            newCanvas.updateSelectedPointIndices();
             newCanvas.highlightPoints(action.selectedPointIndices);
+            break;
+        }
+        case ActionType.SHOW_PREVIEW_POINTS: {
+            newCanvas.resetPointColors();
+            if (canvas.selector.selectionMode !== PointSelectionMode.BOX) {
+                newCanvas.highlightPreviewPoints(action.selectedPointIndices);
+            }
+            newCanvas.highlightPoints(newCanvas.selectedPointIndices);
             break;
         }
         case ActionType.UPDATE_WITH_STATE:
@@ -245,6 +306,14 @@ function usePointCanvas(
         },
         [canvas.curTime, canvas.maxPointsPerTimepoint],
     );
+
+    canvas.selector.selectionPreviewChanged = useCallback((pointIndices: number[]) => {
+        console.debug("selectionPreviewChanged:", pointIndices);
+        dispatchCanvas({
+            type: ActionType.SHOW_PREVIEW_POINTS,
+            selectedPointIndices: pointIndices,
+        });
+    }, []);
 
     // set up the canvas when the div is available
     // this is an effect because:

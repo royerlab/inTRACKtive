@@ -3,6 +3,7 @@ const config = {
     branding:{
         // Path to logo image (assumes logo is in /public directory)
         logo_path: "/CZ-Biohub-SF-RGB-60x60.png",
+        
         // Organization name
         name: "CZ BIOHUB"
     },
@@ -17,10 +18,22 @@ const config = {
     settings:{
         // Maximum number of cells a user can select without getting a warning
         max_num_selected_cells: 100,
+        
         // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
         colormap_tracks: "cividis-inferno",
-        // Point size (arbitrary units)
-        point_size: 30
+        
+        // Point size (arbitrary units), if cell sizes not provided in zarr attributes
+        point_size: 0.1,
+
+        // Point color (not selected)
+        point_color: [0, 0.8, 0.8], //cyan
+
+        // Point color (when selected)
+        highlight_point_color: [0.9, 0, 0.9], //pink
+
+        // Point color (when selector hovers over)
+        preview_hightlight_point_color: [0.8, 0.8, 0], //yellow
+
     }
 }
 
