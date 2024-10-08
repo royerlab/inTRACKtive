@@ -334,12 +334,13 @@ export default function App() {
                     </Box>
 
                     {/* Scrollable section for other controls */}
-                    <Box 
+                    <Box
                         sx={{
-                            flexGrow: 1,  // CHANGED: Allows the middle section to expand
-                            overflowY: "auto",  // CHANGED: Makes this section scrollable
+                            flexGrow: 1, // CHANGED: Allows the middle section to expand
+                            overflowY: "auto", // CHANGED: Makes this section scrollable
                             padding: "2em",
-                          }}>
+                        }}
+                    >
                         <CellControls
                             clearTracks={() => {
                                 dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
@@ -361,7 +362,7 @@ export default function App() {
                                 dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                             }}
                         />
-                    <Divider sx={{ marginY: "1em" }} /> 
+                        <Divider sx={{ marginY: "1em" }} />
                         <LeftSidebarWrapper
                             hasTracks={numSelectedCells > 0}
                             trackManager={trackManager}
@@ -385,14 +386,14 @@ export default function App() {
                         />
                     </Box>
                     <Divider />
-                    <Box 
-                    sx={{
-                        flexGrow: 0,  
-                        padding: "1em",
-                        position: "sticky",  
-                        bottom: 0,  
-                        backgroundColor: "#fff",  
-                      }}
+                    <Box
+                        sx={{
+                            flexGrow: 0,
+                            padding: "1em",
+                            position: "sticky",
+                            bottom: 0,
+                            backgroundColor: "#fff",
+                        }}
                     >
                         <DataControls
                             dataUrl={dataUrl}
