@@ -1,15 +1,25 @@
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 /* eslint-disable spaced-comment */
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-    plugins: [react()],
+    plugins: [
+        react(),
+        sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            telemetry: process.env.NODE_ENV === "production",
+        }),
+    ],
+
     resolve: {
         alias: {
             "@": "/src",
         },
     },
+
     test: {
         environment: "jsdom",
         browser: {
@@ -22,5 +32,9 @@ export default defineConfig({
             provider: "istanbul",
             include: ["src/**"],
         },
+    },
+
+    build: {
+        sourcemap: true,
     },
 });
