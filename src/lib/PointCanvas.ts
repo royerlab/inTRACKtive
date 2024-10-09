@@ -350,7 +350,8 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
         const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
+            // console.log('xyz=', data[num * i], data[num * i + 1], data[num * i + 2]);
+            positions.setXYZ(i, data[num * i + 2], data[num * i + 1], data[num * i + 0]);
             if (num == 4) {
                 sizes.setX(i, pointSize * data[num * i + 3]);
             } else {

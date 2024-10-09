@@ -57,9 +57,9 @@ class ScaleSettings {
         let yTotal = 0;
         let zTotal = 0;
         for (let i = 0; i < array.length; i += stride) {
-            xTotal += array[i];
+            zTotal += array[i];
             yTotal += array[i + 1];
-            zTotal += array[i + 2];
+            xTotal += array[i + 2];
         }
 
         this.meanX = xTotal / (array.length / stride);
@@ -214,9 +214,9 @@ export class TrackManager {
         const meanZ = this.scaleSettings.meanZ ?? 0;
         const extentXYZ = this.scaleSettings.extentXYZ ?? this.defaultExtent;
         for (let i = 0; i < array.length; i += stride) {
-            array[i] = ((array[i] - meanX) / extentXYZ) * this.defaultExtent;
+            array[i] = ((array[i] - meanZ) / extentXYZ) * this.defaultExtent;
             array[i + 1] = ((array[i + 1] - meanY) / extentXYZ) * this.defaultExtent;
-            array[i + 2] = ((array[i + 2] - meanZ) / extentXYZ) * this.defaultExtent;
+            array[i + 2] = ((array[i + 2] - meanX) / extentXYZ) * this.defaultExtent;
         }
         return array;
     }
