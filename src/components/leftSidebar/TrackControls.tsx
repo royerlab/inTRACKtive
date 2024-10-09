@@ -23,7 +23,7 @@ export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
 
     return (
-        <Stack spacing={"2em"}>
+        <Stack spacing={"1.1em"}>
             <ControlLabel>Visualization options</ControlLabel>
 
             {/* Tracks toggle */}
