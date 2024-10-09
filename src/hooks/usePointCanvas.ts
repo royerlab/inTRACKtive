@@ -25,6 +25,7 @@ enum ActionType {
     UPDATE_WITH_STATE = "UPDATE_WITH_STATE",
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
     SELECTOR_SCALE = "SELECTOR_SCALE",
+    TOGGLE_AXES = "TOGGLE_AXES",
 }
 
 interface AutoRotate {
@@ -126,6 +127,10 @@ interface SelectorScale {
     scale: number;
 }
 
+interface ToggleAxes {
+    type: ActionType.TOGGLE_AXES;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -147,7 +152,8 @@ type PointCanvasAction =
     | ShowPreviewPoints
     | UpdateWithState
     | MobileSelectCells
-    | SelectorScale;
+    | SelectorScale
+    | ToggleAxes;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -265,6 +271,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.SELECTOR_SCALE:
             newCanvas.setSelectorScale(action.scale);
             newCanvas.updatePreviewPoints();
+            break;
+        case ActionType.TOGGLE_AXES:
+            newCanvas.toggleAxesHelper();
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
