@@ -2,6 +2,14 @@ import { TrackManager } from "@/lib/TrackManager";
 import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
 import { PointSelectionMode } from "@/lib/PointSelector";
+import { PointCanvas } from "@/lib/PointCanvas";
+
+// interface Action {
+//     type: ActionType;
+//     brightness?: number;
+//     pointSize?: number;
+//     // Add more fields for other actions as needed
+// }
 
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
@@ -14,6 +22,9 @@ interface LeftSidebarWrapperProps {
     setTrackHighlightLength: (trackHighlightLength: number) => void;
     selectionMode: PointSelectionMode | null;
     isTablet: boolean;
+    canvas: PointCanvas;
+    setPointBrightness: (brightness: number) => void;
+    setPointSize: (pointSize: number) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -27,20 +38,28 @@ export default function LeftSidebarWrapper({
     setTrackHighlightLength,
     selectionMode,
     isTablet,
+    canvas,
+    setPointBrightness,
+    setPointSize,
 }: LeftSidebarWrapperProps) {
     return (
         <>
-            {hasTracks && (
-                <TrackControls
-                    trackManager={trackManager}
-                    trackHighlightLength={trackHighlightLength}
-                    showTracks={showTracks}
-                    setShowTracks={setShowTracks}
-                    showTrackHighlights={showTrackHighlights}
-                    setShowTrackHighlights={setShowTrackHighlights}
-                    setTrackHighlightLength={setTrackHighlightLength}
-                />
-            )}
+            {/* {hasTracks && ( */}
+            <TrackControls
+                trackManager={trackManager}
+                trackHighlightLength={trackHighlightLength}
+                showTracks={showTracks}
+                setShowTracks={setShowTracks}
+                showTrackHighlights={showTrackHighlights}
+                setShowTrackHighlights={setShowTrackHighlights}
+                setTrackHighlightLength={setTrackHighlightLength}
+                pointBrightness={canvas.pointBrightness}
+                setPointBrightness={setPointBrightness}
+                pointSize={canvas.pointSize}
+                setPointSize={setPointSize}
+                hasTracks={hasTracks}
+            />
+            {/* )} */}
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}
         </>
     );

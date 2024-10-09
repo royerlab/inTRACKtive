@@ -1,9 +1,8 @@
 import { Box, Stack } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition, Button } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
-
 import { PointSelectionMode } from "@/lib/PointSelector";
-import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
+import { TrackManager } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 
 interface CellControlsProps {
@@ -12,10 +11,6 @@ interface CellControlsProps {
     numSelectedCells?: number;
     numSelectedTracks?: number;
     trackManager: TrackManager | null;
-    pointBrightness: number;
-    setPointBrightness: (value: number) => void;
-    pointSize: number;
-    setPointSize: (value: number) => void;
     selectionMode: PointSelectionMode | null;
     setSelectionMode: (value: PointSelectionMode) => void;
     isTablet: boolean;
@@ -60,6 +55,7 @@ export default function CellControls(props: CellControlsProps) {
                 <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
+            {/* Selection mode buttons */}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
             </label>
@@ -71,6 +67,7 @@ export default function CellControls(props: CellControlsProps) {
                     value={props.selectionMode}
                 />
             </Box>
+            {/* Select cells button */}
             <Box display="flex" justifyContent="center" alignItems="center">
                 {props.isTablet && props.selectionMode === PointSelectionMode.SPHERE && (
                     <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
@@ -78,6 +75,7 @@ export default function CellControls(props: CellControlsProps) {
                     </Button>
                 )}
             </Box>
+            {/* Selector radius slider */}
             {(props.selectionMode === PointSelectionMode.SPHERICAL_CURSOR ||
                 props.selectionMode === PointSelectionMode.SPHERE) &&
                 props.isTablet && (
@@ -102,43 +100,6 @@ export default function CellControls(props: CellControlsProps) {
                         />
                     </>
                 )}
-            {numberOfValuesPerPoint !== 4 && (
-                <>
-                    <label htmlFor="points-sizes-slider">
-                        <ControlLabel id="input-slider-points-sizes-slider">Cell Size</ControlLabel>
-                    </label>
-                    <InputSlider
-                        id="points-sizes-slider"
-                        aria-labelledby="input-slider-points-sizes-slider"
-                        disabled={numberOfValuesPerPoint === 4}
-                        min={0.05}
-                        max={1}
-                        step={0.01}
-                        valueLabelDisplay="off"
-                        valueLabelFormat={(value) => `${value}`}
-                        onChange={(_, value) => {
-                            props.setPointSize(value as number);
-                        }}
-                        value={props.pointSize}
-                    />
-                </>
-            )}
-            <label htmlFor="points-brightness-slider">
-                <ControlLabel id="input-slider-points-brightness-slider">Cell Brightness</ControlLabel>
-            </label>
-            <InputSlider
-                id="points-brightness-slider"
-                aria-labelledby="input-slider-points-brightness-slider"
-                // disabled={!props.numSelectedCells}
-                min={0}
-                max={100}
-                valueLabelDisplay="on"
-                valueLabelFormat={(value) => `${Math.floor(value)}%`}
-                onChange={(_, value) => {
-                    props.setPointBrightness((value as number) * 0.01);
-                }}
-                value={props.pointBrightness * 100}
-            />
         </Stack>
     );
 }

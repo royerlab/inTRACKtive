@@ -398,14 +398,6 @@ export default function App() {
                                 numSelectedCells={numSelectedCells}
                                 numSelectedTracks={numSelectedTracks}
                                 trackManager={trackManager}
-                                pointBrightness={canvas.pointBrightness}
-                                setPointBrightness={(brightness: number) => {
-                                    dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
-                                }}
-                                pointSize={canvas.pointSize}
-                                setPointSize={(pointSize: number) => {
-                                    dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
-                                }}
                                 selectionMode={canvas.selector.selectionMode}
                                 setSelectionMode={(value: PointSelectionMode) => {
                                     dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
@@ -444,6 +436,13 @@ export default function App() {
                                     });
                                 }}
                                 isTablet={detectedDevice.isTablet}
+                                canvas={canvas}
+                                setPointBrightness={(brightness: number) => {
+                                    dispatchCanvas({ type: ActionType.POINT_BRIGHTNESS, brightness });
+                                }}
+                                setPointSize={(pointSize: number) => {
+                                    dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
+                                }}
                             />
                         </Box>
                         <Divider />
