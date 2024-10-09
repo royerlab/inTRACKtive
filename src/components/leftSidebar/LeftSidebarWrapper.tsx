@@ -59,7 +59,7 @@ export default function LeftSidebarWrapper({
                 setPointSize={setPointSize}
                 hasTracks={hasTracks}
             />
-            <Divider/>
+            <Divider />
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}
         </>
     );
