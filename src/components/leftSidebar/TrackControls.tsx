@@ -17,6 +17,8 @@ interface TrackControlsProps {
     pointSize: number;
     setPointSize: (value: number) => void;
     hasTracks: boolean;
+    axesVisible: boolean;
+    toggleAxesVisible: () => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
@@ -59,6 +61,22 @@ export default function TrackControls(props: TrackControlsProps) {
                     </Box>
                 </Box>
             )}
+
+            {/* Axes toggle */}
+            <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <label htmlFor="show-track-highlights">
+                    <FontS>Axes</FontS>
+                </label>
+                <Box>
+                    <InputToggle
+                        id="show-tracks-highlights"
+                        checked={props.axesVisible}
+                        onChange={() => {
+                            props.toggleAxesVisible();
+                        }}
+                    />
+                </Box>
+            </Box>
 
             {/* Cell size slider */}
             {numberOfValuesPerPoint !== 4 && (

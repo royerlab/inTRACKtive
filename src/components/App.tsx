@@ -443,6 +443,10 @@ export default function App() {
                                 setPointSize={(pointSize: number) => {
                                     dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
                                 }}
+                                axesVisible={canvas.axesVisible}
+                                toggleAxesVisible={() => {
+                                    dispatchCanvas({ type: ActionType.TOGGLE_AXES });
+                                }}
                             />
                         </Box>
                         <Divider />
