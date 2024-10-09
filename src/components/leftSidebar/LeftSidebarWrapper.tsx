@@ -3,6 +3,7 @@ import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { PointCanvas } from "@/lib/PointCanvas";
+import { Divider } from "@mui/material";
 
 // interface Action {
 //     type: ActionType;
@@ -44,7 +45,6 @@ export default function LeftSidebarWrapper({
 }: LeftSidebarWrapperProps) {
     return (
         <>
-            {/* {hasTracks && ( */}
             <TrackControls
                 trackManager={trackManager}
                 trackHighlightLength={trackHighlightLength}
@@ -59,7 +59,7 @@ export default function LeftSidebarWrapper({
                 setPointSize={setPointSize}
                 hasTracks={hasTracks}
             />
-            {/* )} */}
+            <Divider/>
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}
         </>
     );
