@@ -24,25 +24,28 @@ Sentry.init({
     // Tracing
     tracesSampleRate: 1.0, //  Capture 100% of the transactions
 
-    // For traces, only log request URLs if its from our domain
-    // (this is for when the user changes the zarr URL)
-    beforeSend(event) {
-        // If the event contains an HTTP request URL, inspect it
-        if (event.request && event.request.url) {
-            try {
-                // Create a URL object to inspect the request URL
-                const parsedUrl = new URL(event.request.url);
-                // Only allow events for the specific domain
-                if (parsedUrl.hostname !== "public.czbiohub.org") {
-                    // Return null to drop the event if the hostname does not match
-                    return null;
+    // If the user puts a custom zarr url outside of "public.czbiohub.org", we will drop the transaction
+    beforeSendTransaction(event) {
+        // Check if the event contains spans (which represent individual requests/operations)
+        if (event.spans && event.spans.length > 0) {
+            for (const span of event.spans) {
+                // Check if the span is an HTTP request (fetch or XHR)
+                if (span.op === "http.client" || span.op === "fetch") {
+                    try {
+                        // Parse the URL from the span
+                        const parsedUrl = new URL(span.data?.url);
+                        // If the domain is not 'public.czbiohub.org', drop the transaction
+                        if (parsedUrl.hostname !== "public.czbiohub.org") {
+                            return null; // Drop the transaction
+                        }
+                    } catch (e) {
+                        // In case of an invalid URL or parsing error, drop the transaction
+                        return null;
+                    }
                 }
-            } catch (e) {
-                // In case of invalid URL or parsing errors, drop the event
-                return null;
             }
         }
-        // Otherwise, allow the event to be sent to Sentry
+        // Allow the transaction if all requests are to the allowed domain
         return event;
     },
 });
