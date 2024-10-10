@@ -147,18 +147,21 @@ Of course, any other setting can be personalized by activately changing the code
 
 # Collaborators
 ... \
-(Ashley, Andy, Erin, Teun, Jordao, Kyle, Loic)
-
+**[ToDo]**
 <br/>
 
 
 # Contact us
 ...
 
+**[ToDo]**
+
 <br/>
 
 
 # Citation
 ...
+
+**[ToDo]**
 
 <br/>
