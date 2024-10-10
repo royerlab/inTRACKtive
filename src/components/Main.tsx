@@ -26,6 +26,7 @@ Sentry.init({
     // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
     tracePropagationTargets: [
         /^https:\/\/intracktive\.sf\.czbiohub\.org/, // Match all URLs from this domain including base URL and paths
+        /^https:\/\/.*-czbiohub\.vercel\.app/, // Match any subdomain ending with -czbiohub.vercel.app
     ],
 });
 
