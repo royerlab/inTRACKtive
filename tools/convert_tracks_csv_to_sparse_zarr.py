@@ -109,7 +109,6 @@ tracks = len(set(p[0] for p in points))
 
 #tests track_id consistency
 track_id_set = set(p[0] for p in points)
-print(len(track_id_set),max(track_id_set))
 
 if len(track_id_set) != max(track_id_set):
     print(f"Warning: track_ids not consecutive ({len(track_id_set)} track_IDs found, max track_id = {max(track_id_set)})")

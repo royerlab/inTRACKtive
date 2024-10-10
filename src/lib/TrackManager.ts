@@ -57,9 +57,9 @@ class ScaleSettings {
         let yTotal = 0;
         let zTotal = 0;
         for (let i = 0; i < array.length; i += stride) {
-            zTotal += array[i];
+            xTotal += array[i];
             yTotal += array[i + 1];
-            xTotal += array[i + 2];
+            zTotal += array[i + 2];
         }
 
         this.meanX = xTotal / (array.length / stride);
