@@ -1,6 +1,6 @@
 # points-web-viewer
 
-`inTracktive` **[ToDo: Link to Preprint]** is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced  lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+`inTRACKtive` **[ToDo: Link to Preprint]** is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced  lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundles with [Vite](https://vitejs.dev/), and using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading. The viewer utilizes a specialized tracking data format for asynchronous laze data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/)
@@ -10,13 +10,13 @@ This tool was originally built to explore the light-sheet 3D cell tracking resul
 <br/>
 
 # Table of content
-`inTracktive` has three main use-cases: 
+`inTRACKtive` has three main use-cases: 
 
 1. Explore the Virtual Embryo Zoo ([↓go down↓](#1-explore-the-virtual-embryo-zoo))
 
 2. Visualize your own cell tracking data ([↓go down↓](#2-visualize-your-own-cell-tracking-data))
 
-3. Host your own customized `inTracktive` client ([↓go down↓](#3-host-your-own-customized-viewer))
+3. Host your own customized `inTRACKtive` client ([↓go down↓](#3-host-your-own-customized-viewer))
 
 Below we will explain each use-case in more detail.
 
@@ -28,7 +28,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTracktive` for an intuitive and accesible web-based interface. 
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accesible web-based interface. 
 
 See the image below with the explanation of the viewer's GUI: 
 
@@ -51,11 +51,11 @@ See the image below with the explanation of the viewer's GUI:
 <details open>
     <summary>collapse</summary></br>
 
-If you want to visualize your own data with `inTracktive`, you need to do two things: 
+If you want to visualize your own data with `inTRACKtive`, you need to do two things: 
 
 ### i) Convert the cell tracking data into our zarr format
 
-In order to view your own cell tracking data in `inTracktive`, you need to convert your data into our zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format: 
+In order to view your own cell tracking data in `inTRACKtive`, you need to convert your data into our zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format: 
 
 ```
 |   track_id |   t |   z |   y |   x |   parent_track_id |
