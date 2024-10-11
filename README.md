@@ -146,15 +146,28 @@ Of course, any other setting can be personalized by activately changing the code
 
 
 # Collaborators
-... \
-**[ToDo]**
+This tool has been developed by the [Loïc A. Royer Group](https://www.czbiohub.org/royer/) from the [Chan Zuckerberg Biohub San Francisco](https://www.czbiohub.org/sf/) and the [Chan Zuckerberg Initiative](https://chanzuckerberg.com).
+
+Team: 
+- Teun A.P.M. Huijben
+- Ashley Anderson
+- Andy Sweet
+- Erin Hoops
+- Connor Larsen
+- Kyle Awayan
+- Jordao Bragantini
+- Chi-Li Chiu
+- Loic A. Royer
+
 <br/>
 
 
 # Contact us
-...
+If you have any questions, requests or awesome ideas, please contact us:
 
-**[ToDo]**
+Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben))
+
+Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/))
 
 <br/>
 
