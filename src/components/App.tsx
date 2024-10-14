@@ -496,7 +496,7 @@ export default function App() {
                         flexGrow: 0,
                         padding: ".5em",
                         height: detectedDevice.isMobile ? "150px" : "50px", // leaving extra space for mobile
-                        paddingLeft: !detectedDevice.isPhone ? `${drawerWidth+15}px` : 0, // Ensure playback controls are visible
+                        paddingLeft: !detectedDevice.isPhone ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
                     }}
                 >
                     <PlaybackControls
