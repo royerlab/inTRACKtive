@@ -56,7 +56,6 @@ interface PointSizes {
 interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
-    pointSize: number;
 }
 
 interface PointColors {
@@ -190,7 +189,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.setPointsSizes();
             break;
         case ActionType.POINTS_POSITIONS:
-            newCanvas.setPointsPositions(action.positions, action.pointSize);
+            newCanvas.setPointsPositions(action.positions);
             newCanvas.resetPointColors();
             newCanvas.updateSelectedPointIndices();
             newCanvas.updatePreviewPoints();

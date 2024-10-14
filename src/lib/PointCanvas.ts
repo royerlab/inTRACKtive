@@ -346,7 +346,7 @@ export class PointCanvas {
         }
     }
 
-    setPointsPositions(data: Float32Array, pointSize: number) {
+    setPointsPositions(data: Float32Array) {
         const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -355,7 +355,7 @@ export class PointCanvas {
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
             if (num == 4) {
-                sizes.setX(i, pointSize * data[num * i + 3]);
+                sizes.setX(i, 0.078 * data[num * i + 3]); // 27/350//
             } else {
                 sizes.setX(i, this.pointSize);
             }
