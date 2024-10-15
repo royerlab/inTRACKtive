@@ -149,15 +149,15 @@ Of course, any other setting can be personalized by activately changing the code
 This tool has been developed by the [Loïc A. Royer Group](https://www.czbiohub.org/royer/) from the [Chan Zuckerberg Biohub San Francisco](https://www.czbiohub.org/sf/) and the [Chan Zuckerberg Initiative](https://chanzuckerberg.com).
 
 Team: 
-- Teun A.P.M. Huijben
-- Ashley Anderson
-- Andy Sweet
-- Erin Hoops
+- [Teun A.P.M. Huijben](https://github.com/TeunHuijben)
+- [Ashley Anderson](https://github.com/aganders3)
+- [Andy Sweet](https://github.com/andy-sweet)
+- [Erin Hoops](https://github.com/ehoops-cz)
 - Connor Larsen
-- Kyle Awayan
-- Jordao Bragantini
-- Chi-Li Chiu
-- Loic A. Royer
+- [Kyle Awayan](https://github.com/kyleawayan)
+- [Jordão Bragantini](https://github.com/JoOkuma)
+- [Chi-Li Chiu](https://github.com/chili-chiu)
+- [Loïc A. Royer](https://github.com/royerloic)
 
 <br/>
 
