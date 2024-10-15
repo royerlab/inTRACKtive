@@ -5,7 +5,7 @@ const config = {
         logo_path: "/CZ-Biohub-SF-RGB-60x60.png",
         
         // Organization name
-        name: "inTracktive"
+        name: "inTRACKtive"
     },
   
     // When opening the viewer, or refreshing the page, the viewer will revert to the following default dataset
