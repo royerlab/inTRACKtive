@@ -33,7 +33,7 @@ The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growi
 See the image below with the explanation of the viewer's GUI: 
 
 <p align="center">
-  <img src="/public/docs/images/UI_overview.pdf" width="75%">
+  <img src="/public/docs/images/UI_overview.png" width="75%">
   <p align="center">
     <em>Figure 1 - UI overview</em>
   </p>
