@@ -78,7 +78,7 @@ If you want to visualize your own data with `inTRACKtive`, you need to do two th
 
 ### i) Convert the cell tracking data into our zarr format
 
-In order to view your own cell tracking data in `inTRACKtive`, you need to convert your data into our zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format: 
+In order to view your own cell tracking data with `inTRACKtive`, you need to convert your data into our zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format (which is the standard [Ultrack](https://github.com/royerlab/ultrack) format)
 
 ```
 |   track_id |   t |   z |   y |   x |   parent_track_id |
