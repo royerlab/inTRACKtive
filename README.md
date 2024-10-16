@@ -1,9 +1,10 @@
-# inTRACKtive
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributors](https://img.shields.io/github/contributors-anon/royerlab/inTRACKtive)](https://github.com/royerlab/inTRACKtive/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/royerlab/inTRACKtive?style=social)](https://github.com/royerlab/inTRACKtive/)
 [![GitHub forks](https://img.shields.io/github/forks/royerlab/inTRACKtive?style=social)](https://git:hub.com/royerlab/inTRACKtive/)
 (badges will work after repo goes public)
+
+# inTRACKtive
 
 `inTRACKtive` is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced  lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundles with [Vite](https://vitejs.dev/), and using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading. The viewer utilizes a specialized tracking data format for asynchronous laze data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
