@@ -14,12 +14,12 @@ it's used in the `tracks_to_points` where it stores the point coordinates. If pr
 array should have shape `(len(indices), N)`, where `N` is the number of associated pieces of data
 (in the `tracks_to_points` example, this is 3).
 
-Here is the directory layout including approximate sizes for the arrays our example dataset. Note
+Here is the directory layout including approximate sizes for the arrays the example Zebrafish dataset. Note
 the relatively small size of the `indptr` arrays, providing an opportunity for efficient caching and
 reducing the total number of requests when fetching tracks.
 
 ```
-ZSNS001_tracks_bundle.zarr (~550M)
+tracks_zebrafish_bundle.zarr (~550M)
 ├── points (198M)
 ├── points_to_tracks (62M)
 │   ├── indices (61M)
@@ -42,14 +42,14 @@ file.
 
 ## points
 
-The `points` array is a dense, ragged array of 32-bit floats with shape `(n_timepoints,
-3 * max_points_per_timepoint)`. So each row is a timepoint, and within that row are point coordinates as
-`[x0, y0, z0, x1, y1, z1, ...]`. Rows with fewer points are padded at the end with `-9999.9`. Each
+The `points` array is a dense, ragged array of 32-bit floats with shape (`n_timepoints`,
+`num_values_per_point` * `max_points_per_timepoint`). The number of rows is the total number of time points (`n_timepoints`). The number of columns is `num_values_per_point` * `max_points_in_timepoint` where:
+`num_values_per_point` is 3 (for `z`, `y`, `x`) or 4 (for `z`, `y`, `x`, `radius`) depending on whether `radius` is included. `max_points_in_timepoint` is the maximum number of points observed in any timepoint.
+So each row is a timepoint, and within that row are point coordinates as
+`[x0, y0, z0, (radius1), x1, y1, z1, (radius2)...]`. Rows with fewer points are padded at the end with `-9999.9`. Each
 point is then given a unique ID calculated by `t * max_points_per_timepoint + n` where `t` is the
 timepoint (row in the `points` array), and `n` is the index of the point within the timepoint. That
-is, the point ID is just a flat index value into the ragged array.
-
-This array is used for fetching all the points in a given timeframe.
+is, the point ID is just a flat index value into the ragged array. This array is used for fetching all the points in a given timeframe.
 
 ## points_to_tracks
 
@@ -103,7 +103,7 @@ script, columns in the CSV file should be ordered as follows:
 - parent_track_id - reference to the parent track, if any (-1 otherwise)
 
 The script requires numpy, scipy, and zarr libraries. This script is not optimized, and takes about
-4 minutes to convert the example dataset on an Apple M1 Pro.
+4 minutes (for the largest Zebrafish dataset) to convert the example dataset on an Apple M1 Pro.
 
 ## Lineage computation
 Most of the logic in the script is pretty straightforward, but the lineage computation may require

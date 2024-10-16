@@ -353,7 +353,8 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
         const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
-            positions.setXYZ(i, data[num * i], data[num * i + 1], data[num * i + 2]);
+            positions.setXYZ(i, data[num * i + 0], data[num * i + 1], data[num * i + 2]);
+            // positions.setXYZ(i, data[num * i + 2], data[num * i + 1], data[num * i + 0]);
             if (num == 4) {
                 sizes.setX(i, 0.078 * data[num * i + 3]); // the value of 0.078 relates the actual size of the points to the size of the points in the viewer
             } else {

@@ -10,13 +10,13 @@ from scipy.sparse import lil_matrix
 
 parser = argparse.ArgumentParser(description="Convert a CSV of tracks to a sparse Zarr store")
 parser.add_argument("csv_file", type=str, help="Path to the CSV file")
-parser.add_argument("--add_radius",action="store_true",help="Boolean indicating whether to include the column radius as cell size")
 parser.add_argument(
     "out_dir",
     type=str,
     help="Path to the output directory (optional, defaults to the parent dir of the CSV file)",
     nargs="?",
 )
+parser.add_argument("--add_radius",action="store_true",help="Boolean indicating whether to include the column radius as cell size")
 args = parser.parse_args()
 
 csv_file = Path(args.csv_file)
@@ -32,8 +32,7 @@ if add_radius == True:
     num_values_per_point = 4
 else:
     num_values_per_point = 3
-print('num_values_per_point',num_values_per_point)
-
+print('num_values_per_point (z,y,x,radius)',num_values_per_point)
 
 start = time.monotonic()
 points = []
@@ -42,21 +41,66 @@ with open(csv_file, "r") as f:
     reader = csv.reader(f)
     header = next(reader)  # Skip the header
 
-    assert header[0] == 'track_id',         "Error: first columns name in csv must be track_id"
-    assert header[1] == 't',                "Error: second columns name in csv must be t"
-    assert header[2] == 'z',                "Error: third columns name in csv must be z"
-    assert header[3] == 'y',                "Error: fourth columns name in csv must be y"
-    assert header[4] == 'x',                "Error: fifth columns name in csv must be x"
-    assert header[5] == 'parent_track_id',  "Error: sixth columns name in csv must be parent_track_id"
+    column_map = {name: idx for idx, name in enumerate(header)}
+    if 'z' in column_map:
+        flag_2D = False
+        print('3D dataset')
+    else:   
+        flag_2D = True
+        print('2D dataset')
+
+    required_columns = ['track_id','t','y','x','parent_track_id']
+    for col in required_columns:
+        assert col in column_map, f"Error: column {col} must exist in the CSV"
+    if not flag_2D:
+        assert 'z' in column_map, f'Error: column z must exist in the CSV'
     if add_radius:
-        assert header[6] == 'radius',           "Error: seventh columns name in csv must be radius"    # TrackID,t,z,y,x,parent_track_id
+        assert 'radius' in column_map, f'Error: column radius must exist in the CSV'
 
     for row in reader:
-        t = int(row[1])
-        if add_radius:
-            points.append((int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), float(row[6]), points_in_timepoint[t]))
-        else:
-            points.append((int(row[0]), t, float(row[2]), float(row[3]), float(row[4]), int(row[5]), points_in_timepoint[t]))
+        t = int(row[column_map['t']])
+        if add_radius and not flag_2D:  # 3D + radius
+            points.append((
+                int(row[column_map['track_id']]), 
+                t, 
+                float(row[column_map['z']]), 
+                float(row[column_map['y']]), 
+                float(row[column_map['x']]), 
+                int(row[column_map['parent_track_id']]), 
+                float(row[column_map['radius']]), 
+                points_in_timepoint[t]
+            ))
+        elif add_radius and flag_2D: # 2D + radius
+            points.append((
+                int(row[column_map['track_id']]), 
+                t, 
+                float(0), 
+                float(row[column_map['y']]), 
+                float(row[column_map['x']]), 
+                int(row[column_map['parent_track_id']]), 
+                float(row[column_map['radius']]), 
+                points_in_timepoint[t]
+            ))
+        elif not add_radius and not flag_2D:  # 3D without radius
+            points.append((
+                int(row[column_map['track_id']]), 
+                t, 
+                float(row[column_map['z']]), 
+                float(row[column_map['y']]), 
+                float(row[column_map['x']]), 
+                int(row[column_map['parent_track_id']]), 
+                points_in_timepoint[t]
+            ))
+        elif not add_radius and flag_2D: # 2D without radius
+            points.append((
+                int(row[column_map['track_id']]), 
+                t, 
+                float(0), 
+                float(row[column_map['y']]), 
+                float(row[column_map['x']]), 
+                int(row[column_map['parent_track_id']]), 
+                points_in_timepoint[t]
+            ))
         points_in_timepoint[t] += 1
 
 print(f"Read {len(points)} points in {time.monotonic() - start} seconds")
@@ -65,6 +109,27 @@ start = time.monotonic()
 max_points_in_timepoint = max(points_in_timepoint.values())
 timepoints = len(points_in_timepoint)
 tracks = len(set(p[0] for p in points))
+
+#tests track_id consistency
+track_id_set = set(p[0] for p in points)
+
+if len(track_id_set) != max(track_id_set):
+    print(f"Warning: track_ids not consecutive ({len(track_id_set)} track_IDs found, max track_id = {max(track_id_set)})")
+    print("Solution: Track_id are reformatted to be consecutive from 1 to N, with N the number of tracks")
+
+track_id_map = {old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)}
+points = [
+    (
+        track_id_map[p[0]],  # remap track_id
+        p[1],                # time
+        p[2],                # z
+        p[3],                # y
+        p[4],                # x
+        track_id_map[p[5]] if p[5] != -1 else -1,  # remap parent_track_id (keep -1 unchanged)
+        *p[6:]               # radius and other remaining values (if any)
+    ) 
+    for p in points
+]
 
 # store the points in an array
 points_array = np.ones((timepoints, num_values_per_point * max_points_in_timepoint), dtype=np.float32) * -9999.9
@@ -106,7 +171,6 @@ for point in points:
         tracks_to_children[parent_track_id - 1, track_id - 1] = 1
     
 print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
-
 tracks_to_parents.setdiag(1)
 tracks_to_children.setdiag(1)
 tracks_to_parents = tracks_to_parents.tocsr()
@@ -119,13 +183,6 @@ extent_x = np.max(np.abs(vector_x - mean_x))
 extent_y = np.max(np.abs(vector_y - mean_y))
 extent_z = np.max(np.abs(vector_z - mean_z))
 extent_xyz = np.max([extent_x, extent_y, extent_z])
-print(f'{mean_x=}')
-print(f'{mean_y=}')
-print(f'{mean_z=}')
-print(f'{extent_x=}')
-print(f'{extent_z=}')
-print(f'{extent_z=}')
-print(f'{extent_xyz=}')
 
 start = time.monotonic()
 iter = 0
@@ -217,35 +274,23 @@ tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
 print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
-# Here is the output of this script on my machine, using the ZSNS001_tracks.csv file.
-# Surely this conversion could be sped up!
-# ❯ python tools/convert_tracks_csv_to_sparse_zarr.py
-# Read 21697591 points in 25.869198750006035 seconds
-# Munged 21697591 points in 142.77665075007826 seconds
-# Chased track lineage forward in 0.9570639999583364 seconds (7 iterations)
-# Chased track lineage backward in 1.2615197079721838 seconds (7 iterations)
-# Converted to CSR in 10.87520341691561 seconds
-# Saved to Zarr in 45.39336562505923 seconds
+# # This is what an example resulting Zarr store looks like:
+# # ❯ du -sh tracks_bundle.zarr
+# # 520M	tracks_bundle.zarr
+# # tracks_bundle.zarr
+# # ├── points (198M)
+# # ├── points_to_tracks (62M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
+# # ├── tracks_to_points (259M)
+# # │   ├── data (207M)
+# # │   ├── indices (50M)
+# # │   └── indptr (1.9M)
+# # └── tracks_to_tracks (37M)
+# #     ├── data (22M) <- currently unused
+# #     ├── indices (13M)
+# #     └── indptr (1.8M)
 
-# This is what the resulting Zarr store looks like:
-# ~/Data/tracking
-# ❯ du -sh ZSNS001_tracks_bundle.zarr
-# 520M	ZSNS001_tracks_bundle.zarr
-
-# ZSNS001_tracks_bundle.zarr
-# ├── points (198M)
-# ├── points_to_tracks (62M)
-# │   ├── indices (61M)
-# │   └── indptr (1M)
-# ├── tracks_to_points (259M)
-# │   ├── data (207M)
-# │   ├── indices (50M)
-# │   └── indptr (1.9M)
-# └── tracks_to_tracks (37M)
-#     ├── data (22M) <- currently unused
-#     ├── indices (13M)
-#     └── indptr (1.8M)
-
-# note the relatively small size of the indptr arrays
-# tracks_to_points/data is a redundant copy of the points array to avoid having
-# to fetch point coordinates individually
+# # note the relatively small size of the indptr arrays
+# # tracks_to_points/data is a redundant copy of the points array to avoid having
+# # to fetch point coordinates individually
