@@ -3,7 +3,7 @@
 [![Downloads](https://pepy.tech/badge/ultrack)](https://pepy.tech/project/ultrack)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Contributors](https://img.shields.io/github/contributors-anon/royerlab/ultrack)](https://github.com/royerlab/ultrack/graphs/contributors)
+[![Contributors](https://img.shields.io/github/contributors-anon/royerlab/intractive)](https://github.com/royerlab/intracktive/graphs/contributors)
 
 [![GitHub stars](https://img.shields.io/github/stars/royerlab/intracktive?style=social)](https://github.com/royerlab/intracktive/)
 [![GitHub forks](https://img.shields.io/github/forks/royerlab/intracktive?style=social)](https://git:hub.com/royerlab/intracktive/)
