@@ -7,7 +7,7 @@ This tool was originally built to explore the light-sheet 3D cell tracking resul
 
 <p align="center">
   <a href="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a">
-    <img src="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a" width="50%" />
+    <img src="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a" width="60%" />
   </a>
   <p align="center">
     <em>Virtual Embryo Zoo (<a href="https://vimeo.com/1019958933/a61cfa4120">Vimeo</a> for the high-resolution version)</em>
@@ -40,13 +40,12 @@ The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growi
 
 <p align="center">
   <a href="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a">
-    <img src="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a" width="50%" />
+    <img src="https://github.com/user-attachments/assets/a07c43b1-6457-4856-b88f-cd66a0a7470a" width="60%" />
   </a>
   <p align="center">
     <em>Virtual Embryo Zoo (<a href="https://vimeo.com/1019959289/edfcb4d6a7">Vimeo</a> for the high-resolution version)</em>
   </p>
 </p>
-
 
 See the image below with the explanation of the `inTRACKtive` UI: 
 
