@@ -17,7 +17,6 @@ parser.add_argument(
     nargs="?",
 )
 parser.add_argument("--add_radius",action="store_true",help="Boolean indicating whether to include the column radius as cell size")
-parser.add_argument("--dims2",action="store_true",help="Boolean indicating whether data is 2D")
 args = parser.parse_args()
 
 csv_file = Path(args.csv_file)
@@ -34,9 +33,6 @@ if add_radius == True:
 else:
     num_values_per_point = 3
 print('num_values_per_point (z,y,x,radius)',num_values_per_point)
-flag_2D = args.dims2
-print('flag_2D',flag_2D)
-
 
 start = time.monotonic()
 points = []
@@ -46,7 +42,12 @@ with open(csv_file, "r") as f:
     header = next(reader)  # Skip the header
 
     column_map = {name: idx for idx, name in enumerate(header)}
-    required_columns = ['track_id', 't','y', 'x', 'parent_track_id']
+    if 'z' in column_map:
+        flag_2D = True
+    else:   
+        flag_2D = False
+
+    required_columns = ['track_id','t','y','x','parent_track_id']
     for col in required_columns:
         assert col in column_map, f"Error: column {col} must exist in the CSV"
     if not flag_2D:
