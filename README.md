@@ -5,7 +5,7 @@
 
 This tool was originally built to explore the light-sheet 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/)
 
-https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a
+![Descriptive Video Title](https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a)
 
 **[ToDo: add link to the high-res Video version]**
 
