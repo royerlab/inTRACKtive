@@ -11,15 +11,9 @@
 
 This tool was originally built to explore the light-sheet 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/)
 
-<p align="center">
-  <a href="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a">
-    <img src="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a" width="60%" />
-  </a>
-  <p align="center">
-    <em>inTRACKtive viewer (<a href="https://vimeo.com/1019958933/a61cfa4120">Vimeo</a> for the high-resolution version)</em>
-  </p>
-</p>
+https://github.com/user-attachments/assets/4d674696-0add-4f03-8f38-600b44c987e7
 
+(<a href="https://vimeo.com/1019958933/a61cfa4120">Vimeo</a> for the high-resolution version)
 
 <br/>
 
@@ -44,14 +38,10 @@ Below we will explain each use-case in more detail.
 
 The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accesible web-based interface. 
 
-<p align="center">
-  <a href="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a">
-    <img src="https://github.com/user-attachments/assets/a07c43b1-6457-4856-b88f-cd66a0a7470a" width="60%" />
-  </a>
-  <p align="center">
-    <em>Virtual Embryo Zoo (<a href="https://vimeo.com/1019959289/edfcb4d6a7">Vimeo</a> for the high-resolution version)</em>
-  </p>
-</p>
+
+https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
+
+(<a href="https://vimeo.com/1019959289/edfcb4d6a7">Vimeo</a> for the high-resolution version)
 
 See the image below with the explanation of the `inTRACKtive` UI: 
 
