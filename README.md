@@ -145,6 +145,10 @@ To customize the viewer, personalize the settings by simply changing elements in
 - parameters:
     - max number of points allowed to select, before warning pops up (`100`)
     - colormap of the track highlights (`"viridis-inferno"`)
+    - size of points (`0.1`)
+    - color of the cells (`[0, 0.8, 0.8]`) = cyan
+    - color of the selected cells (`[0.9, 0, 0.9]`) = pink
+    - color of the previewed cells (`[0.8, 0.8, 0]`) = yellow
 
 Of course, any other setting can be personalized by activately changing the code of the `inTRACKtive`. Check the documentation regarding the architecture of the application [here](public/docs/architecture.md))
 
