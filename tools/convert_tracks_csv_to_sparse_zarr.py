@@ -119,6 +119,18 @@ if len(track_id_set) != max(track_id_set):
 
 track_id_map = {old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)}
 points = [(track_id_map[p[0]], *p[1:]) for p in points]
+points = [
+    (
+        track_id_map[p[0]],  # remap track_id
+        p[1],                # time
+        p[2],                # z
+        p[3],                # y
+        p[4],                # x
+        track_id_map[p[5]] if p[5] != -1 else -1,  # remap parent_track_id (keep -1 unchanged)
+        *p[6:]               # radius and other remaining values (if any)
+    ) 
+    for p in points
+]
 
 # store the points in an array
 points_array = np.ones((timepoints, num_values_per_point * max_points_in_timepoint), dtype=np.float32) * -9999.9
