@@ -43,11 +43,11 @@ with open(csv_file, "r") as f:
 
     column_map = {name: idx for idx, name in enumerate(header)}
     if 'z' in column_map:
-        flag_2D = True
-        print('2D dataset')
-    else:   
         flag_2D = False
         print('3D dataset')
+    else:   
+        flag_2D = True
+        print('2D dataset')
 
     required_columns = ['track_id','t','y','x','parent_track_id']
     for col in required_columns:
@@ -118,7 +118,6 @@ if len(track_id_set) != max(track_id_set):
     print("Solution: Track_id are reformatted to be consecutive from 1 to N, with N the number of tracks")
 
 track_id_map = {old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)}
-points = [(track_id_map[p[0]], *p[1:]) for p in points]
 points = [
     (
         track_id_map[p[0]],  # remap track_id
