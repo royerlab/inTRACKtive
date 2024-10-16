@@ -44,8 +44,10 @@ with open(csv_file, "r") as f:
     column_map = {name: idx for idx, name in enumerate(header)}
     if 'z' in column_map:
         flag_2D = True
+        print('2D dataset')
     else:   
         flag_2D = False
+        print('3D dataset')
 
     required_columns = ['track_id','t','y','x','parent_track_id']
     for col in required_columns:
@@ -268,22 +270,10 @@ tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
 print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
-# # Here is the output of this script on my machine, using the ZSNS001_tracks.csv file.
-# # Surely this conversion could be sped up!
-# # ❯ python tools/convert_tracks_csv_to_sparse_zarr.py
-# # Read 21697591 points in 25.869198750006035 seconds
-# # Munged 21697591 points in 142.77665075007826 seconds
-# # Chased track lineage forward in 0.9570639999583364 seconds (7 iterations)
-# # Chased track lineage backward in 1.2615197079721838 seconds (7 iterations)
-# # Converted to CSR in 10.87520341691561 seconds
-# # Saved to Zarr in 45.39336562505923 seconds
-
-# # This is what the resulting Zarr store looks like:
-# # ~/Data/tracking
-# # ❯ du -sh ZSNS001_tracks_bundle.zarr
-# # 520M	ZSNS001_tracks_bundle.zarr
-
-# # ZSNS001_tracks_bundle.zarr
+# # This is what an example resulting Zarr store looks like:
+# # ❯ du -sh tracks_bundle.zarr
+# # 520M	tracks_bundle.zarr
+# # tracks_bundle.zarr
 # # ├── points (198M)
 # # ├── points_to_tracks (62M)
 # # │   ├── indices (61M)
