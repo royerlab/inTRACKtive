@@ -183,13 +183,6 @@ extent_x = np.max(np.abs(vector_x - mean_x))
 extent_y = np.max(np.abs(vector_y - mean_y))
 extent_z = np.max(np.abs(vector_z - mean_z))
 extent_xyz = np.max([extent_x, extent_y, extent_z])
-print(f'{mean_x=}')
-print(f'{mean_y=}')
-print(f'{mean_z=}')
-print(f'{extent_x=}')
-print(f'{extent_z=}')
-print(f'{extent_z=}')
-print(f'{extent_xyz=}')
 
 start = time.monotonic()
 iter = 0
