@@ -16,7 +16,7 @@ This tool was originally built to explore the light-sheet 3D cell tracking resul
     <img src="https://github.com/user-attachments/assets/1dba568b-001f-4444-bf5c-a07c4909137a" width="60%" />
   </a>
   <p align="center">
-    <em>Virtual Embryo Zoo (<a href="https://vimeo.com/1019958933/a61cfa4120">Vimeo</a> for the high-resolution version)</em>
+    <em>inTRACKtive viewer (<a href="https://vimeo.com/1019958933/a61cfa4120">Vimeo</a> for the high-resolution version)</em>
   </p>
 </p>
 
