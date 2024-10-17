@@ -83,7 +83,7 @@ In order to view your own cell tracking data with `inTRACKtive`, you need to con
 |          3 |   4 | 419 | 398 | 302 |                 1 |
 ```
 
-where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is continuous and starts from `1`.
+where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`.
 
 **[add explanation of add/not adding radius, and the option for 2D datasets]**
 
@@ -98,7 +98,7 @@ This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see 
 
 ### ii) Host the data
 
-In order for the viewer to access the data, the data must be hosted on a location where the browser has access to. For testing and visualizing data on your own computer, the easiest way is to host the data via `local_host`. This repository contains a [tool to host the data locally](tools/serve_directory_http.py):
+In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool to host the data locally](tools/serve_directory_http.py):
 
 ```
 cd tools
