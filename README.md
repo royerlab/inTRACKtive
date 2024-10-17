@@ -94,18 +94,18 @@ cd tools
 python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see on the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details).
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details).
 
 ### ii) Host the data
 
-In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool to host the data locally](tools/serve_directory_http.py):
+In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](tools/serve_directory_http.py) to host the data locally:
 
 ```
 cd tools
 python serve_directory_http path/to/data
 ```
 
-where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
+where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, open [the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
 
 ([↑go up↑](#table-of-content))
 
@@ -150,7 +150,7 @@ To customize the viewer, personalize the settings by simply changing elements in
     - color of the selected cells (`[0.9, 0, 0.9]`) = pink
     - color of the previewed cells (`[0.8, 0.8, 0]`) = yellow
 
-Of course, any other setting can be personalized by actively changing the code of the `inTRACKtive`. For more technical details check the [documentation regarding the architecture of the application](public/docs/architecture.md).
+Of course, any other setting can be personalized by actively changing the code of the `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application.
 
 ([↑go up↑](#table-of-content))
 
