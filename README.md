@@ -170,7 +170,7 @@ Team:
 - [Ashley Anderson](https://github.com/aganders3)
 - [Andy Sweet](https://github.com/andy-sweet)
 - [Erin Hoops](https://github.com/ehoops-cz)
-- Connor Larsen
+- [Connor Larsen](https://github.com/clarsen-czi)
 - [Kyle Awayan](https://github.com/kyleawayan)
 - [Jordão Bragantini](https://github.com/JoOkuma)
 - [Chi-Li Chiu](https://github.com/chili-chiu)
