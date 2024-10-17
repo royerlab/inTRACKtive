@@ -6,8 +6,8 @@
 
 # inTRACKtive
 
-`inTRACKtive` is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced  lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
-[Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous laze data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
+`inTRACKtive` is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+[Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous lazy data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/)
 
@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/4d674696-0add-4f03-8f38-600b44c987e7
 
 <br/>
 
-# Table of content
+# Table of contents
 `inTRACKtive` has three main use-cases: 
 
 1. Explore the Virtual Embryo Zoo ([↓go down↓](#1-explore-the-virtual-embryo-zoo))
@@ -36,7 +36,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accesible web-based interface. 
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
@@ -66,9 +66,9 @@ See the image below with the explanation of the `inTRACKtive` UI:
 
 If you want to visualize your own data with `inTRACKtive`, you need to do two things: 
 
-### i) Convert the cell tracking data into our zarr format
+### i) Convert the cell tracking data into our Zarr format
 
-In order to view your own cell tracking data with `inTRACKtive`, you need to convert your data into our zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format (which is the standard [Ultrack](https://github.com/royerlab/ultrack) format):
+In order to view your own cell tracking data with `inTRACKtive`, you need to convert your data into our Zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format (which is the standard [Ultrack](https://github.com/royerlab/ultrack) format):
 
 ```
 |   track_id |   t |   z |   y |   x |   parent_track_id |
@@ -83,29 +83,29 @@ In order to view your own cell tracking data with `inTRACKtive`, you need to con
 |          3 |   4 | 419 | 398 | 302 |                 1 |
 ```
 
-where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is continuously and starts from `1`.
+where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is continuous and starts from `1`.
 
 **[add explanation of add/not adding radius, and the option for 2D datasets]**
 
-This `tracks.csv` file can be converted to our zarr format using the following command-line function (found in [/tools/convert_tracks_csv_to_sparse_zarr.py](tools/convert_tracks_csv_to_sparse_zarr.py)):
+This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/tools/convert_tracks_csv_to_sparse_zarr.py](tools/convert_tracks_csv_to_sparse_zarr.py)):
 
 ```
 cd tools
 python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see on the [zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details)
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see on the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details).
 
 ### ii) Host the data
 
-In order for the viewer to access the data, the data must be hosted on a location where the browser has access to. For testing and visualizing data on your own computer, the easiest way is to host the data via `local_host`. This repository contains a [tool](tools/serve_directory_http.py) to host the data locally:
+In order for the viewer to access the data, the data must be hosted on a location where the browser has access to. For testing and visualizing data on your own computer, the easiest way is to host the data via `local_host`. This repository contains a [tool to host the data locally](tools/serve_directory_http.py):
 
 ```
 cd tools
 python serve_directory_http path/to/data
 ```
 
-where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open](https://intracktive.sf.czbiohub.org/) the viewer, paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
+where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, [open the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
 
 ([↑go up↑](#table-of-content))
 
@@ -150,7 +150,7 @@ To customize the viewer, personalize the settings by simply changing elements in
     - color of the selected cells (`[0.9, 0, 0.9]`) = pink
     - color of the previewed cells (`[0.8, 0.8, 0]`) = yellow
 
-Of course, any other setting can be personalized by activately changing the code of the `inTRACKtive`. Check the documentation regarding the architecture of the application [here](public/docs/architecture.md))
+Of course, any other setting can be personalized by actively changing the code of the `inTRACKtive`. For more technical details check the [documentation regarding the architecture of the application](public/docs/architecture.md).
 
 ([↑go up↑](#table-of-content))
 
