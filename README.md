@@ -20,11 +20,11 @@ https://github.com/user-attachments/assets/4d674696-0add-4f03-8f38-600b44c987e7
 # Table of contents
 `inTRACKtive` has three main use-cases: 
 
-1. Explore the Virtual Embryo Zoo ([↓go down↓](#1-explore-the-virtual-embryo-zoo))
+1. Explore the Virtual Embryo Zoo ([↓1. Explore the Virtual Embryo Zoo↓](#1-explore-the-virtual-embryo-zoo))
 
-2. Visualize your own cell tracking data ([↓go down↓](#2-visualize-your-own-cell-tracking-data))
+2. Visualize your own cell tracking data ([↓2. Visualize your own tracking data↓](#2-visualize-your-own-cell-tracking-data))
 
-3. Host your own customized `inTRACKtive` client ([↓go down↓](#3-host-your-own-customized-viewer))
+3. Host your own customized `inTRACKtive` client ([↓3. Host your own customized viewer↓](#3-host-your-own-customized-viewer))
 
 Below we will explain each use-case in more detail.
 
@@ -52,7 +52,7 @@ See the image below with the explanation of the `inTRACKtive` UI:
   </p>
 </p>
 
-([↑go up↑](#table-of-content))
+([↑Back to table of contents↑](#table-of-content))
 
 </details><br/>
 
@@ -107,7 +107,7 @@ python serve_directory_http path/to/data
 
 where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, open [the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
 
-([↑go up↑](#table-of-content))
+([↑Back to table of contents↑](#table-of-content))
 
 
 
@@ -152,7 +152,7 @@ To customize the viewer, personalize the settings by simply changing elements in
 
 Of course, any other setting can be personalized by actively changing the code of the `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application.
 
-([↑go up↑](#table-of-content))
+([↑Back to table of contents↑](#table-of-content))
 
 </details><br/>
 
