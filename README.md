@@ -85,8 +85,6 @@ In order to view your own cell tracking data with `inTRACKtive`, you need to con
 
 where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`.
 
-**[add explanation of add/not adding radius, and the option for 2D datasets]**
-
 This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/tools/convert_tracks_csv_to_sparse_zarr.py](tools/convert_tracks_csv_to_sparse_zarr.py)):
 
 ```
@@ -94,7 +92,13 @@ cd tools
 python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details).
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
+
+By default, all the cells are represented by equally-sized dots in inTRACKtive. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
+
+```
+python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv --add_radius
+```
 
 ### ii) Host the data
 
