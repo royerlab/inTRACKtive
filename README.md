@@ -154,7 +154,7 @@ To customize the viewer, personalize the settings by simply changing elements in
     - color of the selected cells (`[0.9, 0, 0.9]`) = pink
     - color of the previewed cells (`[0.8, 0.8, 0]`) = yellow
 
-Of course, any other setting can be personalized by actively changing the code of the `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application.
+Of course, any other setting can be personalized by actively changing the code of `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application.
 
 ([↑Back to table of contents↑](#table-of-contents))
 
