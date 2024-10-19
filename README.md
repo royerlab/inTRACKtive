@@ -2,7 +2,6 @@
 [![Contributors](https://img.shields.io/github/contributors-anon/royerlab/inTRACKtive)](https://github.com/royerlab/inTRACKtive/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/royerlab/inTRACKtive?style=social)](https://github.com/royerlab/inTRACKtive/)
 [![GitHub forks](https://img.shields.io/github/forks/royerlab/inTRACKtive?style=social)](https://git:hub.com/royerlab/inTRACKtive/)
-(badges will work after repo goes public)
 
 # inTRACKtive
 
