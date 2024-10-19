@@ -266,7 +266,10 @@ export class PointCanvas {
     }
 
     updatePreviewPoints() {
-        if (this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR || this.selector.selectionMode === PointSelectionMode.SPHERE) {
+        if (
+            this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR ||
+            this.selector.selectionMode === PointSelectionMode.SPHERE
+        ) {
             this.selector.sphereSelector.findPointsWithinSelector();
         }
     }
