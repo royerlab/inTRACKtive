@@ -266,7 +266,9 @@ export class PointCanvas {
     }
 
     updatePreviewPoints() {
-        this.selector.sphereSelector.findPointsWithinSelector();
+        if (this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR || this.selector.selectionMode === PointSelectionMode.SPHERE) {
+            this.selector.sphereSelector.findPointsWithinSelector();
+        }
     }
 
     highlightPreviewPoints(points: number[]) {

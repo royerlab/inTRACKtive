@@ -205,6 +205,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.clearPointIndicesCache();
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
+            newCanvas.updatePreviewPoints();
             break;
         case ActionType.SELECTION_MODE: {
             const modeOld: PointSelectionMode | null = canvas.selector.selectionMode;
