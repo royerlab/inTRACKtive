@@ -98,7 +98,7 @@ export default function App() {
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
-    const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+    const [isLoadingPoints, setIsLoadingPoints] = useState(true);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // refresh window to initial state
@@ -231,7 +231,7 @@ export default function App() {
             getPoints(canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
-            setIsLoadingPoints(false);
+            // setIsLoadingPoints(false);
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
