@@ -193,6 +193,18 @@ Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/)
 
 
 # Citation
-...
+
+If you use `inTRACKtive in your research, please cite the following preprint:
+```
+@article {Huijben2024.10.18.618998,
+	author = {Huijben, Teun A.P.M. and Anderson, Ashley G. and Sweet, Andrew and Hoops, Erin and Larsen, Connor and Awayan, Kyle and Bragantini, Jordao and Chiu, Chi-Li and Royer, Loic A.},
+	title = {inTRACKtive - A Web-Based Tool for Interactive Cell Tracking Visualization},
+	year = {2024},
+	doi = {10.1101/2024.10.18.618998},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2024/10/20/2024.10.18.618998},
+	journal = {bioRxiv}
+}
+```
 
 <br/>
