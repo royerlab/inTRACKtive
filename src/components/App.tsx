@@ -98,7 +98,7 @@ export default function App() {
 
     // this state is pure React
     const [playing, setPlaying] = useState(false);
-    const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+    const [isLoadingPoints, setIsLoadingPoints] = useState(true);
     const [numLoadingTracks, setNumLoadingTracks] = useState(0);
 
     // refresh window to initial state
@@ -231,7 +231,7 @@ export default function App() {
             getPoints(canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
-            setIsLoadingPoints(false);
+            // setIsLoadingPoints(false); // removed this line to make the loading indicated turn on from the beginning, until all points loaded
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
@@ -347,7 +347,7 @@ export default function App() {
     };
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", overflow: "hidden" }}>
+        <Box sx={{ display: "flex", flexDirection: "row", width: "100%", height: "100%", overflow: "hidden" }}>
             {/* TODO: components *could* go deeper still for organization */}
             {!detectedDevice.isPhone && (
                 <Drawer
@@ -480,7 +480,7 @@ export default function App() {
                     sx={{
                         flexGrow: 1,
                         width: "100%",
-                        height: "calc(100vh - 100px)", // Ensure canvas does not fill entire screen
+                        height: "100%",
                         overflow: "hidden",
                         position: "relative", // Add this to make ColorMap and TimestampOverlay relative to the canvas
                     }}
@@ -493,10 +493,10 @@ export default function App() {
                 {/* The playback controls */}
                 <Box
                     sx={{
-                        flexGrow: 0,
+                        flexGrow: 1,
                         padding: ".5em",
                         height: detectedDevice.isMobile ? "150px" : "50px", // leaving extra space for mobile
-                        paddingLeft: !detectedDevice.isPhone ? `${drawerWidth}px` : 0, // Ensure playback controls are visible
+                        paddingLeft: 0,
                     }}
                 >
                     <PlaybackControls
