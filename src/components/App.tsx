@@ -231,7 +231,7 @@ export default function App() {
             getPoints(canvas.curTime);
         } else {
             clearTimeout(loadingTimeout);
-            // setIsLoadingPoints(false);
+            // setIsLoadingPoints(false); // removed this line to make the loading indicated turn on from the beginning, until all points loaded
             console.debug("IGNORE FETCH points at time %d", canvas.curTime);
         }
 
