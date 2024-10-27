@@ -26,7 +26,7 @@ def make_random_points(
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser('Generates random points data')
+    parser = argparse.ArgumentParser('Generates random points data (Development helper function)')
     parser.add_argument('path', type=str, help='The path of the zarr directory to write')
     parser.add_argument('--num_times', type=int, default=500, help='The number of times')
     parser.add_argument('--num_points', type=int, default=25_000, help='The number of points at each time')
