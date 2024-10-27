@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "click",
+  "magicgui",
   "scipy",
   "pandas",
   "zarr"
@@ -35,6 +36,9 @@ Source = "https://github.com/royerlab/inTRACKtive"
 
 [project.scripts]
 intracktive = "intracktive.main:main"
+
+[project.entry-points."napari.manifest"]
+intracktive = "intracktive:napari.yaml"
 
 [tool.hatch.version]
 path = "src/intracktive/__about__.py"
