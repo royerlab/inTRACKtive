@@ -1,4 +1,5 @@
 ---
+files: ^python/
 repos:
 # basic pre-commit
   - repo: https://github.com/pre-commit/pre-commit-hooks
