@@ -8,10 +8,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 def make_random_points(
-        *,
-        path: Path,
-        num_times: int = 500,
-        num_points: int = 25_000,
+    *,
+    path: Path,
+    num_times: int = 500,
+    num_points: int = 25_000,
 ) -> zarr.Array:
     z = zarr.open_array(
         path,
@@ -26,10 +26,22 @@ def make_random_points(
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser('Generates random points data (Development helper function)')
-    parser.add_argument('path', type=str, help='The path of the zarr directory to write')
-    parser.add_argument('--num_times', type=int, default=500, help='The number of times')
-    parser.add_argument('--num_points', type=int, default=25_000, help='The number of points at each time')
+
+    parser = argparse.ArgumentParser(
+        "Generates random points data (Development helper function)"
+    )
+    parser.add_argument(
+        "path", type=str, help="The path of the zarr directory to write"
+    )
+    parser.add_argument(
+        "--num_times", type=int, default=500, help="The number of times"
+    )
+    parser.add_argument(
+        "--num_points",
+        type=int,
+        default=25_000,
+        help="The number of points at each time",
+    )
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -39,4 +51,4 @@ if __name__ == "__main__":
         num_times=args.num_times,
         num_points=args.num_points,
     )
-    logging.info(f"Made zarr array with shape %s at %s", array.shape, path)
+    logging.info("Made zarr array with shape %s at %s", array.shape, path)

@@ -1,9 +1,9 @@
-import click
 import csv
 import time
 from collections import Counter
 from pathlib import Path
 
+import click
 import numpy as np
 import zarr
 from scipy.sparse import lil_matrix
@@ -44,12 +44,12 @@ def convert_csv(
         out_dir = Path(out_dir)
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    print('add_radius',add_radius)
-    if add_radius == True:
+    print("add_radius", add_radius)
+    if add_radius:
         num_values_per_point = 4
     else:
         num_values_per_point = 3
-    print('num_values_per_point (z,y,x,radius)',num_values_per_point)
+    print("num_values_per_point (z,y,x,radius)", num_values_per_point)
 
     start = time.monotonic()
     points = []
@@ -59,65 +59,73 @@ def convert_csv(
         header = next(reader)  # Skip the header
 
         column_map = {name: idx for idx, name in enumerate(header)}
-        if 'z' in column_map:
+        if "z" in column_map:
             flag_2D = False
-            print('3D dataset')
-        else:   
+            print("3D dataset")
+        else:
             flag_2D = True
-            print('2D dataset')
+            print("2D dataset")
 
-        required_columns = ['track_id','t','y','x','parent_track_id']
+        required_columns = ["track_id", "t", "y", "x", "parent_track_id"]
         for col in required_columns:
             assert col in column_map, f"Error: column {col} must exist in the CSV"
         if not flag_2D:
-            assert 'z' in column_map, f'Error: column z must exist in the CSV'
+            assert "z" in column_map, "Error: column z must exist in the CSV"
         if add_radius:
-            assert 'radius' in column_map, f'Error: column radius must exist in the CSV'
+            assert "radius" in column_map, "Error: column radius must exist in the CSV"
 
         for row in reader:
-            t = int(row[column_map['t']])
+            t = int(row[column_map["t"]])
             if add_radius and not flag_2D:  # 3D + radius
-                points.append((
-                    int(row[column_map['track_id']]), 
-                    t, 
-                    float(row[column_map['z']]), 
-                    float(row[column_map['y']]), 
-                    float(row[column_map['x']]), 
-                    int(row[column_map['parent_track_id']]), 
-                    float(row[column_map['radius']]), 
-                    points_in_timepoint[t]
-                ))
-            elif add_radius and flag_2D: # 2D + radius
-                points.append((
-                    int(row[column_map['track_id']]), 
-                    t, 
-                    float(0), 
-                    float(row[column_map['y']]), 
-                    float(row[column_map['x']]), 
-                    int(row[column_map['parent_track_id']]), 
-                    float(row[column_map['radius']]), 
-                    points_in_timepoint[t]
-                ))
+                points.append(
+                    (
+                        int(row[column_map["track_id"]]),
+                        t,
+                        float(row[column_map["z"]]),
+                        float(row[column_map["y"]]),
+                        float(row[column_map["x"]]),
+                        int(row[column_map["parent_track_id"]]),
+                        float(row[column_map["radius"]]),
+                        points_in_timepoint[t],
+                    )
+                )
+            elif add_radius and flag_2D:  # 2D + radius
+                points.append(
+                    (
+                        int(row[column_map["track_id"]]),
+                        t,
+                        float(0),
+                        float(row[column_map["y"]]),
+                        float(row[column_map["x"]]),
+                        int(row[column_map["parent_track_id"]]),
+                        float(row[column_map["radius"]]),
+                        points_in_timepoint[t],
+                    )
+                )
             elif not add_radius and not flag_2D:  # 3D without radius
-                points.append((
-                    int(row[column_map['track_id']]), 
-                    t, 
-                    float(row[column_map['z']]), 
-                    float(row[column_map['y']]), 
-                    float(row[column_map['x']]), 
-                    int(row[column_map['parent_track_id']]), 
-                    points_in_timepoint[t]
-                ))
-            elif not add_radius and flag_2D: # 2D without radius
-                points.append((
-                    int(row[column_map['track_id']]), 
-                    t, 
-                    float(0), 
-                    float(row[column_map['y']]), 
-                    float(row[column_map['x']]), 
-                    int(row[column_map['parent_track_id']]), 
-                    points_in_timepoint[t]
-                ))
+                points.append(
+                    (
+                        int(row[column_map["track_id"]]),
+                        t,
+                        float(row[column_map["z"]]),
+                        float(row[column_map["y"]]),
+                        float(row[column_map["x"]]),
+                        int(row[column_map["parent_track_id"]]),
+                        points_in_timepoint[t],
+                    )
+                )
+            elif not add_radius and flag_2D:  # 2D without radius
+                points.append(
+                    (
+                        int(row[column_map["track_id"]]),
+                        t,
+                        float(0),
+                        float(row[column_map["y"]]),
+                        float(row[column_map["x"]]),
+                        int(row[column_map["parent_track_id"]]),
+                        points_in_timepoint[t],
+                    )
+                )
             points_in_timepoint[t] += 1
 
     print(f"Read {len(points)} points in {time.monotonic() - start} seconds")
@@ -127,36 +135,52 @@ def convert_csv(
     timepoints = len(points_in_timepoint)
     tracks = len(set(p[0] for p in points))
 
-    #tests track_id consistency
+    # tests track_id consistency
     track_id_set = set(p[0] for p in points)
 
     if len(track_id_set) != max(track_id_set):
-        print(f"Warning: track_ids not consecutive ({len(track_id_set)} track_IDs found, max track_id = {max(track_id_set)})")
-        print("Solution: Track_id are reformatted to be consecutive from 1 to N, with N the number of tracks")
+        print(
+            f"Warning: track_ids not consecutive ({len(track_id_set)} track_IDs found, max track_id = {max(track_id_set)})"
+        )
+        print(
+            "Solution: Track_id are reformatted to be consecutive from 1 to N, with N the number of tracks"
+        )
 
-    track_id_map = {old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)}
+    track_id_map = {
+        old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)
+    }
     points = [
         (
             track_id_map[p[0]],  # remap track_id
-            p[1],                # time
-            p[2],                # z
-            p[3],                # y
-            p[4],                # x
-            track_id_map[p[5]] if p[5] != -1 else -1,  # remap parent_track_id (keep -1 unchanged)
-            *p[6:]               # radius and other remaining values (if any)
-        ) 
+            p[1],  # time
+            p[2],  # z
+            p[3],  # y
+            p[4],  # x
+            track_id_map[p[5]]
+            if p[5] != -1
+            else -1,  # remap parent_track_id (keep -1 unchanged)
+            *p[6:],  # radius and other remaining values (if any)
+        )
         for p in points
     ]
 
     # store the points in an array
-    points_array = np.ones((timepoints, num_values_per_point * max_points_in_timepoint), dtype=np.float32) * -9999.9
-    points_to_tracks = lil_matrix((timepoints * max_points_in_timepoint, tracks), dtype=np.int32)
+    points_array = (
+        np.ones(
+            (timepoints, num_values_per_point * max_points_in_timepoint),
+            dtype=np.float32,
+        )
+        * -9999.9
+    )
+    points_to_tracks = lil_matrix(
+        (timepoints * max_points_in_timepoint, tracks), dtype=np.int32
+    )
     tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
     tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
 
     # create a map of the track_index to the parent_track_index
     # track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
-    direct_parent_index_map = {}  
+    direct_parent_index_map = {}
 
     vector_x = []
     vector_y = []
@@ -164,17 +188,40 @@ def convert_csv(
 
     for point in points:
         if add_radius:
-            track_id, t, z, y, x, parent_track_id, radius,  n = point # n is the nth point in this timepoint
-            points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)] = [z, y, x, radius]
-        else: 
-            track_id, t, z, y, x, parent_track_id,          n = point # n is the nth point in this timepoint
-            points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)] = [z, y, x]
+            (
+                track_id,
+                t,
+                z,
+                y,
+                x,
+                parent_track_id,
+                radius,
+                n,
+            ) = point  # n is the nth point in this timepoint
+            points_array[
+                t, num_values_per_point * n : num_values_per_point * (n + 1)
+            ] = [z, y, x, radius]
+        else:
+            (
+                track_id,
+                t,
+                z,
+                y,
+                x,
+                parent_track_id,
+                n,
+            ) = point  # n is the nth point in this timepoint
+            points_array[
+                t, num_values_per_point * n : num_values_per_point * (n + 1)
+            ] = [z, y, x]
 
         vector_x.append(x)
         vector_y.append(y)
         vector_z.append(z)
 
-        point_id = t * max_points_in_timepoint + n # creates a sequential ID for each point, but there is no guarantee that the points close together in space
+        point_id = (
+            t * max_points_in_timepoint + n
+        )  # creates a sequential ID for each point, but there is no guarantee that the points close together in space
 
         track_index = track_id - 1
         if track_index not in direct_parent_index_map:
@@ -186,7 +233,7 @@ def convert_csv(
         if parent_track_id > 0:
             tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
             tracks_to_children[parent_track_id - 1, track_id - 1] = 1
-        
+
     print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
     tracks_to_parents.setdiag(1)
     tracks_to_children.setdiag(1)
@@ -205,19 +252,23 @@ def convert_csv(
     iter = 0
     # More info on sparse matrix: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
     # Transitive closure: https://en.wikipedia.org/wiki/Transitive_closure
-    while tracks_to_parents.nnz != (nxt := tracks_to_parents ** 2).nnz:
+    while tracks_to_parents.nnz != (nxt := tracks_to_parents**2).nnz:
         tracks_to_parents = nxt
         iter += 1
 
-    print(f"Chased track lineage forward in {time.monotonic() - start} seconds ({iter} iterations)")
+    print(
+        f"Chased track lineage forward in {time.monotonic() - start} seconds ({iter} iterations)"
+    )
     start = time.monotonic()
 
     iter = 0
-    while tracks_to_children.nnz != (nxt := tracks_to_children ** 2).nnz:
+    while tracks_to_children.nnz != (nxt := tracks_to_children**2).nnz:
         tracks_to_children = nxt
         iter += 1
 
-    print(f"Chased track lineage backward in {time.monotonic() - start} seconds ({iter} iterations)")
+    print(
+        f"Chased track lineage backward in {time.monotonic() - start} seconds ({iter} iterations)"
+    )
     start = time.monotonic()
 
     tracks_to_tracks = tracks_to_parents + tracks_to_children
@@ -255,10 +306,11 @@ def convert_csv(
     points.attrs["mean_y"] = mean_y
     points.attrs["mean_z"] = mean_z
     points.attrs["extent_xyz"] = extent_xyz
-    points.attrs["fields"] = ['z', 'y', 'x', 'radius'][:num_values_per_point]
+    points.attrs["fields"] = ["z", "y", "x", "radius"][:num_values_per_point]
 
-
-    top_level_group.create_groups("points_to_tracks", "tracks_to_points", "tracks_to_tracks")
+    top_level_group.create_groups(
+        "points_to_tracks", "tracks_to_points", "tracks_to_tracks"
+    )
     # TODO: tracks_to_points may want to store xyz for the points, not just the indices
     # this would make the indices array 3x (4x?) larger, but would eliminate the need to
     # fetch coordinates again based on point IDs
@@ -266,10 +318,14 @@ def convert_csv(
     tracks_to_points_zarr.attrs["sparse_format"] = "csr"
     tracks_to_points_zarr.create_dataset("indices", data=tracks_to_points.indices)
     tracks_to_points_zarr.create_dataset("indptr", data=tracks_to_points.indptr)
-    tracks_to_points_xyz = np.zeros((len(tracks_to_points.indices), 3), dtype=np.float32)
+    tracks_to_points_xyz = np.zeros(
+        (len(tracks_to_points.indices), 3), dtype=np.float32
+    )
     for i, ind in enumerate(tracks_to_points.indices):
         t, n = divmod(ind, max_points_in_timepoint)
-        tracks_to_points_xyz[i] = points_array[t, num_values_per_point * n:num_values_per_point * (n + 1)][:3]
+        tracks_to_points_xyz[i] = points_array[
+            t, num_values_per_point * n : num_values_per_point * (n + 1)
+        ][:3]
     # TODO: figure out better chunking?
     tracks_to_points_zarr.create_dataset(
         "data",

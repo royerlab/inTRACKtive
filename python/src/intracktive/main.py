@@ -1,5 +1,4 @@
 import click
-
 from intracktive.convert import convert_csv
 
 
