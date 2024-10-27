@@ -29,7 +29,7 @@ from scipy.sparse import lil_matrix
     default=False,
     type=bool,
 )
-def convert_csv(
+def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
     add_radius: bool,
@@ -349,4 +349,4 @@ def convert_csv(
 
 
 if __name__ == "__main__":
-    convert_csv()
+    convert_cli()
