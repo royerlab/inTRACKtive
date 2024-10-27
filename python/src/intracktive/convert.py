@@ -9,11 +9,12 @@ import zarr
 from scipy.sparse import lil_matrix
 
 
-@click.command()
-@click.argument(
-    "csv_file",
+@click.command(name="convert")
+@click.option(
+    "--csv_file",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path to the CSV file",
+    required=True,
 )
 @click.option(
     "--out_dir",
