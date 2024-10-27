@@ -21,12 +21,19 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = []
+dependencies = [
+  "click",
+  "scipy",
+  "zarr"
+]
 
 [project.urls]
 Documentation = "https://github.com/royerlab/inTRACKtive/tree/main/python#readme"
 Issues = "https://github.com/royerlab/inTRACKtive/issues"
 Source = "https://github.com/royerlab/inTRACKtive"
+
+[project.scripts]
+intracktive = "intracktive.main:main"
 
 [tool.hatch.version]
 path = "src/intracktive/__about__.py"
