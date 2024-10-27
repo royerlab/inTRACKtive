@@ -1,4 +1,4 @@
-name: Linting
+name: Python linting
 on:
   push:
     branches:
