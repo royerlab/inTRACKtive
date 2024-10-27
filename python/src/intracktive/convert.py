@@ -5,8 +5,17 @@ from pathlib import Path
 
 import click
 import numpy as np
+import pandas as pd
 import zarr
 from scipy.sparse import lil_matrix
+
+
+def convert_dataframe(
+    df: pd.DataFrame,
+    out_dir: Path,
+    add_radius: bool,
+) -> None:
+    raise NotImplementedError
 
 
 @click.command(name="convert")
