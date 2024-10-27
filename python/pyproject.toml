@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "intracktive"
+dynamic = ["version"]
+description = 'Python tools for inTRACKtive'
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Teun Huijben", email = "teun.huijben@czbiohub.org"},
+  { name = "Jordao Bragantini", email = "jordao.bragantini@czbiohub.org" },
+]
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = []
+
+[project.urls]
+Documentation = "https://github.com/royerlab/inTRACKtive/tree/main/python#readme"
+Issues = "https://github.com/royerlab/inTRACKtive/issues"
+Source = "https://github.com/royerlab/inTRACKtive"
+
+[tool.hatch.version]
+path = "src/intracktive/__about__.py"
+
+[tool.coverage.run]
+source_pkgs = ["intracktive"]
+branch = true
+parallel = true
+omit = [
+  "src/intracktive/__about__.py",
+]
+
+[tool.coverage.paths]
+intracktive = ["src/intracktive"]
+tests = ["src/intracktive/_tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
