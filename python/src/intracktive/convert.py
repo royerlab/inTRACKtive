@@ -79,7 +79,7 @@ def convert_dataframe(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
     )
 
-    # inserting points their buffer
+    # inserting points to buffer
     for t, group in df.groupby("t"):
         group_size = len(group)
         points_array[t, : group_size * num_values_per_point] = (
