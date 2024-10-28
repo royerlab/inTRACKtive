@@ -25,6 +25,7 @@ dependencies = [
   "click",
   "magicgui",
   "scipy",
+  "scikit-image",
   "pandas",
   "zarr"
 ]
