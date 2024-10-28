@@ -105,7 +105,7 @@ In order for the viewer to access the data, the data must be hosted at a locatio
 
 ```
 cd tools
-python serve_directory_http path/to/data
+python serve_directory_http.py path/to/data
 ```
 
 where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, open [the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
