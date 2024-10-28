@@ -105,10 +105,6 @@ def convert_dataframe(
     for i in range(n_cc):
         lineage_graph[cc == i, cc == i] = 1
 
-    mean = df[["z", "y", "x"]].mean()
-    extent = (df[["z", "y", "x"]] - mean).abs().max()
-    extent_xyz = extent.max()
-
     non_zero = lineage_graph.nonzero()
     lineage_graph = lineage_graph.tolil()
 
@@ -142,6 +138,11 @@ def convert_dataframe(
         dtype=np.float32,
     )
     points.attrs["values_per_point"] = num_values_per_point
+
+    mean = df[["z", "y", "x"]].mean()
+    extent = (df[["z", "y", "x"]] - mean).abs().max()
+    extent_xyz = extent.max()
+
     for col in ("z", "y", "x"):
         points.attrs[f"mean_{col}"] = mean[col]
 
