@@ -6,11 +6,31 @@ import click
 import numpy as np
 import pandas as pd
 import zarr
-from scipy.sparse import csgraph, lil_matrix
-from skimage.segmentation import relabel_sequential
+from scipy.sparse import csr_matrix, lil_matrix
+from skimage.util._map_array import ArrayMap
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
+
+
+def _transitive_closure(
+    graph: lil_matrix,
+    direction: str,
+) -> csr_matrix:
+    graph.setdiag(1)
+    graph = graph.tocsr()
+
+    start = time.monotonic()
+
+    iter = 0
+    while graph.nnz != (nxt := graph**2).nnz:
+        graph = nxt
+        iter += 1
+
+    print(
+        f"Chased track lineage {direction} in {time.monotonic() - start} seconds ({iter} iterations)"
+    )
+    return graph
 
 
 def convert_dataframe(
@@ -42,6 +62,7 @@ def convert_dataframe(
 
     extra_cols = list(extra_cols)
     columns = REQUIRED_COLUMNS + extra_cols
+    points_cols = ["z", "y", "x"] + extra_cols  # columns to store in the points array
 
     for col in columns:
         if col not in df.columns:
@@ -55,11 +76,12 @@ def convert_dataframe(
     n_time_points = df["t"].max() + 1
     max_values_per_time_point = df.groupby("t").size().max()
 
-    relabeld_track_ids, fwd_map, _ = relabel_sequential(df["track_id"], offset=0)
-    fwd_map[-1] = -1
+    uniq_track_ids = df["track_id"].unique()
+    fwd_map = ArrayMap(uniq_track_ids, np.arange(1, 1 + len(uniq_track_ids)))
 
     # relabeling from 0 to N-1
-    df["track_id"] = relabeld_track_ids
+    df["track_id"] = fwd_map[df["track_id"].to_numpy()]
+    # orphaned are set to 0 according to skimage convention
     df["parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
 
     n_tracklets = df["track_id"].nunique()
@@ -83,42 +105,44 @@ def convert_dataframe(
     for t, group in df.groupby("t"):
         group_size = len(group)
         points_array[t, : group_size * num_values_per_point] = (
-            df[columns].to_numpy().ravel()
+            group[points_cols].to_numpy().ravel()
         )
         points_ids = t * max_values_per_time_point + np.arange(group_size)
 
-        points_to_tracks[points_ids, group["track_id"]] = 1
+        points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
     # creating mapping of tracklets parent-child relationship
     tracks_edges = df[["track_id", "parent_track_id"]].drop_duplicates()
+    tracks_edges = tracks_edges[tracks_edges["parent_track_id"] > 0]
 
-    tracklets_graph = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
-    tracklets_graph[tracks_edges["track_id"], tracks_edges["parent_track_id"]] = 1
-    tracklets_graph = tracklets_graph.tocsr()
+    tracks_to_children = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
+    tracks_to_children[
+        tracks_edges["track_id"] - 1, tracks_edges["parent_track_id"] - 1
+    ] = 1
+    tracks_to_children = _transitive_closure(tracks_to_children, "forward")
 
-    # find connected components to obtain transitive closure
-    n_cc, cc = csgraph.connected_components(
-        tracklets_graph, directed=True, connection="weak"
+    tracks_to_parents = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
+    tracks_to_parents[
+        tracks_edges["parent_track_id"] - 1, tracks_edges["track_id"] - 1
+    ] = 1
+    tracks_to_parents = _transitive_closure(tracks_to_parents, "backward")
+
+    tracks_to_tracks = (tracks_to_parents + tracks_to_children).tolil()
+    # FIXME: I'm not sure on what value the orphaned tracklets should be set to
+    # setting to zero for now
+    tracks_edges_map = ArrayMap(
+        tracks_edges["track_id"].to_numpy(), tracks_edges["parent_track_id"].to_numpy()
     )
-    lineage_graph = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
 
-    for i in range(n_cc):
-        lineage_graph[cc == i, cc == i] = 1
-
-    non_zero = lineage_graph.nonzero()
-    lineage_graph = lineage_graph.tolil()
-
-    tracks_edges_map = tracks_edges.set_index("track_id")
-    lineage_graph[non_zero] = tracks_edges_map.loc[
-        non_zero[1], "parent_track_id"
-    ].to_numpy()
+    non_zero = tracks_to_tracks.nonzero()
+    tracks_to_tracks[non_zero] = tracks_edges_map[non_zero[1] + 1]
 
     # @jordao NOTE: didn't modify the original code, from this point below
 
     # Convert to CSR format for efficient row slicing
     tracks_to_points = points_to_tracks.T.tocsr()
     points_to_tracks = points_to_tracks.tocsr()
-    lineage_graph = lineage_graph.tocsr()
+    tracks_to_tracks = tracks_to_tracks.tocsr()
 
     print(
         f"Parsed dataframe and converted to CSR data structures in {time.monotonic() - start} seconds"
@@ -184,9 +208,9 @@ def convert_dataframe(
 
     tracks_to_tracks_zarr = top_level_group["tracks_to_tracks"]
     tracks_to_tracks_zarr.attrs["sparse_format"] = "csr"
-    tracks_to_tracks_zarr.create_dataset("indices", data=lineage_graph.indices)
-    tracks_to_tracks_zarr.create_dataset("indptr", data=lineage_graph.indptr)
-    tracks_to_tracks_zarr.create_dataset("data", data=lineage_graph.data)
+    tracks_to_tracks_zarr.create_dataset("indices", data=tracks_to_tracks.indices)
+    tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
+    tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
     print(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
