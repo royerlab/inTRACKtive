@@ -135,22 +135,11 @@ def convert_dataframe(
         tracks_edges["track_id"].to_numpy(), tracks_edges["parent_track_id"].to_numpy()
     )
 
-    print('tracks_to_tracks.todense \n', tracks_to_tracks.todense(),'\n')
-    print('tracks_to_tracks \n', tracks_to_tracks,'\n')
-
     non_zero = tracks_to_tracks.nonzero()
-    print('non_zero \n', non_zero,'\n')
-    # print('non_zero[1] \n', non_zero[1],'\n')
-    print('tracks_edges_map \n', tracks_edges_map,'\n')
-    # print('tracks_to_tracks[non_zero] \n', tracks_to_tracks[non_zero],'\n')
-    # print('tracks_edges_map[non_zero[1] + 1] \n', tracks_edges_map[non_zero[1] + 1],'\n')
-    # print('map[0 1 2 3 4]',tracks_edges_map[0],tracks_edges_map[1],tracks_edges_map[2],tracks_edges_map[3],tracks_edges_map[4],'\n')
 
     # tracks_to_tracks[non_zero] = tracks_edges_map[non_zero[1] + 1]
     for i, j in zip(*non_zero):
         tracks_to_tracks[i, j] = tracks_edges_map[tracks_to_tracks[i, j] + 1]
-
-    print('tracks_to_tracks.todense() \n', tracks_to_tracks.todense(),'\n')
 
     # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing
