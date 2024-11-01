@@ -24,7 +24,7 @@ if args.out_dir is None:
     out_dir = csv_file.parent
 else:
     out_dir = Path(args.out_dir)
-zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
+zarr_path = out_dir / f"{csv_file.stem}_bundle_OLD.zarr"
 
 add_radius = args.add_radius
 print('add_radius',add_radius)

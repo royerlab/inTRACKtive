@@ -78,7 +78,10 @@ def convert_dataframe(
     max_values_per_time_point = df.groupby("t").size().max()
 
     uniq_track_ids = df["track_id"].unique()
-    fwd_map = ArrayMap(uniq_track_ids, np.arange(1, 1 + len(uniq_track_ids)))
+    extended_uniq_track_ids = np.append(uniq_track_ids, -1) #include -1 for orphaned tracklets
+    fwd_map = ArrayMap(extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1))
+
+    print('fwd_map:', fwd_map)
 
     # relabeling from 0 to N-1
     df["track_id"] = fwd_map[df["track_id"].to_numpy()]
@@ -116,8 +119,8 @@ def convert_dataframe(
 
 
     # creating mapping of tracklets parent-child relationship
-    tracks_edges = df[["track_id", "parent_track_id"]].drop_duplicates()
-    tracks_edges = tracks_edges[tracks_edges["parent_track_id"] > 0]
+    tracks_edges_all = df[["track_id", "parent_track_id"]].drop_duplicates()    #all unique edges
+    tracks_edges = tracks_edges_all[tracks_edges_all["parent_track_id"] > 0]    #only the tracks with a parent
 
     tracks_to_children = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
     tracks_to_children[
@@ -133,21 +136,16 @@ def convert_dataframe(
     start = time.monotonic()
 
     tracks_to_tracks = (tracks_to_parents + tracks_to_children).tolil()
-    # FIXME: I'm not sure on what value the orphaned tracklets should be set to
-    # setting to zero for now
+    # orphaned tracklets need -1 as parent
     tracks_edges_map = ArrayMap(
-        tracks_edges["track_id"].to_numpy(), tracks_edges["parent_track_id"].to_numpy()
+        tracks_edges_all["track_id"].to_numpy(), tracks_edges_all["parent_track_id"].to_numpy()
     )
 
     non_zero = tracks_to_tracks.nonzero()
 
-    # tracks_to_tracks[non_zero] = tracks_edges_map[non_zero[1] + 1]
-    # for i, j in zip(*non_zero):
-    #     counter += 1
-    #     tracks_to_tracks[i, j] = tracks_edges_map[tracks_to_tracks[i, j] + 1]
     for i in range(len(non_zero[0])):
-        tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = 1
-        # tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = tracks_edges_map[non_zero[1][i] + 1]
+        tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = tracks_edges_map[non_zero[1][i] + 1]
+    print(tracks_to_tracks.todense())
 
     # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing

@@ -8,7 +8,6 @@ DEFAULT_HOST = "127.0.0.1"
 
 logging.basicConfig(level=logging.INFO)
 
-
 def serve_directory(
     path: Path,
     host: str = DEFAULT_HOST,
@@ -43,13 +42,16 @@ def serve_directory(
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received, exiting.")
             raise SystemExit(0)
+        except Exception as e:
+            logging.error("An error occurred: %s", e)
+            raise SystemExit(1)
 
 
-@click.command("serve")
+
+@click.command()
 @click.argument(
-    "--path",
-    type=click.Path(exists=True, file_ok=False, path_type=Path),
-    help="The directory on the filesystem to serve.",
+    "path",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
     "--host", type=str, default=DEFAULT_HOST, help="The host name or IP address."
@@ -60,9 +62,6 @@ def server_cli(
     host: str,
     port: int,
 ) -> None:
-    """
-    Serves data on the file system over HTTP bypassing CORS
-    """
     serve_directory(path, host, port)
 
 
