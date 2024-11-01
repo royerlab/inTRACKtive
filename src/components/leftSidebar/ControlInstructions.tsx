@@ -69,7 +69,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
             break;
     }
     return (
-        <Callout intent="info" sx={{ width: "auto" }}>
+        <Callout intent="info" sx={{ width: "auto", maxWidth: "100%" }}>
             {instructionText}
         </Callout>
     );

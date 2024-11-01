@@ -21,8 +21,13 @@ interface CellControlsProps {
 
 export default function CellControls(props: CellControlsProps) {
     const buttonDefinition: SingleButtonDefinition[] = [
-        { icon: "Cube", tooltipText: "Box", value: PointSelectionMode.BOX },
-        { icon: "Starburst", tooltipText: "Sphere", value: PointSelectionMode.SPHERICAL_CURSOR },
+        { icon: "Cube", tooltipText: "Box", value: PointSelectionMode.BOX, disabled: props.isTablet },
+        {
+            icon: "Starburst",
+            tooltipText: "Sphere",
+            value: PointSelectionMode.SPHERICAL_CURSOR,
+            disabled: props.isTablet,
+        },
         { icon: "Globe", tooltipText: "Adjustable sphere", value: PointSelectionMode.SPHERE },
     ];
 
