@@ -81,8 +81,6 @@ def convert_dataframe(
     extended_uniq_track_ids = np.append(uniq_track_ids, -1) #include -1 for orphaned tracklets
     fwd_map = ArrayMap(extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1))
 
-    print('fwd_map:', fwd_map)
-
     # relabeling from 0 to N-1
     df["track_id"] = fwd_map[df["track_id"].to_numpy()]
     # orphaned are set to 0 according to skimage convention
@@ -145,7 +143,6 @@ def convert_dataframe(
 
     for i in range(len(non_zero[0])):
         tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = tracks_edges_map[non_zero[1][i] + 1]
-    print(tracks_to_tracks.todense())
 
     # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing
