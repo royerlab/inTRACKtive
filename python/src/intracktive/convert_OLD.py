@@ -35,6 +35,8 @@ else:
 print('num_values_per_point (z,y,x,radius)',num_values_per_point)
 
 start = time.monotonic()
+start_fullBegin = time.monotonic()
+
 points = []
 points_in_timepoint = Counter()
 with open(csv_file, "r") as f:
@@ -207,19 +209,10 @@ tracks_to_tracks = tracks_to_parents + tracks_to_children
 tracks_to_tracks = tracks_to_tracks.tolil()
 non_zero = tracks_to_tracks.nonzero()
 
-print('map',direct_parent_index_map)
-print('started remapping')
-print(len(non_zero[0]))
 for i in range(len(non_zero[0])):
-    if i%1000 == 0:
-        print('i',i)
-    # track_index = track_id - 1 since track_id is 1-indexed
     track_index = non_zero[1][i]
     parent_track_index = direct_parent_index_map[track_index]
-    print(i,track_index,parent_track_index)
     tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_index + 1
-print('finished remapping')
-print(tracks_to_tracks.todense())
 
 # Convert to CSR format for efficient row slicing
 tracks_to_points = points_to_tracks.T.tocsr()
@@ -281,6 +274,9 @@ tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
 tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
 print(f"Saved to Zarr in {time.monotonic() - start} seconds")
+
+print(f"Full conversion took {time.monotonic() - start_fullBegin} seconds")
+
 
 # # This is what an example resulting Zarr store looks like:
 # # ❯ du -sh tracks_bundle.zarr

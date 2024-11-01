@@ -134,10 +134,7 @@ def convert_dataframe(
     start = time.monotonic()
 
     tracks_to_tracks = (tracks_to_parents + tracks_to_children).tolil()
-    # orphaned tracklets need -1 as parent
-    tracks_edges_map = ArrayMap(
-        tracks_edges_all["track_id"].to_numpy(), tracks_edges_all["parent_track_id"].to_numpy()
-    )
+    tracks_edges_map = {int(k): int(v) for k, v in zip(tracks_edges_all["track_id"].to_numpy(), tracks_edges_all["parent_track_id"].to_numpy())}
 
     non_zero = tracks_to_tracks.nonzero()
 
@@ -271,6 +268,9 @@ def convert_cli(
         zarr_path,
         extra_cols=extra_cols,
     )
+
+    print(f"Full conversion took {time.monotonic() - start} seconds")
+
 
 
 if __name__ == "__main__":
