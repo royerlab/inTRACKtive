@@ -56,6 +56,7 @@ def convert_dataframe(
     extra_cols : Iterable[str], optional
         List of extra columns to include in the Zarr store, by default ()
     """
+    start = time.monotonic()
 
     if "z" not in df.columns:
         df["z"] = 0.0
@@ -111,10 +112,12 @@ def convert_dataframe(
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
+    print(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
+
+
     # creating mapping of tracklets parent-child relationship
     tracks_edges = df[["track_id", "parent_track_id"]].drop_duplicates()
     tracks_edges = tracks_edges[tracks_edges["parent_track_id"] > 0]
-    print('tracks_edges \n', tracks_edges,'\n')
 
     tracks_to_children = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
     tracks_to_children[
@@ -127,6 +130,7 @@ def convert_dataframe(
         tracks_edges["parent_track_id"] - 1, tracks_edges["track_id"] - 1
     ] = 1
     tracks_to_parents = _transitive_closure(tracks_to_parents, "backward")
+    start = time.monotonic()
 
     tracks_to_tracks = (tracks_to_parents + tracks_to_children).tolil()
     # FIXME: I'm not sure on what value the orphaned tracklets should be set to
@@ -138,8 +142,12 @@ def convert_dataframe(
     non_zero = tracks_to_tracks.nonzero()
 
     # tracks_to_tracks[non_zero] = tracks_edges_map[non_zero[1] + 1]
-    for i, j in zip(*non_zero):
-        tracks_to_tracks[i, j] = tracks_edges_map[tracks_to_tracks[i, j] + 1]
+    # for i, j in zip(*non_zero):
+    #     counter += 1
+    #     tracks_to_tracks[i, j] = tracks_edges_map[tracks_to_tracks[i, j] + 1]
+    for i in range(len(non_zero[0])):
+        tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = 1
+        # tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = tracks_edges_map[non_zero[1][i] + 1]
 
     # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing
@@ -246,6 +254,7 @@ def convert_cli(
     """
     Convert a CSV of tracks to a sparse Zarr store
     """
+    start = time.monotonic()
 
     if out_dir is None:
         out_dir = csv_file.parent
@@ -258,6 +267,9 @@ def convert_cli(
     extra_cols = ["radius"] if add_radius else []
 
     tracks_df = pd.read_csv(csv_file)
+
+    print(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
+
 
     convert_dataframe(
         tracks_df,
