@@ -214,6 +214,11 @@ export class PointCanvas {
         this.controls.update();
     };
 
+    lockRotation() {
+        this.controls.enableRotate = false;
+        console.debug("Rotation locked because 2D datast detected");
+    }
+
     updateSelectedPointIndices() {
         const cacheKey = this.createCacheKey();
 

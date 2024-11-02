@@ -24,7 +24,7 @@ export class ViewerState {
     showTracks = true;
     showTrackHighlights = true;
     // Default position and target for the camera
-    cameraPosition = [0, 0, -4]; // was  [500, 500, -1250];
+    cameraPosition = [-4, 0, 0]; // was  [-1250, 500, 500];
     cameraTarget = [0, 0, 0]; // was  [500, 500, 500];
 
     toUrlHash(): string {

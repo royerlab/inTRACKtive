@@ -7,6 +7,7 @@ import { ViewerState } from "@/lib/ViewerState";
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
+    LOCK_ROTATION = "LOCK_ROTATION",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
@@ -36,6 +37,10 @@ interface AutoRotate {
 interface CurTime {
     type: ActionType.CUR_TIME;
     curTime: number | ((curTime: number) => number);
+}
+
+interface LockRotation {
+    type: ActionType.LOCK_ROTATION;
 }
 
 interface InitPointsGeometry {
@@ -134,6 +139,7 @@ interface ToggleAxes {
 type PointCanvasAction =
     | AutoRotate
     | CurTime
+    | LockRotation
     | InitPointsGeometry
     | PointBrightness
     | PointSizes
@@ -160,7 +166,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
-
+        case ActionType.LOCK_ROTATION:
+            newCanvas.lockRotation();
+            break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
             if (typeof action.curTime === "function") {

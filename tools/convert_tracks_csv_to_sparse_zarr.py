@@ -74,7 +74,7 @@ with open(csv_file, "r") as f:
             points.append((
                 int(row[column_map['track_id']]), 
                 t, 
-                float(0), 
+                float(0),  #set z to 0 for 2D
                 float(row[column_map['y']]), 
                 float(row[column_map['x']]), 
                 int(row[column_map['parent_track_id']]), 
@@ -95,7 +95,7 @@ with open(csv_file, "r") as f:
             points.append((
                 int(row[column_map['track_id']]), 
                 t, 
-                float(0), 
+                float(0),   #set z to 0 for 2D
                 float(row[column_map['y']]), 
                 float(row[column_map['x']]), 
                 int(row[column_map['parent_track_id']]), 
@@ -239,6 +239,7 @@ points.attrs["mean_y"] = mean_y
 points.attrs["mean_z"] = mean_z
 points.attrs["extent_xyz"] = extent_xyz
 points.attrs["fields"] = ['z', 'y', 'x', 'radius'][:num_values_per_point]
+points.attrs["ndim"] = 3 if not flag_2D else 2
 
 
 top_level_group.create_groups("points_to_tracks", "tracks_to_points", "tracks_to_tracks")

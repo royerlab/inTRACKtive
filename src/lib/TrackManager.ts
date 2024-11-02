@@ -110,6 +110,7 @@ export class TrackManager {
     maxPointsPerTimepoint: number;
     scaleSettings: ScaleSettings;
     defaultExtent: number;
+    ndim: number;
 
     constructor(
         store: string,
@@ -128,6 +129,7 @@ export class TrackManager {
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
         this.scaleSettings = scaleSettings;
         this.defaultExtent = 1; // pointcloud is centered around (0,0,0) with an extent of 1
+        this.ndim = 3;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -246,6 +248,16 @@ export async function loadTrackManager(url: string) {
             numberOfValuesPerPoint = 3;
         }
 
+        let datasetNdim = 3;
+        try {
+            const store = new HTTPStore(url);
+            const zattrsResponse = await store.getItem("points/.zattrs");
+            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            datasetNdim = zattrs["ndim"];
+        } catch (error) {
+            console.error("Error getting ndim from zattrs: %s", error);
+        }
+
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
@@ -254,6 +266,10 @@ export async function loadTrackManager(url: string) {
         trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks, scaleSettings);
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
+        }
+        if (datasetNdim == 2) {
+            trackManager.ndim = 2;
+            console.debug("2D datast detected in loadTrackManager");
         }
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);
