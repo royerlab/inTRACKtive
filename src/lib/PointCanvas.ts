@@ -214,8 +214,16 @@ export class PointCanvas {
         this.controls.update();
     };
 
-    lockRotation() {
-        this.controls.enableRotate = false;
+    lockRotation(ndim: number) {
+        if (ndim == 2) {
+            const cameraPosition = new ViewerState().cameraPosition;
+            this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+            this.controls.enableRotate = false;
+        } else if (ndim == 3) {
+            this.controls.enableRotate = true;
+        } else {
+            console.error("Invalid ndim value: " + ndim);
+        }
         console.debug("Rotation locked because 2D datast detected");
     }
 

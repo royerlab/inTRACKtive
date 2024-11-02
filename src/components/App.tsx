@@ -201,11 +201,10 @@ export default function App() {
             type: ActionType.INIT_POINTS_GEOMETRY,
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
         });
-        if (trackManager.ndim === 2) {
-            dispatchCanvas({
-                type: ActionType.LOCK_ROTATION,
-            });
-        }
+        dispatchCanvas({
+            type: ActionType.LOCK_ROTATION,
+            ndim: trackManager.ndim,
+        });
     }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes

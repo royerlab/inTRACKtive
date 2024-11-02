@@ -41,6 +41,7 @@ interface CurTime {
 
 interface LockRotation {
     type: ActionType.LOCK_ROTATION;
+    ndim: number;
 }
 
 interface InitPointsGeometry {
@@ -167,7 +168,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.REFRESH:
             break;
         case ActionType.LOCK_ROTATION:
-            newCanvas.lockRotation();
+            newCanvas.lockRotation(action.ndim);
             break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
