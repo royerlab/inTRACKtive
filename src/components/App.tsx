@@ -96,6 +96,10 @@ export default function App() {
     const numSelectedTracks = canvas.tracks.size;
     const trackHighlightLength = canvas.maxTime - canvas.minTime;
 
+    if (detectedDevice.isPhone) {
+        canvas.axesVisible = false;
+    }
+
     // this state is pure React
     const [playing, setPlaying] = useState(false);
     const [isLoadingPoints, setIsLoadingPoints] = useState(true);
