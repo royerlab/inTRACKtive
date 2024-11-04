@@ -48,7 +48,7 @@ def serve_directory(
             raise SystemExit(1)
 
 
-@click.command()
+@click.command("serve")
 @click.argument(
     "path",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
@@ -62,6 +62,9 @@ def server_cli(
     host: str,
     port: int,
 ) -> None:
+    """
+    Serves data on the file system over HTTP bypassing CORS
+    """
     serve_directory(path, host, port)
 
 
