@@ -134,10 +134,6 @@ export class PointCanvas {
 
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
-        // if (this.axesVisible==false){
-        //     this.toggleAxesHelper();
-        //     console.log('toggled')
-        // }
         if (detectedDevice.isPhone) {
             this.toggleAxesHelper();
         }
@@ -169,8 +165,6 @@ export class PointCanvas {
             this.setSelectionMode(PointSelectionMode.SPHERE);
         } else if (detectedDevice.isPhone) {
             this.setSelectionMode(null); // no selection functionality on phone
-            // this.axesVisible = false; // axes helper is not visible on phone
-            // console.log('axes set to false')
         } else {
             this.setSelectionMode(PointSelectionMode.BOX);
         }
