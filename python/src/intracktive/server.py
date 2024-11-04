@@ -8,6 +8,7 @@ DEFAULT_HOST = "127.0.0.1"
 
 logging.basicConfig(level=logging.INFO)
 
+
 def serve_directory(
     path: Path,
     host: str = DEFAULT_HOST,
@@ -45,7 +46,6 @@ def serve_directory(
         except Exception as e:
             logging.error("An error occurred: %s", e)
             raise SystemExit(1)
-
 
 
 @click.command()
