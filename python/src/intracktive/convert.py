@@ -1,3 +1,4 @@
+import logging
 import time
 from pathlib import Path
 from typing import Iterable
@@ -11,6 +12,9 @@ from skimage.util._map_array import ArrayMap
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 
 def _transitive_closure(
@@ -27,7 +31,7 @@ def _transitive_closure(
         graph = nxt
         iter += 1
 
-    print(
+    LOG.info(
         f"Chased track lineage {direction} in {time.monotonic() - start} seconds ({iter} iterations)"
     )
     return graph
@@ -117,7 +121,7 @@ def convert_dataframe(
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
-    print(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
+    LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
 
     # creating mapping of tracklets parent-child relationship
     tracks_edges_all = df[
@@ -162,7 +166,7 @@ def convert_dataframe(
     points_to_tracks = points_to_tracks.tocsr()
     tracks_to_tracks = tracks_to_tracks.tocsr()
 
-    print(
+    LOG.info(
         f"Parsed dataframe and converted to CSR data structures in {time.monotonic() - start} seconds"
     )
     start = time.monotonic()
@@ -230,7 +234,7 @@ def convert_dataframe(
     tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
     tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
-    print(f"Saved to Zarr in {time.monotonic() - start} seconds")
+    LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 
 @click.command(name="convert")
@@ -275,7 +279,7 @@ def convert_cli(
 
     tracks_df = pd.read_csv(csv_file)
 
-    print(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
+    LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
     convert_dataframe(
         tracks_df,
@@ -283,7 +287,7 @@ def convert_cli(
         extra_cols=extra_cols,
     )
 
-    print(f"Full conversion took {time.monotonic() - start} seconds")
+    LOG.info(f"Full conversion took {time.monotonic() - start} seconds")
 
 
 if __name__ == "__main__":
