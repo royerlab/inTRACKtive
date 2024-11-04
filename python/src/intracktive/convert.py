@@ -292,3 +292,25 @@ def convert_cli(
 
 if __name__ == "__main__":
     convert_cli()
+
+
+# # This is what an example resulting Zarr store looks like:
+# # ❯ du -sh tracks_bundle.zarr
+# # 520M	tracks_bundle.zarr
+# # tracks_bundle.zarr
+# # ├── points (198M)
+# # ├── points_to_tracks (62M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
+# # ├── tracks_to_points (259M)
+# # │   ├── data (207M)
+# # │   ├── indices (50M)
+# # │   └── indptr (1.9M)
+# # └── tracks_to_tracks (37M)
+# #     ├── data (22M)
+# #     ├── indices (13M)
+# #     └── indptr (1.8M)
+
+# # note the relatively small size of the indptr arrays
+# # tracks_to_points/data is a redundant copy of the points array to avoid having
+# # to fetch point coordinates individually
