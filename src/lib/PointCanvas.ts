@@ -76,6 +76,7 @@ export class PointCanvas {
     maxTime: number = 5;
     pointBrightness = 1.0;
     pointSize = initialPointSize;
+    trackWidthRatio = 1 / 100;
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -346,8 +347,8 @@ export class PointCanvas {
         sizes.needsUpdate = true;
 
         for (const track of this.tracks.values()) {
-            track.threeTrack.material.trackwidth = this.pointSize / 100;
-            track.threeTrack.material.highlightwidth = this.pointSize / 15;
+            track.threeTrack.material.trackwidth = this.pointSize * this.trackWidthRatio;
+            track.threeTrack.material.highlightwidth = this.pointSize * this.trackWidthRatio * 6;
         }
     }
 
@@ -384,8 +385,8 @@ export class PointCanvas {
             this.showTrackHighlights,
             this.minTime,
             this.maxTime,
-            this.pointSize / 100,
-            this.pointSize / 15,
+            this.pointSize * this.trackWidthRatio, // trackWidth
+            this.pointSize * this.trackWidthRatio * 6, // highlightWidth
         );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
@@ -399,8 +400,8 @@ export class PointCanvas {
                 this.showTrackHighlights,
                 this.minTime,
                 this.maxTime,
-                this.pointSize / 100,
-                this.pointSize / 15,
+                this.pointSize * this.trackWidthRatio, // trackWidth
+                this.pointSize * this.trackWidthRatio * 6, // highlightWidth
             );
         });
     }
