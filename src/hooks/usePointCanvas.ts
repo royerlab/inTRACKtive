@@ -8,6 +8,7 @@ enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
+    TRACK_WIDTH = "TRACK_WIDTH",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
     RESET_POINTS_COLORS = "POINT_COLORS",
@@ -41,6 +42,11 @@ interface CurTime {
 interface InitPointsGeometry {
     type: ActionType.INIT_POINTS_GEOMETRY;
     maxPointsPerTimepoint: number;
+}
+
+interface TrackWidth {
+    type: ActionType.TRACK_WIDTH;
+    ratio: number;
 }
 
 interface PointBrightness {
@@ -135,6 +141,7 @@ type PointCanvasAction =
     | AutoRotate
     | CurTime
     | InitPointsGeometry
+    | TrackWidth
     | PointBrightness
     | PointSizes
     | PointsPositions
@@ -177,6 +184,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            break;
+        case ActionType.TRACK_WIDTH:
+            newCanvas.trackWidthRatio = action.ratio;
+            newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;

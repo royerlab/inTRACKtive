@@ -17,6 +17,8 @@ interface TrackControlsProps {
     pointSize: number;
     setPointSize: (value: number) => void;
     hasTracks: boolean;
+    trackWidth: number;
+    setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
 }
@@ -118,6 +120,29 @@ export default function TrackControls(props: TrackControlsProps) {
                 }}
                 value={props.pointBrightness * 100}
             />
+
+            {/* Track width slider */}
+            {props.hasTracks && (
+                <label htmlFor="track-width-slider">
+                    <FontS>Track Width</FontS>
+                </label>
+            )}
+            {props.hasTracks && (
+                <InputSlider
+                    id="track-width-slider"
+                    aria-labelledby="input-slider-track-width"
+                    disabled={!props.trackManager}
+                    min={0.01}
+                    max={0.1}
+                    step={0.001}
+                    valueLabelDisplay="on"
+                    valueLabelFormat={(value) => `${Math.round(value * 100 * 10) / 10}x`}
+                    onChange={(_, value) => {
+                        props.setTrackWidth(value as number);
+                    }}
+                    value={props.trackWidth}
+                />
+            )}
 
             {/* Track highlight length slider */}
             {props.hasTracks && (

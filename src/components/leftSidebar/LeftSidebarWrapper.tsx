@@ -26,6 +26,7 @@ interface LeftSidebarWrapperProps {
     canvas: PointCanvas;
     setPointBrightness: (brightness: number) => void;
     setPointSize: (pointSize: number) => void;
+    setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
 }
@@ -44,6 +45,7 @@ export default function LeftSidebarWrapper({
     canvas,
     setPointBrightness,
     setPointSize,
+    setTrackWidth,
     axesVisible,
     toggleAxesVisible,
 }: LeftSidebarWrapperProps) {
@@ -62,6 +64,8 @@ export default function LeftSidebarWrapper({
                 pointSize={canvas.pointSize}
                 setPointSize={setPointSize}
                 hasTracks={hasTracks}
+                trackWidth={canvas.trackWidthRatio}
+                setTrackWidth={setTrackWidth}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
             />
