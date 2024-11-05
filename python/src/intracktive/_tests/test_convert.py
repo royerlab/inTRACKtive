@@ -47,48 +47,6 @@ def make_sample_data() -> pd.DataFrame:
     return df
 
 
-# def test_new_conversion(tmp_path: Path) -> None:
-#     # might change in the future, smaller than zebrahub data
-#     sample_data_url = "https://public.czbiohub.org/royerlab/ultrack/multi-color-cytoplasm-sparse-tracks.csv"
-
-#     rng = np.random.default_rng(0)
-
-#     df = pd.read_csv(sample_data_url)
-#     df["radius"] = rng.uniform(1, 5, size=len(df))
-#     df.loc[df["parent_track_id"] == 0, "parent_track_id"] = -1
-
-#     df.to_csv(tmp_path / "sample_data.csv", index=False)
-
-#     new_path = tmp_path / "sample_data_bundle.zarr"
-#     old_path = tmp_path / "sample_data_bundle_OLD.zarr"
-
-#     convert_dataframe(
-#         df=df,
-#         out_path=new_path,
-#         extra_cols=["radius"],
-#     )
-
-#     print("\n\n-------------\n")
-
-#     old_cmd_path = Path(__file__).parent.parent / "convert_OLD.py"
-
-#     cplt_process = subprocess.run(
-#         [
-#             "python",
-#             str(old_cmd_path),
-#             str(tmp_path / "sample_data.csv"),
-#             str(old_path.parent),
-#             "--add_radius",
-#         ]
-#     )
-#     assert cplt_process.returncode == 0
-
-#     new_data = zarr.open(new_path)
-#     old_data = zarr.open(old_path)
-
-#     _evaluate(new_data, old_data)
-
-
 def test_actual_zarr_content(tmp_path: Path) -> None:
     df = make_sample_data()
     df["radius"] = np.linspace(10, 18, 5)
