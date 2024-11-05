@@ -1,21 +1,240 @@
-import csv
+import logging
 import time
-from collections import Counter
 from pathlib import Path
+from typing import Iterable
 
 import click
 import numpy as np
 import pandas as pd
 import zarr
-from scipy.sparse import lil_matrix
+from scipy.sparse import csr_matrix, lil_matrix
+from skimage.util._map_array import ArrayMap
+
+REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
+INF_SPACE = -9999.9
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
+
+
+def _transitive_closure(
+    graph: lil_matrix,
+    direction: str,
+) -> csr_matrix:
+    graph.setdiag(1)
+    graph = graph.tocsr()
+
+    start = time.monotonic()
+
+    iter = 0
+    while graph.nnz != (nxt := graph**2).nnz:
+        graph = nxt
+        iter += 1
+
+    LOG.info(
+        f"Chased track lineage {direction} in {time.monotonic() - start} seconds ({iter} iterations)"
+    )
+    return graph
 
 
 def convert_dataframe(
     df: pd.DataFrame,
-    out_dir: Path,
-    add_radius: bool,
+    out_path: Path,
+    extra_cols: Iterable[str] = (),
 ) -> None:
-    raise NotImplementedError
+    """
+    Convert a DataFrame of tracks to a sparse Zarr store
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the tracks must have the following columns:
+        - track_id: int
+        - t: int
+        - z: float
+        - y: float
+        - x: float
+        - parent_track_id: int
+    out_path : Path
+        Path to the output Zarr store
+    extra_cols : Iterable[str], optional
+        List of extra columns to include in the Zarr store, by default ()
+    """
+    start = time.monotonic()
+
+    if "z" not in df.columns:
+        df["z"] = 0.0
+
+    extra_cols = list(extra_cols)
+    columns = REQUIRED_COLUMNS + extra_cols
+    points_cols = ["z", "y", "x"] + extra_cols  # columns to store in the points array
+
+    for col in columns:
+        if col not in df.columns:
+            raise ValueError(f"Column '{col}' not found in the DataFrame")
+
+    for col in ("t", "track_id", "parent_track_id"):
+        df[col] = df[col].astype(int)
+
+    start = time.monotonic()
+
+    n_time_points = df["t"].max() + 1
+    max_values_per_time_point = df.groupby("t").size().max()
+
+    uniq_track_ids = df["track_id"].unique()
+    extended_uniq_track_ids = np.append(
+        uniq_track_ids, -1
+    )  # include -1 for orphaned tracklets
+    fwd_map = ArrayMap(
+        extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1)
+    )
+
+    # relabeling from 0 to N-1
+    df["track_id"] = fwd_map[df["track_id"].to_numpy()]
+    # orphaned are set to 0 according to skimage convention
+    df["parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
+
+    n_tracklets = df["track_id"].nunique()
+    # (z, y, x) + extra_cols
+    num_values_per_point = 3 + len(extra_cols)
+
+    # store the points in an array
+    points_array = (
+        np.ones(
+            (n_time_points, num_values_per_point * max_values_per_time_point),
+            dtype=np.float32,
+        )
+        * INF_SPACE
+    )
+
+    points_to_tracks = lil_matrix(
+        (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
+    )
+
+    # inserting points to buffer
+    for t, group in df.groupby("t"):
+        group_size = len(group)
+        points_array[t, : group_size * num_values_per_point] = (
+            group[points_cols].to_numpy().ravel()
+        )
+        points_ids = t * max_values_per_time_point + np.arange(group_size)
+
+        points_to_tracks[points_ids, group["track_id"] - 1] = 1
+
+    LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
+
+    # creating mapping of tracklets parent-child relationship
+    tracks_edges_all = df[
+        ["track_id", "parent_track_id"]
+    ].drop_duplicates()  # all unique edges
+    tracks_edges = tracks_edges_all[
+        tracks_edges_all["parent_track_id"] > 0
+    ]  # only the tracks with a parent
+
+    tracks_to_children = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
+    tracks_to_children[
+        tracks_edges["track_id"] - 1, tracks_edges["parent_track_id"] - 1
+    ] = 1
+    tracks_to_children = _transitive_closure(tracks_to_children, "forward")
+
+    tracks_to_parents = lil_matrix((n_tracklets, n_tracklets), dtype=np.int32)
+    tracks_to_parents[
+        tracks_edges["parent_track_id"] - 1, tracks_edges["track_id"] - 1
+    ] = 1
+    tracks_to_parents = _transitive_closure(tracks_to_parents, "backward")
+    start = time.monotonic()
+
+    tracks_to_tracks = (tracks_to_parents + tracks_to_children).tolil()
+    tracks_edges_map = {
+        int(k): int(v)
+        for k, v in zip(
+            tracks_edges_all["track_id"].to_numpy(),
+            tracks_edges_all["parent_track_id"].to_numpy(),
+        )
+    }
+
+    non_zero = tracks_to_tracks.nonzero()
+
+    for i in range(len(non_zero[0])):
+        tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = tracks_edges_map[
+            non_zero[1][i] + 1
+        ]
+
+    # @jordao NOTE: didn't modify the original code, from this point below
+    # Convert to CSR format for efficient row slicing
+    tracks_to_points = points_to_tracks.T.tocsr()
+    points_to_tracks = points_to_tracks.tocsr()
+    tracks_to_tracks = tracks_to_tracks.tocsr()
+
+    LOG.info(
+        f"Parsed dataframe and converted to CSR data structures in {time.monotonic() - start} seconds"
+    )
+    start = time.monotonic()
+
+    # save the points array
+    top_level_group: zarr.Group = zarr.hierarchy.group(
+        zarr.storage.DirectoryStore(out_path.as_posix()),
+        overwrite=True,
+    )
+
+    points = top_level_group.create_dataset(
+        "points",
+        data=points_array,
+        chunks=(1, points_array.shape[1]),
+        dtype=np.float32,
+    )
+    points.attrs["values_per_point"] = num_values_per_point
+
+    mean = df[["z", "y", "x"]].mean()
+    extent = (df[["z", "y", "x"]] - mean).abs().max()
+    extent_xyz = extent.max()
+
+    for col in ("z", "y", "x"):
+        points.attrs[f"mean_{col}"] = mean[col]
+
+    points.attrs["extent_xyz"] = extent_xyz
+    points.attrs["fields"] = ["z", "y", "x"] + extra_cols
+
+    top_level_group.create_groups(
+        "points_to_tracks", "tracks_to_points", "tracks_to_tracks"
+    )
+
+    # TODO: tracks_to_points may want to store xyz for the points, not just the indices
+    # this would make the indices array 3x (4x?) larger, but would eliminate the need to
+    # fetch coordinates again based on point IDs
+    tracks_to_points_zarr = top_level_group["tracks_to_points"]
+    tracks_to_points_zarr.attrs["sparse_format"] = "csr"
+    tracks_to_points_zarr.create_dataset("indices", data=tracks_to_points.indices)
+    tracks_to_points_zarr.create_dataset("indptr", data=tracks_to_points.indptr)
+    tracks_to_points_xyz = np.zeros(
+        (len(tracks_to_points.indices), 3), dtype=np.float32
+    )
+    for i, ind in enumerate(tracks_to_points.indices):
+        t, n = divmod(ind, max_values_per_time_point)
+        tracks_to_points_xyz[i] = points_array[
+            t, num_values_per_point * n : num_values_per_point * (n + 1)
+        ][:3]
+
+    # TODO: figure out better chunking?
+    tracks_to_points_zarr.create_dataset(
+        "data",
+        data=tracks_to_points_xyz,
+        chunks=(2048, 3),
+        dtype=np.float32,
+    )
+
+    points_to_tracks_zarr = top_level_group["points_to_tracks"]
+    points_to_tracks_zarr.attrs["sparse_format"] = "csr"
+    points_to_tracks_zarr.create_dataset("indices", data=points_to_tracks.indices)
+    points_to_tracks_zarr.create_dataset("indptr", data=points_to_tracks.indptr)
+
+    tracks_to_tracks_zarr = top_level_group["tracks_to_tracks"]
+    tracks_to_tracks_zarr.attrs["sparse_format"] = "csr"
+    tracks_to_tracks_zarr.create_dataset("indices", data=tracks_to_tracks.indices)
+    tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
+    tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
+
+    LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 
 @click.command(name="convert")
@@ -46,316 +265,52 @@ def convert_cli(
     """
     Convert a CSV of tracks to a sparse Zarr store
     """
+    start = time.monotonic()
 
     if out_dir is None:
         out_dir = csv_file.parent
     else:
         out_dir = Path(out_dir)
+
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    print("add_radius", add_radius)
-    if add_radius:
-        num_values_per_point = 4
-    else:
-        num_values_per_point = 3
-    print("num_values_per_point (z,y,x,radius)", num_values_per_point)
+    # TODO: replace this to take arbitrary columns, CLI must be updated as well
+    extra_cols = ["radius"] if add_radius else []
 
-    start = time.monotonic()
-    points = []
-    points_in_timepoint = Counter()
-    with open(csv_file, "r") as f:
-        reader = csv.reader(f)
-        header = next(reader)  # Skip the header
+    tracks_df = pd.read_csv(csv_file)
 
-        column_map = {name: idx for idx, name in enumerate(header)}
-        if "z" in column_map:
-            flag_2D = False
-            print("3D dataset")
-        else:
-            flag_2D = True
-            print("2D dataset")
+    LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
-        required_columns = ["track_id", "t", "y", "x", "parent_track_id"]
-        for col in required_columns:
-            assert col in column_map, f"Error: column {col} must exist in the CSV"
-        if not flag_2D:
-            assert "z" in column_map, "Error: column z must exist in the CSV"
-        if add_radius:
-            assert "radius" in column_map, "Error: column radius must exist in the CSV"
-
-        for row in reader:
-            t = int(row[column_map["t"]])
-            if add_radius and not flag_2D:  # 3D + radius
-                points.append(
-                    (
-                        int(row[column_map["track_id"]]),
-                        t,
-                        float(row[column_map["z"]]),
-                        float(row[column_map["y"]]),
-                        float(row[column_map["x"]]),
-                        int(row[column_map["parent_track_id"]]),
-                        float(row[column_map["radius"]]),
-                        points_in_timepoint[t],
-                    )
-                )
-            elif add_radius and flag_2D:  # 2D + radius
-                points.append(
-                    (
-                        int(row[column_map["track_id"]]),
-                        t,
-                        float(0),
-                        float(row[column_map["y"]]),
-                        float(row[column_map["x"]]),
-                        int(row[column_map["parent_track_id"]]),
-                        float(row[column_map["radius"]]),
-                        points_in_timepoint[t],
-                    )
-                )
-            elif not add_radius and not flag_2D:  # 3D without radius
-                points.append(
-                    (
-                        int(row[column_map["track_id"]]),
-                        t,
-                        float(row[column_map["z"]]),
-                        float(row[column_map["y"]]),
-                        float(row[column_map["x"]]),
-                        int(row[column_map["parent_track_id"]]),
-                        points_in_timepoint[t],
-                    )
-                )
-            elif not add_radius and flag_2D:  # 2D without radius
-                points.append(
-                    (
-                        int(row[column_map["track_id"]]),
-                        t,
-                        float(0),
-                        float(row[column_map["y"]]),
-                        float(row[column_map["x"]]),
-                        int(row[column_map["parent_track_id"]]),
-                        points_in_timepoint[t],
-                    )
-                )
-            points_in_timepoint[t] += 1
-
-    print(f"Read {len(points)} points in {time.monotonic() - start} seconds")
-    start = time.monotonic()
-
-    max_points_in_timepoint = max(points_in_timepoint.values())
-    timepoints = len(points_in_timepoint)
-    tracks = len(set(p[0] for p in points))
-
-    # tests track_id consistency
-    track_id_set = set(p[0] for p in points)
-
-    if len(track_id_set) != max(track_id_set):
-        print(
-            f"Warning: track_ids not consecutive ({len(track_id_set)} track_IDs found, max track_id = {max(track_id_set)})"
-        )
-        print(
-            "Solution: Track_id are reformatted to be consecutive from 1 to N, with N the number of tracks"
-        )
-
-    track_id_map = {
-        old_id: new_id for new_id, old_id in enumerate(sorted(track_id_set), start=1)
-    }
-    points = [
-        (
-            track_id_map[p[0]],  # remap track_id
-            p[1],  # time
-            p[2],  # z
-            p[3],  # y
-            p[4],  # x
-            track_id_map[p[5]]
-            if p[5] != -1
-            else -1,  # remap parent_track_id (keep -1 unchanged)
-            *p[6:],  # radius and other remaining values (if any)
-        )
-        for p in points
-    ]
-
-    # store the points in an array
-    points_array = (
-        np.ones(
-            (timepoints, num_values_per_point * max_points_in_timepoint),
-            dtype=np.float32,
-        )
-        * -9999.9
-    )
-    points_to_tracks = lil_matrix(
-        (timepoints * max_points_in_timepoint, tracks), dtype=np.int32
-    )
-    tracks_to_children = lil_matrix((tracks, tracks), dtype=np.int32)
-    tracks_to_parents = lil_matrix((tracks, tracks), dtype=np.int32)
-
-    # create a map of the track_index to the parent_track_index
-    # track_id and parent_track_id are 1-indexed, track_index and parent_track_index are 0-indexed
-    direct_parent_index_map = {}
-
-    vector_x = []
-    vector_y = []
-    vector_z = []
-
-    for point in points:
-        if add_radius:
-            (
-                track_id,
-                t,
-                z,
-                y,
-                x,
-                parent_track_id,
-                radius,
-                n,
-            ) = point  # n is the nth point in this timepoint
-            points_array[
-                t, num_values_per_point * n : num_values_per_point * (n + 1)
-            ] = [z, y, x, radius]
-        else:
-            (
-                track_id,
-                t,
-                z,
-                y,
-                x,
-                parent_track_id,
-                n,
-            ) = point  # n is the nth point in this timepoint
-            points_array[
-                t, num_values_per_point * n : num_values_per_point * (n + 1)
-            ] = [z, y, x]
-
-        vector_x.append(x)
-        vector_y.append(y)
-        vector_z.append(z)
-
-        point_id = (
-            t * max_points_in_timepoint + n
-        )  # creates a sequential ID for each point, but there is no guarantee that the points close together in space
-
-        track_index = track_id - 1
-        if track_index not in direct_parent_index_map:
-            # maps the track_index to the parent_track_index
-            direct_parent_index_map[track_id - 1] = parent_track_id - 1
-
-        points_to_tracks[point_id, track_id - 1] = 1
-
-        if parent_track_id > 0:
-            tracks_to_parents[track_id - 1, parent_track_id - 1] = 1
-            tracks_to_children[parent_track_id - 1, track_id - 1] = 1
-
-    print(f"Munged {len(points)} points in {time.monotonic() - start} seconds")
-    tracks_to_parents.setdiag(1)
-    tracks_to_children.setdiag(1)
-    tracks_to_parents = tracks_to_parents.tocsr()
-    tracks_to_children = tracks_to_children.tocsr()
-
-    mean_x = np.mean(vector_x)
-    mean_y = np.mean(vector_y)
-    mean_z = np.mean(vector_z)
-    extent_x = np.max(np.abs(vector_x - mean_x))
-    extent_y = np.max(np.abs(vector_y - mean_y))
-    extent_z = np.max(np.abs(vector_z - mean_z))
-    extent_xyz = np.max([extent_x, extent_y, extent_z])
-
-    start = time.monotonic()
-    iter = 0
-    # More info on sparse matrix: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
-    # Transitive closure: https://en.wikipedia.org/wiki/Transitive_closure
-    while tracks_to_parents.nnz != (nxt := tracks_to_parents**2).nnz:
-        tracks_to_parents = nxt
-        iter += 1
-
-    print(
-        f"Chased track lineage forward in {time.monotonic() - start} seconds ({iter} iterations)"
-    )
-    start = time.monotonic()
-
-    iter = 0
-    while tracks_to_children.nnz != (nxt := tracks_to_children**2).nnz:
-        tracks_to_children = nxt
-        iter += 1
-
-    print(
-        f"Chased track lineage backward in {time.monotonic() - start} seconds ({iter} iterations)"
-    )
-    start = time.monotonic()
-
-    tracks_to_tracks = tracks_to_parents + tracks_to_children
-    tracks_to_tracks = tracks_to_tracks.tolil()
-    non_zero = tracks_to_tracks.nonzero()
-
-    for i in range(len(non_zero[0])):
-        # track_index = track_id - 1 since track_id is 1-indexed
-        track_index = non_zero[1][i]
-        parent_track_index = direct_parent_index_map[track_index]
-        tracks_to_tracks[non_zero[0][i], non_zero[1][i]] = parent_track_index + 1
-
-    # Convert to CSR format for efficient row slicing
-    tracks_to_points = points_to_tracks.T.tocsr()
-    points_to_tracks = points_to_tracks.tocsr()
-    tracks_to_tracks = tracks_to_tracks.tocsr()
-
-    print(f"Converted to CSR in {time.monotonic() - start} seconds")
-    start = time.monotonic()
-
-    # save the points array
-    top_level_group = zarr.hierarchy.group(
-        zarr.storage.DirectoryStore(zarr_path.as_posix()),
-        overwrite=True,
+    convert_dataframe(
+        tracks_df,
+        zarr_path,
+        extra_cols=extra_cols,
     )
 
-    points = top_level_group.create_dataset(
-        "points",
-        data=points_array,
-        chunks=(1, points_array.shape[1]),
-        dtype=np.float32,
-    )
-    points.attrs["values_per_point"] = num_values_per_point
-    points.attrs["mean_x"] = mean_x
-    points.attrs["mean_y"] = mean_y
-    points.attrs["mean_z"] = mean_z
-    points.attrs["extent_xyz"] = extent_xyz
-    points.attrs["fields"] = ["z", "y", "x", "radius"][:num_values_per_point]
-
-    top_level_group.create_groups(
-        "points_to_tracks", "tracks_to_points", "tracks_to_tracks"
-    )
-    # TODO: tracks_to_points may want to store xyz for the points, not just the indices
-    # this would make the indices array 3x (4x?) larger, but would eliminate the need to
-    # fetch coordinates again based on point IDs
-    tracks_to_points_zarr = top_level_group["tracks_to_points"]
-    tracks_to_points_zarr.attrs["sparse_format"] = "csr"
-    tracks_to_points_zarr.create_dataset("indices", data=tracks_to_points.indices)
-    tracks_to_points_zarr.create_dataset("indptr", data=tracks_to_points.indptr)
-    tracks_to_points_xyz = np.zeros(
-        (len(tracks_to_points.indices), 3), dtype=np.float32
-    )
-    for i, ind in enumerate(tracks_to_points.indices):
-        t, n = divmod(ind, max_points_in_timepoint)
-        tracks_to_points_xyz[i] = points_array[
-            t, num_values_per_point * n : num_values_per_point * (n + 1)
-        ][:3]
-    # TODO: figure out better chunking?
-    tracks_to_points_zarr.create_dataset(
-        "data",
-        data=tracks_to_points_xyz,
-        chunks=(2048, 3),
-        dtype=np.float32,
-    )
-
-    points_to_tracks_zarr = top_level_group["points_to_tracks"]
-    points_to_tracks_zarr.attrs["sparse_format"] = "csr"
-    points_to_tracks_zarr.create_dataset("indices", data=points_to_tracks.indices)
-    points_to_tracks_zarr.create_dataset("indptr", data=points_to_tracks.indptr)
-
-    tracks_to_tracks_zarr = top_level_group["tracks_to_tracks"]
-    tracks_to_tracks_zarr.attrs["sparse_format"] = "csr"
-    tracks_to_tracks_zarr.create_dataset("indices", data=tracks_to_tracks.indices)
-    tracks_to_tracks_zarr.create_dataset("indptr", data=tracks_to_tracks.indptr)
-    tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
-
-    print(f"Saved to Zarr in {time.monotonic() - start} seconds")
+    LOG.info(f"Full conversion took {time.monotonic() - start} seconds")
 
 
 if __name__ == "__main__":
     convert_cli()
+
+
+# # This is what an example resulting Zarr store looks like:
+# # ❯ du -sh tracks_bundle.zarr
+# # 520M	tracks_bundle.zarr
+# # tracks_bundle.zarr
+# # ├── points (198M)
+# # ├── points_to_tracks (62M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
+# # ├── tracks_to_points (259M)
+# # │   ├── data (207M)
+# # │   ├── indices (50M)
+# # │   └── indptr (1.9M)
+# # └── tracks_to_tracks (37M)
+# #     ├── data (22M)
+# #     ├── indices (13M)
+# #     └── indptr (1.8M)
+
+# # note the relatively small size of the indptr arrays
+# # tracks_to_points/data is a redundant copy of the points array to avoid having
+# # to fetch point coordinates individually

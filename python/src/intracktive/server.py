@@ -43,13 +43,15 @@ def serve_directory(
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received, exiting.")
             raise SystemExit(0)
+        except Exception as e:
+            logging.error("An error occurred: %s", e)
+            raise SystemExit(1)
 
 
 @click.command("serve")
 @click.argument(
-    "--path",
-    type=click.Path(exists=True, file_ok=False, path_type=Path),
-    help="The directory on the filesystem to serve.",
+    "path",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
     "--host", type=str, default=DEFAULT_HOST, help="The host name or IP address."
