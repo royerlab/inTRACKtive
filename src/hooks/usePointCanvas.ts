@@ -46,7 +46,7 @@ interface InitPointsGeometry {
 
 interface TrackWidth {
     type: ActionType.TRACK_WIDTH;
-    ratio: number;
+    factor: number;
 }
 
 interface PointBrightness {
@@ -186,7 +186,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
             break;
         case ActionType.TRACK_WIDTH:
-            newCanvas.trackWidthRatio = action.ratio;
+            newCanvas.trackWidthFactor = action.factor;
             newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.POINT_BRIGHTNESS:

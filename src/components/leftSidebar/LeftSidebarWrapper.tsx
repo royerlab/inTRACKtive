@@ -64,7 +64,7 @@ export default function LeftSidebarWrapper({
                 pointSize={canvas.pointSize}
                 setPointSize={setPointSize}
                 hasTracks={hasTracks}
-                trackWidth={canvas.trackWidthRatio}
+                trackWidth={canvas.trackWidthFactor}
                 setTrackWidth={setTrackWidth}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
