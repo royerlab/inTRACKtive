@@ -344,8 +344,8 @@ export class PointCanvas {
             } else if (colorByEvent === 4) {
                 attributeVector.push(positions.getZ(i)); // color based on Z coordinate
             } else if (colorByEvent === 5) {
-                const bool = positions.getZ(i) < 0;
-                attributeVector.push(bool ? 0 : 1); // color based on Z coordinate (2 groups)
+                const bool = positions.getX(i) < 0;
+                attributeVector.push(bool ? 0 : 1); // color based on X coordinate (2 groups)
             } else if (colorByEvent === 6) {
                 const x = positions.getX(i) > 0 ? 1 : 0;
                 const y = positions.getY(i) > 0 ? 1 : 0;

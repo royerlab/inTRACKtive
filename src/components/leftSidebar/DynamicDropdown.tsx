@@ -1,39 +1,76 @@
-import { useState } from "react";
-import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import React, { useState } from "react";
+import { AutocompleteValue } from "@mui/base";
+import { InputDropdown, DropdownMenu, SDSAutocompleteOnChange } from "@czi-sds/components";
 
+export type Option = { name: string; label: number };
 interface DropdownProps {
-    options: { label: string; value: number }[];
-    // updateOptions: (newOptions: { label: string; value: number }[]) => void;
+    options: Option[];
     onClick: (event: number) => void;
 }
 
 export default function DynamicDropdown({ options, onClick }: DropdownProps) {
-    // Set the default to the first option's value
-    // const [selectedValue, setSelectedValue] = useState(options[0]?.value || "");
-    const [selectedValue, setSelectedValue] = useState<number | "">(options[0]?.value || "");
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [open, setOpen] = useState(false);
+    const [inputDropdownValue, setInputDropdownValue] = useState<string>();
+    const [value, setValue] = useState<AutocompleteValue<Option, false, false, false> | null>(null);
 
-    const handleChange = (event: SelectChangeEvent<number>) => {
-        setSelectedValue(event.target.value as number);
-        onClick(event.target.value as number);
+    function handleClick(event: React.MouseEvent<HTMLElement>) {
+        if (open) {
+            setOpen(false);
+
+            if (anchorEl) {
+                anchorEl.focus();
+            }
+
+            setAnchorEl(null);
+        } else {
+            setAnchorEl(event.currentTarget);
+            setOpen(true);
+        }
+    }
+
+    const handleChange: SDSAutocompleteOnChange<Option, false, false, false> = (
+        _: React.SyntheticEvent<Element, Event>,
+        newValue: AutocompleteValue<Option, false, false, false>,
+    ) => {
+        setOpen(false);
+        setValue(newValue);
+
+        if (newValue) {
+            setInputDropdownValue(newValue.name);
+            onClick(newValue.label);
+        } else {
+            setInputDropdownValue(undefined);
+        }
     };
 
+    function handleClickAway() {
+        if (open) {
+            setOpen(false);
+        }
+    }
+
     return (
-        <FormControl sx={{ m: 1, minWidth: 120, maxWidth: 250 }}>
-            <InputLabel id="dynamic-select-label">Color by</InputLabel>
-            <Select
-                labelId="dynamic-select-label"
-                id="dynamic-select"
-                value={selectedValue}
-                onChange={handleChange}
+        <div>
+            <InputDropdown
                 label="Color by"
-                autoWidth
-            >
-                {options.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                    </MenuItem>
-                ))}
-            </Select>
-        </FormControl>
+                onClick={handleClick}
+                sdsStyle="rounded"
+                multiple={false}
+                value={inputDropdownValue}
+            />
+            <DropdownMenu
+                open={open}
+                anchorEl={anchorEl}
+                // onClose={noop}
+                onChange={handleChange}
+                search={false}
+                multiple={false}
+                disableCloseOnSelect
+                options={options}
+                value={value}
+                onClickAway={handleClickAway}
+            />
+        </div>
     );
 }
