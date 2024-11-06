@@ -305,21 +305,28 @@ export class PointCanvas {
             return;
         }
 
+        const colorAttribute = this.points.geometry.getAttribute("color");
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
+        const attributes = this.getAttributeVector(positions, this.colorByEvent);
+        // console.log("attributes", attributes);
 
-        const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
         color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
         color.multiplyScalar(this.pointBrightness);
 
-        const attributes = this.getAttributeVector(positions, this.colorByEvent);
-        // attributes = this.normalizeAttributeVector(attributes);
-        console.log("attributes", attributes);
+        const colorInv = new Color();
+        colorInv.setRGB(1 - pointColor[0], 1 - pointColor[1], 1 - pointColor[2], SRGBColorSpace); // cyan/turquoise
+        colorInv.multiplyScalar(this.pointBrightness);
 
         for (let i = 0; i < positions.count; i++) {
             const scalar = attributes[i];
-            colorAttribute.setXYZ(i, color.r, color.g * scalar, color.b);
+            colorAttribute.setXYZ(
+                i,
+                color.r * scalar + colorInv.r * (1 - scalar),
+                color.g * scalar + colorInv.g * (1 - scalar),
+                color.b * scalar + colorInv.b * (1 - scalar),
+            ); // linearly interpolate between two colors
         }
         colorAttribute.needsUpdate = true;
     }
@@ -336,12 +343,21 @@ export class PointCanvas {
                 attributeVector.push(positions.getY(i)); // color based on Y coordinate
             } else if (colorByEvent === 4) {
                 attributeVector.push(positions.getZ(i)); // color based on Z coordinate
+            } else if (colorByEvent === 5) {
+                const bool = positions.getZ(i) < 0;
+                attributeVector.push(bool ? 0 : 1); // color based on Z coordinate (2 groups)
+            } else if (colorByEvent === 6) {
+                const x = positions.getX(i) > 0 ? 1 : 0;
+                const y = positions.getY(i) > 0 ? 1 : 0;
+                const quadrant = x + y * 2 + 1; // Compute quadrant number
+                attributeVector.push(quadrant); // color based on XY coordinates (4 groups)
             } else {
                 attributeVector.push(1); // default to constant color if event type not recognized
             }
         }
 
-        return attributeVector;
+        return this.normalizeAttributeVector(attributeVector);
+        // return attributeVector;
     }
 
     normalizeAttributeVector(attributes: number[]): number[] {

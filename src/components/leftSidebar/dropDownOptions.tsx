@@ -1,4 +1,3 @@
-// dropDownOptions.tsx
 import { useState } from "react";
 
 // Define the option type
@@ -14,6 +13,8 @@ export function useDropdownOptions() {
         { label: "x-position", value: 2 },
         { label: "y-position", value: 3 },
         { label: "z-position", value: 4 },
+        { label: "sign(z-pos)", value: 5 },
+        { label: "quadrants", value: 6 },
     ]);
 
     const updateOptions: (

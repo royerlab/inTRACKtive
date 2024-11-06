@@ -283,7 +283,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.toggleAxesHelper();
             break;
         case ActionType.CHANGE_COLOR_BY:
-            console.log("in usePC: ", action.event);
             newCanvas.changeColorBy(action.event);
             newCanvas.resetPointColors();
             break;
