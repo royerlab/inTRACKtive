@@ -5,13 +5,6 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import { PointCanvas } from "@/lib/PointCanvas";
 import { Divider } from "@mui/material";
 
-// interface Action {
-//     type: ActionType;
-//     brightness?: number;
-//     pointSize?: number;
-//     // Add more fields for other actions as needed
-// }
-
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
     trackManager: TrackManager | null;

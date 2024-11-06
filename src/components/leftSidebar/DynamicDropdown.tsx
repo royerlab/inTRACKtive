@@ -1,6 +1,4 @@
-// DynamicDropdown.tsx
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@mui/material";
 
 interface DropdownProps {
