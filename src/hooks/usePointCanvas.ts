@@ -26,6 +26,7 @@ enum ActionType {
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
     SELECTOR_SCALE = "SELECTOR_SCALE",
     TOGGLE_AXES = "TOGGLE_AXES",
+    CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
 }
 
 interface AutoRotate {
@@ -58,7 +59,7 @@ interface PointsPositions {
     positions: Float32Array;
 }
 
-interface PointColors {
+interface ResetPointColors {
     type: ActionType.RESET_POINTS_COLORS;
 }
 
@@ -130,6 +131,11 @@ interface ToggleAxes {
     type: ActionType.TOGGLE_AXES;
 }
 
+interface ChangeColorBy {
+    type: ActionType.CHANGE_COLOR_BY;
+    event: number;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -138,7 +144,7 @@ type PointCanvasAction =
     | PointBrightness
     | PointSizes
     | PointsPositions
-    | PointColors
+    | ResetPointColors
     | RemoveLastSelection
     | Refresh
     | RemoveAllTracks
@@ -152,7 +158,8 @@ type PointCanvasAction =
     | UpdateWithState
     | MobileSelectCells
     | SelectorScale
-    | ToggleAxes;
+    | ToggleAxes
+    | ChangeColorBy;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -274,6 +281,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.TOGGLE_AXES:
             newCanvas.toggleAxesHelper();
+            break;
+        case ActionType.CHANGE_COLOR_BY:
+            console.log("in usePC: ", action.event);
+            newCanvas.changeColorBy(action.event);
+            newCanvas.resetPointColors();
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

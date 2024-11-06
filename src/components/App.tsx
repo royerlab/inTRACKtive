@@ -446,6 +446,9 @@ export default function App() {
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
+                                changeColorBy={(event: number) => {
+                                    dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, event });
+                                }}
                             />
                         </Box>
                         <Divider />

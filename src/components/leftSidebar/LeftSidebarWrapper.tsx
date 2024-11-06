@@ -28,6 +28,7 @@ interface LeftSidebarWrapperProps {
     setPointSize: (pointSize: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    changeColorBy: (value: number) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -46,6 +47,7 @@ export default function LeftSidebarWrapper({
     setPointSize,
     axesVisible,
     toggleAxesVisible,
+    changeColorBy,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -64,6 +66,7 @@ export default function LeftSidebarWrapper({
                 hasTracks={hasTracks}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
+                changeColorBy={changeColorBy}
             />
             <Divider />
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}

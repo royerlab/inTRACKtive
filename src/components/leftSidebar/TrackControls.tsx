@@ -1,6 +1,8 @@
 import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
 import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
+import DynamicDropdown from "./DynamicDropdown";
+import { useDropdownOptions } from "./dropDownOptions";
 
 import { ControlLabel, FontS } from "@/components/Styled";
 
@@ -19,14 +21,22 @@ interface TrackControlsProps {
     hasTracks: boolean;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    changeColorBy: (value: number) => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
 
+    const { options } = useDropdownOptions();
+
     return (
         <Stack spacing={"1.1em"}>
             <ControlLabel>Visualization options</ControlLabel>
+
+            <div>
+                {/* Pass options and update function as props */}
+                <DynamicDropdown options={options} onClick={props.changeColorBy} />
+            </div>
 
             {/* Tracks toggle */}
             {props.hasTracks && (
@@ -85,6 +95,7 @@ export default function TrackControls(props: TrackControlsProps) {
                         <FontS id="input-slider-points-sizes-slider">Cell Size</FontS>
                     </label>
                     <InputSlider
+                        style={{ marginTop: "-0.3em" }}
                         id="points-sizes-slider"
                         aria-labelledby="input-slider-points-sizes-slider"
                         disabled={numberOfValuesPerPoint === 4}
@@ -102,10 +113,11 @@ export default function TrackControls(props: TrackControlsProps) {
             )}
 
             {/* Cell brightness slider */}
-            <label htmlFor="points-brightness-slider">
+            <label htmlFor="points-brightness-slider" style={{ marginTop: "0.0em" }}>
                 <FontS id="input-slider-points-brightness-slider">Cell Brightness</FontS>
             </label>
             <InputSlider
+                style={{ marginTop: "1.5em" }}
                 id="points-brightness-slider"
                 aria-labelledby="input-slider-points-brightness-slider"
                 // disabled={!props.numSelectedCells}
@@ -121,12 +133,13 @@ export default function TrackControls(props: TrackControlsProps) {
 
             {/* Track highlight length slider */}
             {props.hasTracks && (
-                <label htmlFor="track-highlight-length-slider">
+                <label htmlFor="track-highlight-length-slider" style={{ marginTop: "0.0em" }}>
                     <FontS>Track Highlight Length</FontS>
                 </label>
             )}
             {props.hasTracks && (
                 <InputSlider
+                    style={{ marginTop: "1.5em" }}
                     id="track-highlight-length-slider"
                     aria-labelledby="input-slider-track-highlight-length"
                     disabled={!props.trackManager}

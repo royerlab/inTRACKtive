@@ -1,9 +1,11 @@
 import {
     AxesHelper,
+    BufferAttribute,
     BufferGeometry,
     Color,
     Float32BufferAttribute,
     FogExp2,
+    InterleavedBufferAttribute,
     NormalBlending,
     PerspectiveCamera,
     Points,
@@ -80,6 +82,7 @@ export class PointCanvas {
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
     private pointIndicesCache: Map<number, number[]> = new Map();
+    colorByEvent: number = 1;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -259,6 +262,10 @@ export class PointCanvas {
         this.pointIndicesCache.clear();
     }
 
+    changeColorBy(event: number) {
+        this.colorByEvent = event;
+    }
+
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
@@ -297,14 +304,57 @@ export class PointCanvas {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
+
+        const geometry = this.points.geometry;
+        const positions = geometry.getAttribute("position");
+
+        const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
         color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
         color.multiplyScalar(this.pointBrightness);
-        const colorAttribute = this.points.geometry.getAttribute("color");
-        for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+
+        const attributes = this.getAttributeVector(positions, this.colorByEvent);
+        // attributes = this.normalizeAttributeVector(attributes);
+        console.log("attributes", attributes);
+
+        for (let i = 0; i < positions.count; i++) {
+            const scalar = attributes[i];
+            colorAttribute.setXYZ(i, color.r, color.g * scalar, color.b);
         }
         colorAttribute.needsUpdate = true;
+    }
+
+    getAttributeVector(positions: BufferAttribute | InterleavedBufferAttribute, colorByEvent: number): number[] {
+        const attributeVector = [];
+
+        for (let i = 0; i < positions.count; i++) {
+            if (colorByEvent === 1) {
+                attributeVector.push(1); // constant color
+            } else if (colorByEvent === 2) {
+                attributeVector.push(positions.getX(i)); // color based on X coordinate
+            } else if (colorByEvent === 3) {
+                attributeVector.push(positions.getY(i)); // color based on Y coordinate
+            } else if (colorByEvent === 4) {
+                attributeVector.push(positions.getZ(i)); // color based on Z coordinate
+            } else {
+                attributeVector.push(1); // default to constant color if event type not recognized
+            }
+        }
+
+        return attributeVector;
+    }
+
+    normalizeAttributeVector(attributes: number[]): number[] {
+        const min = Math.min(...attributes);
+        const max = Math.max(...attributes);
+        const range = max - min;
+
+        // Avoid division by zero in case all values are the same
+        if (range === 0) {
+            return attributes.map(() => 1); // Arbitrary choice: map all to the midpoint (0.5)
+        }
+
+        return attributes.map((value) => (value - min) / range);
     }
 
     removeLastSelection() {
