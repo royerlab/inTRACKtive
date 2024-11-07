@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Box, Popover, Snackbar, Stack, Tooltip } from "@mui/material";
 
-import { Button, InputText, Icon } from "@czi-sds/components";
+import { Button, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
 import { TrackManager } from "@/lib/TrackManager";
 
@@ -89,10 +89,8 @@ export default function DataControls(props: DataControlsProps) {
             {/* TODO: make this do something */}
             <Tooltip title="More info">
                 <Button
-                    startIcon={<Icon sdsIcon="InfoCircle" sdsSize="xl" sdsType="button" />}
-                    // icon = "InfoCircle"
-                    // icon="InfoCircle"
-                    // sdsSize="large"
+                    icon="InfoCircle"
+                    sdsSize="large"
                     sdsType="secondary"
                     sdsStyle="icon"
                     onClick={() => {
@@ -105,9 +103,8 @@ export default function DataControls(props: DataControlsProps) {
 
             <Tooltip title="Refresh page to initial settings">
                 <Button
-                    startIcon={<Icon sdsIcon="Refresh" sdsSize="xl" sdsType="button" />}
                     icon="Refresh"
-                    // sdsSize="large"
+                    sdsSize="large"
                     sdsType="secondary"
                     sdsStyle="icon"
                     onClick={refreshPageCallBack}
@@ -117,9 +114,8 @@ export default function DataControls(props: DataControlsProps) {
             <Tooltip title="Copy a shareable URL for this view to your clipboard">
                 <span>
                     <Button
-                        startIcon={<Icon sdsIcon="Share" sdsSize="xl" sdsType="button" />}
                         icon="Share"
-                        // sdsSize="large"
+                        sdsSize="large"
                         sdsType="secondary"
                         sdsStyle="icon"
                         disabled={!props.trackManager}
@@ -148,9 +144,10 @@ export default function DataControls(props: DataControlsProps) {
 
             <Tooltip title="Change link to another dataset">
                 <Button
-                    // icon="GlobeBasic"
-                    startIcon={<Icon sdsIcon="GlobeBasic" sdsSize="xl" sdsType="button" />}
-                    // sdsSize="large"
+                    icon="GlobeBasic"
+                    // startIcon={<Icon sdsIcon="GlobeBasic" sdsSize="xl" sdsType="button" />}
+                    sdsSize="large"
+                    sdsStyle="icon"
                     sdsType="secondary"
                     onClick={showUrlPopover}
                 />
@@ -189,7 +186,7 @@ export default function DataControls(props: DataControlsProps) {
                             placeholder={props.initialDataUrl}
                             defaultValue={props.dataUrl}
                             fullWidth={true}
-                            intent={props.trackManager ? "default" : "negative"}
+                            intent={props.trackManager ? "default" : "notice"}
                         />
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
