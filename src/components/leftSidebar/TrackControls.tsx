@@ -1,7 +1,7 @@
 import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
 import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
-import DynamicDropdown, { Option } from "./DynamicDropdown";
+import DynamicDropdown, { dropDownOptions } from "./DynamicDropdown";
 import { ControlLabel, FontS } from "@/components/Styled";
 
 interface TrackControlsProps {
@@ -21,15 +21,6 @@ interface TrackControlsProps {
     toggleAxesVisible: () => void;
     changeColorBy: (value: number) => void;
 }
-
-const dropDownOptions: Option[] = [
-    { name: "uniform", label: 1 },
-    { name: "x-position", label: 2 },
-    { name: "y-position", label: 3 },
-    { name: "z-position", label: 4 },
-    { name: "sign(x-pos)", label: 5 },
-    { name: "quadrants", label: 6 },
-];
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;

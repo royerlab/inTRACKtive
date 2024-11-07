@@ -2,17 +2,33 @@ import React, { useState } from "react";
 import { AutocompleteValue } from "@mui/base";
 import { InputDropdown, DropdownMenu, SDSAutocompleteOnChange } from "@czi-sds/components";
 
-export type Option = { name: string; label: number };
+export type Option = { name: string; label: number; type: "default" | "categorical" | "continuous" };
+
 interface DropdownProps {
     options: Option[];
     onClick: (event: number) => void;
 }
 
+export const dropDownOptions: Option[] = [
+    // built-in attributes (computed at execution time)
+    { name: "uniform", label: 0, type: "default" },
+    { name: "x-position", label: 1, type: "continuous" },
+    { name: "y-position", label: 2, type: "continuous" },
+    { name: "z-position", label: 3, type: "continuous" },
+    { name: "sign(x-pos)", label: 4, type: "categorical" },
+    { name: "quadrants", label: 5, type: "categorical" },
+];
+
 export default function DynamicDropdown({ options, onClick }: DropdownProps) {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [open, setOpen] = useState(false);
-    const [inputDropdownValue, setInputDropdownValue] = useState<string>();
-    const [value, setValue] = useState<AutocompleteValue<Option, false, false, false> | null>(null);
+    const [inputDropdownValue, setInputDropdownValue] = useState<string | undefined>(options[0]?.name);
+    const [value, setValue] = useState<AutocompleteValue<Option, false, false, false> | null>(options[0] || null);
+
+    // useEffect(() => {
+    //     // Call onClick with the default label if you'd like to trigger it on mount
+    //     onClick(options[0].label);
+    // }, [onClick, options]);
 
     function handleClick(event: React.MouseEvent<HTMLElement>) {
         if (open) {

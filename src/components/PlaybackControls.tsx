@@ -25,7 +25,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 onClick={() => props.setPlaying(!props.playing)}
                 sx={{
                     color: props.playing ? "text.primary" : "primary.main",
-                    minWidth: "auto", // Removes default min-width
+                    // minWidth: "auto", // Removes default min-width
                 }}
             />
 
@@ -51,7 +51,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                     onClick={() => props.setAutoRotate(!props.autoRotate)}
                     sx={{
                         color: props.autoRotate ? "text.primary" : "primary.main",
-                        minWidth: "auto", // Removes default min-width
+                        // minWidth: "auto", // Removes default min-width
                     }}
                 />
             </Tooltip>
