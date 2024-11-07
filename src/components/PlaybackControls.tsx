@@ -1,5 +1,5 @@
 import { Box, Tooltip } from "@mui/material";
-import { ButtonIcon, InputSlider } from "@czi-sds/components";
+import { Button, InputSlider, Icon } from "@czi-sds/components";
 
 interface PlaybackControlsProps {
     enabled: boolean;
@@ -14,14 +14,19 @@ interface PlaybackControlsProps {
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
-        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
-            <ButtonIcon
-                icon="Play"
-                sdsSize="large"
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "1em" }}>
+            <Button
+                startIcon={<Icon sdsIcon="Play" sdsSize="xl" sdsType="button" />}
+                // sdsSize="large"
                 sdsType="primary"
-                on={props.playing}
+                sdsStyle="icon"
+                // on={props.playing} //deprecated
                 disabled={!props.enabled}
                 onClick={() => props.setPlaying(!props.playing)}
+                sx={{
+                    color: props.playing ? "text.primary" : "primary.main",
+                    minWidth: "auto", // Removes default min-width
+                }}
             />
 
             <InputSlider
@@ -35,15 +40,19 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 value={props.curTime}
                 sx={{ alignSelf: "flex-end" }}
             />
-            {/* TODO: add control button groups - perhaps a separate component */}
             <Tooltip title="Auto-rotate">
-                <ButtonIcon
-                    icon="DNA"
-                    sdsSize="large"
+                <Button
+                    startIcon={<Icon sdsIcon="DNA" sdsSize="xl" sdsType="button" />}
+                    // sdsSize="large"
                     sdsType="primary"
-                    on={props.autoRotate}
+                    sdsStyle="icon"
+                    // on={props.autoRotate} //deprecated
                     disabled={!props.enabled}
                     onClick={() => props.setAutoRotate(!props.autoRotate)}
+                    sx={{
+                        color: props.autoRotate ? "text.primary" : "primary.main",
+                        minWidth: "auto", // Removes default min-width
+                    }}
                 />
             </Tooltip>
         </Box>
