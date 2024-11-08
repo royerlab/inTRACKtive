@@ -35,7 +35,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
