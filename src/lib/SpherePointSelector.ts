@@ -32,6 +32,7 @@ export class SpherePointSelector {
     readonly selectionChanged: SelectionChanged;
     readonly selectionPreviewChanged: SelectionPreviewChanged;
     readonly pointer = new Vector2(0, 0);
+    closestIndex: number | undefined = undefined;
 
     // True if this should not respond to pointer movements, false otherwise.
     cursorLock = true;
@@ -149,6 +150,9 @@ export class SpherePointSelector {
         this.pointer.y = (-(event.clientY - canvasElement.top) / canvasElement.height) * 2 + 1;
         this.raycaster.setFromCamera(this.pointer, this.camera);
         const intersects = this.raycaster.intersectObject(this.points);
+
+        const closestIndex = this.findClosestPointsToSelector();
+        this.closestIndex = closestIndex;
         if (intersects.length > 0) {
             this.cursor.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
             this.findPointsWithinSelector();
@@ -197,6 +201,37 @@ export class SpherePointSelector {
         }
         this.selectionPreviewChanged(selected);
         return selected;
+    }
+
+    findClosestPointsToSelector(): number | undefined {
+        // find the points within the cursor sphere
+        const normalMatrix = new Matrix3();
+        normalMatrix.setFromMatrix4(this.cursor.matrixWorld);
+        normalMatrix.invert();
+        const center = this.cursor.position;
+        const geometry = this.points.geometry;
+
+        // Check if geometry has a valid 'position' attribute (not the case in the beginning of the app, when the eventListerer of the cursor already call this function)
+        if (!geometry || !geometry.getAttribute("position") || geometry.getAttribute("position").count === 0) {
+            return;
+        }
+
+        const positions = geometry.getAttribute("position");
+        const numPoints = positions.count;
+        let closestDistance: number = Infinity; 
+        let closestIndex: number = -1;
+        for (let i = 0; i < numPoints; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i);
+            const z = positions.getZ(i);
+            const vecToCenter = new Vector3(x, y, z).sub(center);
+            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
+            if (scaledVecToCenter.length() < closestDistance) {
+                closestIndex = i;
+                closestDistance = scaledVecToCenter.length();
+            }
+        }
+        return closestIndex;
     }
 
     MobileFindAndSelect() {

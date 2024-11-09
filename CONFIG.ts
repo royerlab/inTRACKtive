@@ -1,3 +1,5 @@
+import { Preview } from "@mui/icons-material"
+
 const config = {
     // Customize the branding of the viewer by providing a logo and/or name (at least one of them)
     branding:{
@@ -11,7 +13,8 @@ const config = {
     // When opening the viewer, or refreshing the page, the viewer will revert to the following default dataset
     data:{
         // Default dataset URL (must be publically accessible)
-        default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
+        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
+        default_dataset: "https://public.czbiohub.org/royerlab/zoo/Ascidian/tracks_ascidian_bundle.zarr/"
     },
   
     // Default settings for certain parameters
@@ -32,7 +35,7 @@ const config = {
         highlight_point_color: [0.9, 0, 0.9], //pink
 
         // Point color (when selector hovers over)
-        preview_hightlight_point_color: [0.8, 0.8, 0], //yellow
+        preview_hightlight_point_color: [0.8, 0.8, 0.0], //yellow
 
     }
 }
