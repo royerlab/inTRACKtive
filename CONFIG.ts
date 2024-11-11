@@ -11,7 +11,8 @@ const config = {
     // When opening the viewer, or refreshing the page, the viewer will revert to the following default dataset
     data:{
         // Default dataset URL (must be publically accessible)
-        default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
+        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
+        default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_ascidian_withSize_withFeatures_bundle.zarr/"
     },
   
     // Default settings for certain parameters

@@ -40,6 +40,7 @@ def _transitive_closure(
 def convert_dataframe(
     df: pd.DataFrame,
     out_path: Path,
+    add_radius: bool = False,
     extra_cols: Iterable[str] = (),
 ) -> None:
     """
@@ -65,11 +66,14 @@ def convert_dataframe(
     if "z" not in df.columns:
         df["z"] = 0.0
 
+    points_cols = ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"] # columns to store in the points array
     extra_cols = list(extra_cols)
-    columns = REQUIRED_COLUMNS + extra_cols
-    points_cols = ["z", "y", "x"] + extra_cols  # columns to store in the points array
+    columns_to_check = REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS # columns to check for in the DataFrame
+    columns_to_check = columns_to_check + extra_cols
+    print('point_cols:', points_cols)
+    print('columns_to_check:', columns_to_check)
 
-    for col in columns:
+    for col in columns_to_check:
         if col not in df.columns:
             raise ValueError(f"Column '{col}' not found in the DataFrame")
 
@@ -96,7 +100,7 @@ def convert_dataframe(
 
     n_tracklets = df["track_id"].nunique()
     # (z, y, x) + extra_cols
-    num_values_per_point = 3 + len(extra_cols)
+    num_values_per_point = 4 if add_radius else 3
 
     # store the points in an array
     points_array = (
@@ -106,6 +110,14 @@ def convert_dataframe(
         )
         * INF_SPACE
     )
+    attribute_array_empty = (
+        np.ones(
+            (n_time_points, max_values_per_time_point),
+            dtype=np.float32,
+        )
+        * INF_SPACE
+    )
+    attribute_arrays = {}
 
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
@@ -117,9 +129,20 @@ def convert_dataframe(
         points_array[t, : group_size * num_values_per_point] = (
             group[points_cols].to_numpy().ravel()
         )
+        
         points_ids = t * max_values_per_time_point + np.arange(group_size)
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
+
+    for col in extra_cols:
+        attribute_array = attribute_array_empty.copy()
+        for t, group in df.groupby("t"):
+            group_size = len(group)
+            attribute_array[t, : group_size] = (
+                group[col].to_numpy().ravel()
+            )
+        attribute_arrays[col] = attribute_array
+
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
 
@@ -183,7 +206,18 @@ def convert_dataframe(
         chunks=(1, points_array.shape[1]),
         dtype=np.float32,
     )
+    print('points shape:', points.shape)
     points.attrs["values_per_point"] = num_values_per_point
+
+    if len(extra_cols) > 0:
+        attributes_matrix = np.hstack([attribute_arrays[attr] for attr in attribute_arrays])
+        attributes = top_level_group.create_dataset(
+            "attributes",
+            data=attributes_matrix,
+            chunks=(1, attribute_array.shape[1]),
+            dtype=np.float32,
+        )
+        attributes.attrs["columns"] = extra_cols
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
@@ -193,7 +227,7 @@ def convert_dataframe(
         points.attrs[f"mean_{col}"] = mean[col]
 
     points.attrs["extent_xyz"] = extent_xyz
-    points.attrs["fields"] = ["z", "y", "x"] + extra_cols
+    points.attrs["fields"] = points_cols
 
     top_level_group.create_groups(
         "points_to_tracks", "tracks_to_points", "tracks_to_tracks"
@@ -257,10 +291,18 @@ def convert_dataframe(
     default=False,
     type=bool,
 )
+@click.option(
+    "--add_attributes",
+    is_flag=True,
+    help="Boolean indicating whether to include extra columns of the CSV as attributes for colors the cells in the viewer",
+    default=False,
+    type=bool,
+)
 def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
     add_radius: bool,
+    add_attributes: bool,
 ) -> None:
     """
     Convert a CSV of tracks to a sparse Zarr store
@@ -274,16 +316,21 @@ def convert_cli(
 
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    # TODO: replace this to take arbitrary columns, CLI must be updated as well
-    extra_cols = ["radius"] if add_radius else []
-
     tracks_df = pd.read_csv(csv_file)
+
+    # find the extra columns in the df
+    extra_cols = []
+    if add_attributes:
+        columns_standard = REQUIRED_COLUMNS
+        extra_cols = tracks_df.columns.difference(columns_standard).to_list()
+        print('extra_cols:', extra_cols)
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
     convert_dataframe(
         tracks_df,
         zarr_path,
+        add_radius,
         extra_cols=extra_cols,
     )
 

@@ -216,6 +216,7 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
+                // console.log('data shape:', data.length, 'attributes shape:', attributes.length);
                 console.debug("got %d points for time %d", data.length / 3, time);
 
                 if (ignore) {
@@ -223,10 +224,15 @@ export default function App() {
                     return;
                 }
 
+                let attributes;
+                if (canvas.colorByEvent.action === "provided") {
+                    attributes = await trackManager.fetchAttributessAtTime(time, canvas.colorByEvent.label - 6);
+                }
+
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes: attributes });
             };
             getPoints(canvas.curTime);
         } else {
@@ -244,7 +250,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [canvas.curTime, dispatchCanvas, trackManager]);
+    }, [canvas.curTime, canvas.colorByEvent, dispatchCanvas, trackManager]);
 
     // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
@@ -446,7 +452,7 @@ export default function App() {
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
-                                changeColorBy={(event: number) => {
+                                changeColorBy={(event: string) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, event });
                                 }}
                             />

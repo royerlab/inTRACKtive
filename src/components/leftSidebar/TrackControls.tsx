@@ -19,7 +19,7 @@ interface TrackControlsProps {
     hasTracks: boolean;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
-    changeColorBy: (value: number) => void;
+    changeColorBy: (value: string) => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {

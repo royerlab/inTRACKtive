@@ -21,7 +21,7 @@ interface LeftSidebarWrapperProps {
     setPointSize: (pointSize: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
-    changeColorBy: (value: number) => void;
+    changeColorBy: (value: string) => void;
 }
 
 export default function LeftSidebarWrapper({

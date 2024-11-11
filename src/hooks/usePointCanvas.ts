@@ -57,6 +57,7 @@ interface PointSizes {
 interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
+    attributes: Float32Array | undefined;
 }
 
 interface ResetPointColors {
@@ -133,7 +134,7 @@ interface ToggleAxes {
 
 interface ChangeColorBy {
     type: ActionType.CHANGE_COLOR_BY;
-    event: number;
+    event: string;
 }
 
 // setting up a tagged union for the actions
@@ -193,11 +194,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.POINT_SIZES:
             newCanvas.pointSize = action.pointSize;
-            newCanvas.setPointsSizes();
+            newCanvas.updatePointsSizes();
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
-            newCanvas.resetPointColors();
+            newCanvas.resetPointColors(action.attributes);
             newCanvas.updateSelectedPointIndices();
             newCanvas.updatePreviewPoints();
             break;
@@ -284,7 +285,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.CHANGE_COLOR_BY:
             newCanvas.changeColorBy(action.event);
-            newCanvas.resetPointColors();
+            // newCanvas.resetPointColors(); //happens now with useEffect in App.tsx
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

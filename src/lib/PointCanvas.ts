@@ -84,6 +84,7 @@ export class PointCanvas {
     maxPointsPerTimepoint = 0;
     private pointIndicesCache: Map<number, number[]> = new Map();
     colorByEvent: Option = dropDownOptions[0];
+    currentAttributes: number[] | Float32Array = new Float32Array();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -263,8 +264,14 @@ export class PointCanvas {
         this.pointIndicesCache.clear();
     }
 
-    changeColorBy(event: number) {
-        this.colorByEvent = dropDownOptions[event];
+    changeColorBy(eventName: string) {
+        const selectedOption = dropDownOptions.find((option) => option.name === eventName);
+        if (selectedOption) {
+            this.colorByEvent = selectedOption;
+            console.debug(`ColorBy attribute selected: ${selectedOption.name}`);
+        } else {
+            console.error(`No option found with name: ${eventName}`);
+        }
     }
 
     highlightPoints(points: number[]) {
@@ -301,33 +308,43 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    resetPointColors() {
+    resetPointColors(attributesInput?: Float32Array) {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
 
         const colorAttribute = this.points.geometry.getAttribute("color");
         const geometry = this.points.geometry;
+        const numPoints = geometry.drawRange.count;
         const positions = geometry.getAttribute("position");
-        const attributes = this.getAttributeVector(positions, this.colorByEvent);
-        // console.log("attributes", attributes);
 
-        // linear interpolation between two colors
-        // const color = new Color();
-        // color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
-        // color.multiplyScalar(this.pointBrightness);
-        // const colorInv = new Color();
-        // colorInv.setRGB(1 - pointColor[0], 1 - pointColor[1], 1 - pointColor[2], SRGBColorSpace); // cyan/turquoise
-        // colorInv.multiplyScalar(this.pointBrightness);
-        // for (let i = 0; i < positions.count; i++) {
-        //     const scalar = attributes[i];
-        //     colorAttribute.setXYZ(
-        //         i,
-        //         color.r * scalar + colorInv.r * (1 - scalar),
-        //         color.g * scalar + colorInv.g * (1 - scalar),
-        //         color.b * scalar + colorInv.b * (1 - scalar),
-        //     );
-        // }
+        let attributes;
+        if (this.colorByEvent.action === "default") {
+            attributes = new Float32Array(numPoints).fill(1);
+            console.debug("Default attributes (1)");
+        } else {
+            if (this.colorByEvent.action === "calculate") {
+                attributes = this.getAttributeVector(positions, this.colorByEvent, numPoints);
+                console.debug("Attributes calculated");
+            } else if (this.colorByEvent.action === "provided") {
+                if (attributesInput) {
+                    attributes = attributesInput;
+                    this.currentAttributes = attributes;
+                    console.debug("Attributes provided, using attributesInput");
+                } else {
+                    attributes = this.currentAttributes;
+                    console.debug("No attributes provided, using currentAttributes");
+                }
+            } else {
+                console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
+            }
+            if (attributes) {
+                attributes = this.normalizeAttributeVector(attributes);
+            } else {
+                attributes = new Float32Array(numPoints).fill(1);
+                console.error("No attributes found for colorByEvent:", this.colorByEvent);
+            }
+        }
 
         const viridisColors = [
             new Color(0.267, 0.005, 0.329), // Dark purple
@@ -348,6 +365,7 @@ export class PointCanvas {
             const nextIndex = Math.min(index + 1, colors.length - 1);
             const localT = scaledT - index;
 
+            // console.log('   index',index,'nextIndex',nextIndex);
             const color1 = colors[index];
             const color2 = colors[nextIndex];
 
@@ -361,7 +379,7 @@ export class PointCanvas {
         // categorical colormap
         if (this.colorByEvent.type === "categorical") {
             const color = new Color();
-            for (let i = 0; i < positions.count; i++) {
+            for (let i = 0; i < numPoints; i++) {
                 const scalar = attributes[i]; // must be [0 1]
                 color.setHSL(scalar * 0.8 + 0.1, 0.8, 0.5); // Generate colors with even hue spacing
                 color.multiplyScalar(this.pointBrightness);
@@ -370,13 +388,16 @@ export class PointCanvas {
         }
         // continuous colormap
         else if (this.colorByEvent.type === "continuous") {
-            for (let i = 0; i < positions.count; i++) {
+            for (let i = 0; i < numPoints; i++) {
                 const scalar = attributes[i]; // must be [0 1]
+                // console.log('i',i,'scalar',scalar)
                 const color = interpolateColor(viridisColors, scalar);
                 color.multiplyScalar(this.pointBrightness);
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
-        } else {
+        }
+        // default constant color
+        else {
             const color = new Color();
             color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
             color.multiplyScalar(this.pointBrightness);
@@ -387,22 +408,29 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    getAttributeVector(positions: BufferAttribute | InterleavedBufferAttribute, colorByEvent: Option): number[] {
+    getAttributeVector(
+        positions: BufferAttribute | InterleavedBufferAttribute,
+        colorByEvent: Option,
+        numPoints: number,
+    ): number[] {
         const attributeVector = [];
+        // const numPoints = positions.count / numberOfValuesPerPoint;
+        // console.log('numPoints in getAtt:',numPoints, positions.count, numberOfValuesPerPoint)
+        // console.log('positions:',positions)
 
-        for (let i = 0; i < positions.count; i++) {
-            if (colorByEvent.label === 0) {
+        for (let i = 0; i < numPoints; i++) {
+            if (colorByEvent.name === "uniform") {
                 attributeVector.push(1); // constant color
-            } else if (colorByEvent.label === 1) {
-                attributeVector.push(positions.getX(i)); // color based on X coordinate
-            } else if (colorByEvent.label === 2) {
+            } else if (colorByEvent.name === "x-position") {
+                attributeVector.push(positions.getX(i) + 1000); // color based on X coordinate
+            } else if (colorByEvent.name === "y-position") {
                 attributeVector.push(positions.getY(i)); // color based on Y coordinate
-            } else if (colorByEvent.label === 3) {
+            } else if (colorByEvent.name === "z-position") {
                 attributeVector.push(positions.getZ(i)); // color based on Z coordinate
-            } else if (colorByEvent.label === 4) {
+            } else if (colorByEvent.name === "sign(x-pos)") {
                 const bool = positions.getX(i) < 0;
                 attributeVector.push(bool ? 0 : 1); // color based on X coordinate (2 groups)
-            } else if (colorByEvent.label === 5) {
+            } else if (colorByEvent.name === "quadrants") {
                 const x = positions.getX(i) > 0 ? 1 : 0;
                 const y = positions.getY(i) > 0 ? 1 : 0;
                 const z = positions.getZ(i) > 0 ? 1 : 0;
@@ -413,10 +441,10 @@ export class PointCanvas {
             }
         }
 
-        return this.normalizeAttributeVector(attributeVector);
+        return attributeVector;
     }
 
-    normalizeAttributeVector(attributes: number[]): number[] {
+    normalizeAttributeVector(attributes: number[] | Float32Array): number[] | Float32Array {
         const min = Math.min(...attributes);
         const max = Math.max(...attributes);
         const range = max - min;
@@ -462,7 +490,7 @@ export class PointCanvas {
         this.resetPointColors();
     }
 
-    setPointsSizes() {
+    updatePointsSizes() {
         const geometry = this.points.geometry;
         const sizes = geometry.getAttribute("size");
 
@@ -482,6 +510,7 @@ export class PointCanvas {
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
         const sizes = geometry.getAttribute("size");
+
         const num = numberOfValuesPerPoint;
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i + 0], data[num * i + 1], data[num * i + 2]);

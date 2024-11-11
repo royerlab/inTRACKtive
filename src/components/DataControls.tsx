@@ -180,13 +180,13 @@ export default function DataControls(props: DataControlsProps) {
                         </label>
                         <InputText
                             id="data-url-input"
-                            autoFocus
+                            // autoFocus=
                             label="Zarr URL"
                             hideLabel
                             placeholder={props.initialDataUrl}
                             defaultValue={props.dataUrl}
                             fullWidth={true}
-                            intent={props.trackManager ? "default" : "notice"}
+                            intent={props.trackManager ? "default" : "negative"}
                         />
                         <Note>
                             <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
