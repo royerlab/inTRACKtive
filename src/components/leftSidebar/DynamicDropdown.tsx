@@ -94,7 +94,6 @@ export default function DynamicDropdown({ options, onClick }: DropdownProps) {
                 sdsStyle="rounded"
                 multiple={false}
                 value={inputDropdownValue}
-                style={{ maxWidth: "200px" }}
             />
             <DropdownMenu
                 open={open}
