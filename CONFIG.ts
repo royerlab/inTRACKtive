@@ -1,5 +1,3 @@
-import { Preview } from "@mui/icons-material"
-
 const config = {
     // Customize the branding of the viewer by providing a logo and/or name (at least one of them)
     branding:{
