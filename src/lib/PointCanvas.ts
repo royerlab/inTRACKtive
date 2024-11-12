@@ -214,10 +214,13 @@ export class PointCanvas {
         this.controls.update();
     };
 
-    lockRotation(ndim: number) {
+    resetCamera(ndim: number) {
+        const cameraPosition = new ViewerState().cameraPosition;
+        const cameraTarget = new ViewerState().cameraTarget;
+        this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+
         if (ndim == 2) {
-            const cameraPosition = new ViewerState().cameraPosition;
-            this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
             this.controls.enableRotate = false;
         } else if (ndim == 3) {
             this.controls.enableRotate = true;

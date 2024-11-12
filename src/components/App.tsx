@@ -192,8 +192,6 @@ export default function App() {
         });
     }, [dispatchCanvas, dataUrl]);
 
-    // update the geometry buffers when the array changes
-    // TODO: do this in the above useEffect
     useEffect(() => {
         console.debug("effect-trackmanager");
         if (!trackManager) return;
@@ -202,7 +200,7 @@ export default function App() {
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
         });
         dispatchCanvas({
-            type: ActionType.LOCK_ROTATION,
+            type: ActionType.RESET_CAMERA,
             ndim: trackManager.ndim,
         });
     }, [dispatchCanvas, trackManager]);
