@@ -218,7 +218,7 @@ export class SpherePointSelector {
 
         const positions = geometry.getAttribute("position");
         const numPoints = positions.count;
-        let closestDistance: number = Infinity; 
+        let closestDistance: number = Infinity;
         let closestIndex: number = -1;
         for (let i = 0; i < numPoints; i++) {
             const x = positions.getX(i);
