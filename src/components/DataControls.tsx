@@ -143,7 +143,13 @@ export default function DataControls(props: DataControlsProps) {
             </Snackbar>
 
             <Tooltip title="Change link to another dataset">
-                <Button icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+                <Button
+                    icon="GlobeBasic"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    sdsStyle="icon"
+                    onClick={showUrlPopover}
+                />
             </Tooltip>
 
             <Popover
