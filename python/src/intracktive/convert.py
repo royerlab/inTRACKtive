@@ -3,12 +3,17 @@ import time
 from pathlib import Path
 from typing import Iterable
 
+import tempfile
+import webbrowser
 import click
 import numpy as np
 import pandas as pd
 import zarr
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
+
+from intracktive.server import serve_directory_threaded
+from intracktive.createHash import generate_viewer_state_hash
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
@@ -21,6 +26,21 @@ def _transitive_closure(
     graph: lil_matrix,
     direction: str,
 ) -> csr_matrix:
+    """
+    Calculate the transitive closure of a graph
+
+    Parameters
+    ----------
+    graph : lil_matrix
+        The graph to calculate the transitive closure of
+    direction : str
+        The direction to calculate the transitive closure in, either 'forward' or 'backward'
+
+    Returns
+    -------
+    csr_matrix
+        The transitive closure of the graph in the specified direction as a CSR matrix
+    """
     graph.setdiag(1)
     graph = graph.tocsr()
 
@@ -36,12 +56,34 @@ def _transitive_closure(
     )
     return graph
 
+def get_unique_zarr_path(zarr_path: Path) -> Path:
+    """
+    Ensure the Zarr path is unique by appending a counter to the name
 
-def convert_dataframe(
+    Parameters
+    ----------  
+    zarr_path : Path
+        The path to the Zarr store, including the name of the store (for example: /path/to/zarr_bundle.zarr)
+    """
+    zarr_path = Path(zarr_path)
+    base_path = zarr_path.parent / zarr_path.stem
+    extension = zarr_path.suffix
+
+    counter = 1
+    unique_path = zarr_path
+
+    # Increment the counter until we find a path that doesn't exist
+    while unique_path.exists():
+        unique_path = base_path.with_name(f"{base_path.name}_{counter}").with_suffix(extension)
+        counter += 1
+
+    return unique_path
+
+def convert_dataframe_to_zarr(
     df: pd.DataFrame,
-    out_path: Path,
+    zarr_path: Path,
     extra_cols: Iterable[str] = (),
-) -> None:
+) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
 
@@ -55,8 +97,8 @@ def convert_dataframe(
         - y: float
         - x: float
         - parent_track_id: int
-    out_path : Path
-        Path to the output Zarr store
+    zarr_path : Path
+        Path to the zarr store, including name of Zarr store ('example: /path/to/zarr_bundle.zarr')
     extra_cols : Iterable[str], optional
         List of extra columns to include in the Zarr store, by default ()
     """
@@ -160,7 +202,6 @@ def convert_dataframe(
             non_zero[1][i] + 1
         ]
 
-    # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing
     tracks_to_points = points_to_tracks.T.tocsr()
     points_to_tracks = points_to_tracks.tocsr()
@@ -171,9 +212,12 @@ def convert_dataframe(
     )
     start = time.monotonic()
 
+    # Ensure the Zarr path is unique
+    zarr_path = get_unique_zarr_path(zarr_path)
+
     # save the points array
     top_level_group: zarr.Group = zarr.hierarchy.group(
-        zarr.storage.DirectoryStore(out_path.as_posix()),
+        zarr.storage.DirectoryStore(zarr_path.as_posix()),
         overwrite=True,
     )
 
@@ -236,6 +280,51 @@ def convert_dataframe(
 
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
+def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
+    """
+    Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function 
+    1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
+    3) host the outpat path as localhost, 4) open the localhost in the browser with inTRACKtive.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
+    zarr_dir : Path 
+        The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
+    """
+
+    if str(zarr_dir) == ".":
+        with tempfile.TemporaryDirectory() as temp_dir:
+            zarr_dir = Path(temp_dir)
+            print('temp_dir',temp_dir)
+            print('Temporary directory used for localhost:', zarr_dir)
+    else:
+        print('Given dir used used for localhost:',zarr_dir)
+    print('zarr_dir',zarr_dir)
+
+    extra_cols = []
+    zarr_path = zarr_dir / "zarr_bundle.zarr"   # zarr_dir is the folder, zarr_path is the folder+zarr_name
+
+    zarr_dir_with_storename = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=zarr_path,
+        extra_cols=extra_cols,
+    )
+
+    hostURL = serve_directory_threaded(
+        path = zarr_dir,
+        )
+
+    print('localhost successfully launched, serving:', zarr_dir_with_storename)
+
+    baseUrl = 'https://intracktive.sf.czbiohub.org'     # inTRACKtive application
+    dataUrl = hostURL + '/zarr_bundle.zarr/'            # exact path of the data (on localhost)
+    fullUrl = baseUrl + generate_viewer_state_hash(data_url=str(dataUrl))   # full hash that encodes viewerState
+    print('full URL',fullUrl)
+    webbrowser.open(fullUrl)
+
+
 
 @click.command(name="convert")
 @click.option(
@@ -274,14 +363,13 @@ def convert_cli(
 
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    # TODO: replace this to take arbitrary columns, CLI must be updated as well
     extra_cols = ["radius"] if add_radius else []
 
     tracks_df = pd.read_csv(csv_file)
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
-    convert_dataframe(
+    convert_dataframe_to_zarr(
         tracks_df,
         zarr_path,
         extra_cols=extra_cols,
