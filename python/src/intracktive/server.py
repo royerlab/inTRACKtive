@@ -1,18 +1,21 @@
-import threading
 import logging
-import click
-import socketserver
 import socket
-
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+import socketserver
+import threading
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
-DEFAULT_HOST = '127.0.0.1'
+import click
+
+DEFAULT_HOST = "127.0.0.1"
 logging.basicConfig(level=logging.INFO)
+
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
+
     daemon_threads = True  # Ensure threads close when main thread exits
+
 
 def find_available_port(starting_port=8000):
     port = starting_port
@@ -21,6 +24,7 @@ def find_available_port(starting_port=8000):
             if sock.connect_ex((DEFAULT_HOST, port)) != 0:  # Port is free
                 return port
             port += 1  # Increment to find the next available port
+
 
 def serve_directory_forever(path: Path, host: str = DEFAULT_HOST, port: int = 8000):
     """
@@ -37,7 +41,9 @@ def serve_directory_forever(path: Path, host: str = DEFAULT_HOST, port: int = 80
     """
 
     if not path.exists() or not path.is_dir():
-        logging.error("The specified path does not exist or is not a directory: %s", path)
+        logging.error(
+            "The specified path does not exist or is not a directory: %s", path
+        )
         return
 
     class CORSRequestHandler(SimpleHTTPRequestHandler):
@@ -64,8 +70,9 @@ def serve_directory_forever(path: Path, host: str = DEFAULT_HOST, port: int = 80
     logging.info(f"Server started in background thread at http://{host}:{port}")
 
 
-
-def serve_directory_threaded(path: Path, host: str = DEFAULT_HOST, port: int = 8000) -> str:
+def serve_directory_threaded(
+    path: Path, host: str = DEFAULT_HOST, port: int = 8000
+) -> str:
     """
     Starts an HTTP server in a background thread to serve a directory, allowing non-blocking execution.
 
@@ -89,7 +96,9 @@ def serve_directory_threaded(path: Path, host: str = DEFAULT_HOST, port: int = 8
     # Ensure path exists and is a directory
     if not path.exists() or not path.is_dir():
         # print(f"The specified path does not exist or is not a directory: {path}")
-        logging.error("The specified path does not exist or is not a directory: %s", path)
+        logging.error(
+            "The specified path does not exist or is not a directory: %s", path
+        )
         return
 
     class CORSRequestHandler(SimpleHTTPRequestHandler):
@@ -119,12 +128,6 @@ def serve_directory_threaded(path: Path, host: str = DEFAULT_HOST, port: int = 8
     print(f"Server started in background thread at http://{host}:{port}")
 
     return f"http://{host}:{port}"
-
-
-
-
-
-
 
 
 @click.command("serve")

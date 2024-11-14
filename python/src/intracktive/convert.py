@@ -1,19 +1,18 @@
 import logging
+import tempfile
 import time
+import webbrowser
 from pathlib import Path
 from typing import Iterable
 
-import tempfile
-import webbrowser
 import click
 import numpy as np
 import pandas as pd
 import zarr
+from intracktive.createHash import generate_viewer_state_hash
+from intracktive.server import serve_directory_threaded
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
-
-from intracktive.server import serve_directory_threaded
-from intracktive.createHash import generate_viewer_state_hash
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
@@ -56,12 +55,13 @@ def _transitive_closure(
     )
     return graph
 
+
 def get_unique_zarr_path(zarr_path: Path) -> Path:
     """
     Ensure the Zarr path is unique by appending a counter to the name
 
     Parameters
-    ----------  
+    ----------
     zarr_path : Path
         The path to the Zarr store, including the name of the store (for example: /path/to/zarr_bundle.zarr)
     """
@@ -74,10 +74,13 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
 
     # Increment the counter until we find a path that doesn't exist
     while unique_path.exists():
-        unique_path = base_path.with_name(f"{base_path.name}_{counter}").with_suffix(extension)
+        unique_path = base_path.with_name(f"{base_path.name}_{counter}").with_suffix(
+            extension
+        )
         counter += 1
 
     return unique_path
+
 
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
@@ -280,31 +283,34 @@ def convert_dataframe_to_zarr(
 
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
+
 def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     """
-    Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function 
+    Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
     1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
     3) host the outpat path as localhost, 4) open the localhost in the browser with inTRACKtive.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
         The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
-    zarr_dir : Path 
+    zarr_dir : Path
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
     """
 
     if str(zarr_dir) == ".":
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
-            print('temp_dir',temp_dir)
-            print('Temporary directory used for localhost:', zarr_dir)
+            print("temp_dir", temp_dir)
+            print("Temporary directory used for localhost:", zarr_dir)
     else:
-        print('Given dir used used for localhost:',zarr_dir)
-    print('zarr_dir',zarr_dir)
+        print("Given dir used used for localhost:", zarr_dir)
+    print("zarr_dir", zarr_dir)
 
     extra_cols = []
-    zarr_path = zarr_dir / "zarr_bundle.zarr"   # zarr_dir is the folder, zarr_path is the folder+zarr_name
+    zarr_path = (
+        zarr_dir / "zarr_bundle.zarr"
+    )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
 
     zarr_dir_with_storename = convert_dataframe_to_zarr(
         df=df,
@@ -313,17 +319,18 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     )
 
     hostURL = serve_directory_threaded(
-        path = zarr_dir,
-        )
+        path=zarr_dir,
+    )
 
-    print('localhost successfully launched, serving:', zarr_dir_with_storename)
+    print("localhost successfully launched, serving:", zarr_dir_with_storename)
 
-    baseUrl = 'https://intracktive.sf.czbiohub.org'     # inTRACKtive application
-    dataUrl = hostURL + '/zarr_bundle.zarr/'            # exact path of the data (on localhost)
-    fullUrl = baseUrl + generate_viewer_state_hash(data_url=str(dataUrl))   # full hash that encodes viewerState
-    print('full URL',fullUrl)
+    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
+    dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
+    fullUrl = baseUrl + generate_viewer_state_hash(
+        data_url=str(dataUrl)
+    )  # full hash that encodes viewerState
+    print("full URL", fullUrl)
     webbrowser.open(fullUrl)
-
 
 
 @click.command(name="convert")
