@@ -298,7 +298,7 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
     """
 
-    if str(zarr_dir) == ".":
+    if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
             print("temp_dir", temp_dir)
