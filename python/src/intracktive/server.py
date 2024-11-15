@@ -40,6 +40,8 @@ def serve_directory_forever(path: Path, host: str = DEFAULT_HOST, port: int = 80
         The port number to serve on, by default 8000.
     """
 
+    port = find_available_port(port)  # Get an available port
+
     if not path.exists() or not path.is_dir():
         logging.error(
             "The specified path does not exist or is not a directory: %s", path
