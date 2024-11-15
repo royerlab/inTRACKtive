@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
-from intracktive.convert import convert_dataframe
+from intracktive.convert import convert_dataframe_to_zarr
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
@@ -57,9 +57,9 @@ def test_actual_zarr_content(tmp_path: Path) -> None:
     new_path = tmp_path / "sample_data_bundle.zarr"
     gt_path = Path(__file__).parent / "data" / "gt_data_bundle.zarr"
 
-    convert_dataframe(
+    convert_dataframe_to_zarr(
         df=df,
-        out_path=new_path,
+        zarr_path=new_path,
         extra_cols=["radius"],
     )
 
