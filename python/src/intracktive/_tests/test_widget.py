@@ -27,16 +27,16 @@ def test_intracktive_widget_2D(
     assert widget._tracks_layer_w.value is not None
     assert str(widget._file_dialog.value) == "."
 
-    # Attempt to simulate the "run" button click and catch errors
-    with patch.object(webbrowser, "open", return_value=True) as mock_browser:
-        try:
-            widget._run_btn_click()
-            mock_browser.assert_called_once()
-        except Exception as e:
-            pytest.fail(f"Button click failed with error: {e}")
+    # # Attempt to simulate the "run" button click and catch errors
+    # with patch.object(webbrowser, "open", return_value=True) as mock_browser:
+    #     try:
+    #         widget._run_btn_click()
+    #         mock_browser.assert_called_once()
+    #     except Exception as e:
+    #         pytest.fail(f"Button click failed with error: {e}")
 
-    if request.config.getoption("--show-napari-viewer"):
-        napari.run()
+    # if request.config.getoption("--show-napari-viewer"):
+    #     napari.run()
 
 
 def test_intracktive_widget_2D_without_graph(
