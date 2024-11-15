@@ -15,7 +15,7 @@ import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
 import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
-// import { TimestampOverlay } from "./overlays/TimestampOverlay";
+import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
 
@@ -487,6 +487,7 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
+                    <TimestampOverlay timestamp={canvas.selector.sphereSelector.closestIndex} />
                     <ColorMap />
                 </Box>
 
