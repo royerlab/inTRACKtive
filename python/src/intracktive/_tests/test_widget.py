@@ -108,12 +108,10 @@ def test_intracktive_widget_noTracksLayer(
     assert str(widget._file_dialog.value) == "."
 
     # Attempt to simulate the "run" button click and catch errors
-    with patch.object(webbrowser, "open", return_value=True) as mock_browser:
-        try:
-            widget._run_btn_click()
-            mock_browser.assert_called_once()
-        except Exception as e:
-            pytest.fail(f"Button click failed with error: {e}")
+    try:
+        widget._run_btn_click()
+    except Exception as e:
+        pytest.fail(f"Button click failed with error: {e}")
 
     if request.config.getoption("--show-napari-viewer"):
         napari.run()

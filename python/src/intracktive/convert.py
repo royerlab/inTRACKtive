@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from intracktive.createHash import generate_viewer_state_hash
-from intracktive.server import serve_directory_threaded
+from intracktive.server import serve_directory
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
 
@@ -318,8 +318,9 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         extra_cols=extra_cols,
     )
 
-    hostURL = serve_directory_threaded(
+    hostURL = serve_directory(
         path=zarr_dir,
+        threaded=True,
     )
 
     print("localhost successfully launched, serving:", zarr_dir_with_storename)
