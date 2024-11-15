@@ -1,5 +1,6 @@
-import pytest
 import pandas as pd
+import pytest
+
 
 @pytest.fixture
 def make_sample_data() -> pd.DataFrame:

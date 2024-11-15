@@ -1,15 +1,16 @@
-import pytest
-
-from typing import List
 from pathlib import Path
+from typing import List
+
 import pandas as pd
 from intracktive.main import main
+
 
 def _run_command(command_and_args: List[str]) -> None:
     try:
         main(command_and_args)
     except SystemExit as exit:
         assert exit.code == 0, f"{command_and_args} failed with exit code {exit.code}"
+
 
 def test_convert_cli(
     tmp_path: Path,
@@ -24,5 +25,6 @@ def test_convert_cli(
             "--csv_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
-            str(tmp_path),]
+            str(tmp_path),
+        ]
     )
