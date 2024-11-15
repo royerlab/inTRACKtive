@@ -38,7 +38,7 @@ def test_intracktive_widget_2D(
         napari.run()
 
 
-def test_intracktive_widget_2D_withoutGraph(
+def test_intracktive_widget_2D_without_graph(
     make_napari_viewer: Callable[[], napari.Viewer],
     request,
 ):
