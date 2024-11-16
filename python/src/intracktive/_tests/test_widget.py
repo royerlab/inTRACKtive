@@ -18,15 +18,15 @@ def test_intracktive_widget_2D(
     graph = dict(zip(filtered_df["track_id"], filtered_df["parent_track_id"]))
     print(graph)
 
-    # viewer = make_napari_viewer()
-    # widget = LauncherWidget()
-    # viewer.window.add_dock_widget(widget)
-    # viewer.add_tracks(df[["track_id", "t", "y", "x"]], graph=graph, name="Tracks")
+    viewer = make_napari_viewer()
+    widget = LauncherWidget()
+    viewer.window.add_dock_widget(widget)
+    viewer.add_tracks(df[["track_id", "t", "y", "x"]], graph=graph, name="Tracks")
 
-    # assert "Tracks" in viewer.layers
+    assert "Tracks" in viewer.layers
 
-    # assert widget._tracks_layer_w.value is not None
-    # assert str(widget._file_dialog.value) == "."
+    assert widget._tracks_layer_w.value is not None
+    assert str(widget._file_dialog.value) == "."
 
     # # Attempt to simulate the "run" button click and catch errors
     # with patch.object(webbrowser, "open", return_value=True) as mock_browser:
