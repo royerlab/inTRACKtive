@@ -17,6 +17,16 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     daemon_threads = True  # Ensure threads close when main thread exits
 
 
+class CORSRequestHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, directory: str = None, **kwargs) -> None:
+        self.directory = directory
+        super().__init__(*args, directory=directory, **kwargs)
+
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        super().end_headers()
+
+
 def find_available_port(starting_port=8000):
     port = starting_port
     while True:
@@ -56,22 +66,17 @@ def serve_directory(
 
     # Ensure path exists and is a directory
     if not path.exists() or not path.is_dir():
-        # print(f"The specified path does not exist or is not a directory: {path}")
         logging.error(
             "The specified path does not exist or is not a directory: %s", path
         )
         return
 
-    class CORSRequestHandler(SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs) -> None:
-            super().__init__(*args, directory=str(path), **kwargs)
-
-        def end_headers(self):
-            self.send_header("Access-Control-Allow-Origin", "*")
-            super().end_headers()
+    # Factory to pass directory to CORSRequestHandler
+    def handler_factory(*args, **kwargs):
+        return CORSRequestHandler(*args, directory=str(path), **kwargs)
 
     def start_server():
-        with ThreadingHTTPServer((host, port), CORSRequestHandler) as httpd:
+        with ThreadingHTTPServer((host, port), handler_factory) as httpd:
             logging.info("Serving %s at http://%s:%s", path, host, port)
             try:
                 logging.info("Server running...")
@@ -88,7 +93,6 @@ def serve_directory(
         start_server()
 
     logging.info(f"Server started in background thread at http://{host}:{port}")
-    print(f"Server started in background thread at http://{host}:{port}")
 
     return f"http://{host}:{port}"
 

@@ -3,7 +3,7 @@ from intracktive.convert import dataframe_to_browser
 from magicgui.widgets import Container, FileEdit, PushButton, create_widget
 
 
-class LauncherWidget(Container):
+class IntracktiveWidget(Container):
     def __init__(self) -> None:
         super().__init__()
 

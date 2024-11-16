@@ -3,7 +3,7 @@ display_name: inTRACKtive
 contributions:
   commands:
     - id: intracktive.widget
-      python_name: intracktive.widget:LauncherWidget
+      python_name: intracktive.widget:IntracktiveWidget
       title: inTRACKtive
 
   widgets:

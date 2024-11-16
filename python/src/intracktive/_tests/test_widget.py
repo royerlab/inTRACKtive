@@ -5,7 +5,7 @@ from unittest.mock import patch
 import napari
 import pandas as pd
 import pytest
-from intracktive.widget import LauncherWidget
+from intracktive.widget import IntracktiveWidget
 
 
 def test_intracktive_widget_2D(
@@ -19,7 +19,7 @@ def test_intracktive_widget_2D(
     print(graph)
 
     viewer = make_napari_viewer()
-    widget = LauncherWidget()
+    widget = IntracktiveWidget()
     viewer.window.add_dock_widget(widget)
     viewer.add_tracks(df[["track_id", "t", "y", "x"]], graph=graph, name="Tracks")
 
@@ -48,7 +48,7 @@ def test_intracktive_widget_2D_without_graph(
     df = make_sample_data
 
     viewer = make_napari_viewer()
-    widget = LauncherWidget()
+    widget = IntracktiveWidget()
     viewer.window.add_dock_widget(widget)
     viewer.add_tracks(df[["track_id", "t", "y", "x"]], name="Tracks")
 
@@ -79,7 +79,7 @@ def test_intracktive_widget_3D(
     graph = dict(zip(filtered_df["track_id"], filtered_df["parent_track_id"]))
 
     viewer = make_napari_viewer()
-    widget = LauncherWidget()
+    widget = IntracktiveWidget()
     viewer.window.add_dock_widget(widget)
     viewer.add_tracks(df[["track_id", "t", "z", "y", "x"]], graph=graph, name="Tracks")
 
@@ -100,13 +100,13 @@ def test_intracktive_widget_3D(
         napari.run()
 
 
-def test_intracktive_widget_noTracksLayer(
+def test_intracktive_widget_no_tracks_layer(
     make_napari_viewer: Callable[[], napari.Viewer],
     request,
     make_sample_data: pd.DataFrame,
 ):
     viewer = make_napari_viewer()
-    widget = LauncherWidget()
+    widget = IntracktiveWidget()
     viewer.window.add_dock_widget(widget)
 
     assert widget._tracks_layer_w.value is None

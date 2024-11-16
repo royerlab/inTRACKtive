@@ -301,11 +301,9 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
-            print("temp_dir", temp_dir)
-            print("Temporary directory used for localhost:", zarr_dir)
+            logging.info("Temporary directory used for localhost:", zarr_dir)
     else:
-        print("Given dir used used for localhost:", zarr_dir)
-    print("zarr_dir", zarr_dir)
+        logging.info("Provided directory used used for localhost:", zarr_dir)
 
     extra_cols = []
     zarr_path = (
@@ -323,14 +321,14 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         threaded=True,
     )
 
-    print("localhost successfully launched, serving:", zarr_dir_with_storename)
+    logging.info("localhost successfully launched, serving:", zarr_dir_with_storename)
 
     baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
     dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
-    print("full URL", fullUrl)
+    logging.info("full URL", fullUrl)
     webbrowser.open(fullUrl)
 
 

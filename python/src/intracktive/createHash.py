@@ -4,7 +4,7 @@ import urllib.parse
 HASH_KEY = "viewerState"
 
 
-def generate_viewer_state_hash(data_url: str):
+def generate_viewer_state_hash(data_url: str) -> str:
     """
     Generate a hash string that can be appended to a URL to load inTRACKtive with a specific viewer state.
 
@@ -12,6 +12,11 @@ def generate_viewer_state_hash(data_url: str):
     ----------
     data_url : str
         The URL to the data file to load in inTRACKtive.
+
+    Returns
+    -------
+    str
+        The inTRACKtive hash string (to be added to the URL).
     """
 
     # Replicate the initial state based on your ViewerState defaults
