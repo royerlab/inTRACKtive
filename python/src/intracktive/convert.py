@@ -1,6 +1,7 @@
 import logging
 import tempfile
 import time
+import webbrowser
 from pathlib import Path
 from typing import Iterable
 
@@ -330,7 +331,7 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
     print("full URL", fullUrl)
-    # webbrowser.open(fullUrl)
+    webbrowser.open(fullUrl)
 
 
 @click.command(name="convert")
