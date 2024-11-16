@@ -9,7 +9,7 @@ from intracktive.widget import LauncherWidget
 
 
 def test_intracktive_widget_2D(
-    # make_napari_viewer: Callable[[], napari.Viewer],
+    make_napari_viewer: Callable[[], napari.Viewer],
     # request,
     make_sample_data: pd.DataFrame,
 ):

@@ -31,5 +31,11 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests
+        uses: GabrielBB/xvfb-action@v1
         working-directory: python
-        run: pytest -vv .
+        with:
+          run: pytest -vv .
+        env:
+          PLATFORM: ubuntu-latest
+          BACKEND: pyqt5
+
