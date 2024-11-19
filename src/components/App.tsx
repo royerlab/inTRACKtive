@@ -386,6 +386,7 @@ export default function App() {
                             sx={{
                                 flexGrow: 1, // CHANGED: Allows the middle section to expand
                                 overflowY: "auto", // CHANGED: Makes this section scrollable
+                                overflowX: "hidden",
                                 padding: "2em",
                             }}
                         >

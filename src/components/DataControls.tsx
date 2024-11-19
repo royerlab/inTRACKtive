@@ -186,7 +186,7 @@ export default function DataControls(props: DataControlsProps) {
                                 placeholder={props.initialDataUrl}
                                 defaultValue={props.dataUrl}
                                 fullWidth={true}
-                                intent={props.trackManager ? "default" : "error"}
+                                intent={props.trackManager ? "default" : "negative"}
                             />
                             <Note>
                                 <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
