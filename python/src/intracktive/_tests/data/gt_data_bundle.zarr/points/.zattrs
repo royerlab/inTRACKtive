@@ -1,0 +1,13 @@
+{
+    "extent_xyz": 38.8,
+    "fields": [
+        "z",
+        "y",
+        "x",
+        "radius"
+    ],
+    "mean_x": 51.2,
+    "mean_y": 32.8,
+    "mean_z": 32.4,
+    "values_per_point": 4
+}

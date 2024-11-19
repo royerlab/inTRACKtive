@@ -152,55 +152,57 @@ export default function DataControls(props: DataControlsProps) {
                 />
             </Tooltip>
 
-            <Popover
-                open={!!urlPopoverAnchor}
-                anchorEl={urlPopoverAnchor}
-                onClose={handleUrlPopoverClose}
-                anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                }}
-                transformOrigin={{
-                    vertical: "bottom",
-                    horizontal: "left",
-                }}
-                disableRestoreFocus // this is needed to autofocus the input when opening
-            >
-                <form onSubmit={handleDataUrlSubmit}>
-                    <Stack
-                        spacing={"2em"}
-                        sx={{
-                            padding: "1em",
-                            width: "50vw",
-                        }}
-                    >
-                        <label htmlFor="data-url-input">
-                            <ControlLabel>Zarr URL</ControlLabel>
-                        </label>
-                        <InputText
-                            id="data-url-input"
-                            // autoFocus
-                            label="Zarr URL"
-                            hideLabel
-                            placeholder={props.initialDataUrl}
-                            defaultValue={props.dataUrl}
-                            fullWidth={true}
-                            intent={props.trackManager ? "default" : "negative"}
-                        />
-                        <Note>
-                            <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
-                        </Note>
-                        <Stack direction="row" spacing={"2em"}>
-                            <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
-                                Cancel
-                            </Button>
-                            <Button sdsStyle="square" sdsType="primary" type="submit">
-                                Apply
-                            </Button>
+            {urlPopoverAnchor && (
+                <Popover
+                    open={!!urlPopoverAnchor}
+                    anchorEl={urlPopoverAnchor}
+                    onClose={handleUrlPopoverClose}
+                    anchorOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                    }}
+                    transformOrigin={{
+                        vertical: "bottom",
+                        horizontal: "left",
+                    }}
+                    disableRestoreFocus // this is needed to autofocus the input when opening
+                >
+                    <form onSubmit={handleDataUrlSubmit}>
+                        <Stack
+                            spacing={"2em"}
+                            sx={{
+                                padding: "1em",
+                                width: "50vw",
+                            }}
+                        >
+                            <label htmlFor="data-url-input">
+                                <ControlLabel>Zarr URL</ControlLabel>
+                            </label>
+                            <InputText
+                                id="data-url-input"
+                                autoFocus
+                                label="Zarr URL"
+                                hideLabel
+                                placeholder={props.initialDataUrl}
+                                defaultValue={props.dataUrl}
+                                fullWidth={true}
+                                intent={props.trackManager ? "default" : "negative"}
+                            />
+                            <Note>
+                                <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
+                            </Note>
+                            <Stack direction="row" spacing={"2em"}>
+                                <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
+                                    Cancel
+                                </Button>
+                                <Button sdsStyle="square" sdsType="primary" type="submit">
+                                    Apply
+                                </Button>
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </form>
-            </Popover>
+                    </form>
+                </Popover>
+            )}
         </Box>
     );
 }
