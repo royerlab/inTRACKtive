@@ -27,14 +27,16 @@ jobs:
 
       # Update output format to enable automatic inline annotations.
       - name: Run pre-commit
-        working-directory: python
-        run: pre-commit run --all-files
+        run: |
+          cd python
+          pre-commit run --all-files
 
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1
-        working-directory: python
         with:
-          run: pytest -vv .
+          run: |
+            cd python
+            pytest -vv .
         env:
           PLATFORM: ubuntu-latest
           BACKEND: pyqt5
