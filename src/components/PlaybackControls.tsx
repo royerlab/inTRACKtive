@@ -1,5 +1,5 @@
 import { Box, Tooltip } from "@mui/material";
-import { ButtonIcon, InputSlider } from "@czi-sds/components";
+import { Button, InputSlider } from "@czi-sds/components";
 
 interface PlaybackControlsProps {
     enabled: boolean;
@@ -15,11 +15,11 @@ interface PlaybackControlsProps {
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
-            <ButtonIcon
+            <Button
                 icon="Play"
                 sdsSize="large"
-                sdsType="primary"
-                on={props.playing}
+                sdsType={props.playing ? "primary" : "secondary"} // Use a different `sdsType` to change color upon toggle
+                sdsStyle="icon"
                 disabled={!props.enabled}
                 onClick={() => props.setPlaying(!props.playing)}
             />
@@ -35,13 +35,12 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 value={props.curTime}
                 sx={{ alignSelf: "flex-end" }}
             />
-            {/* TODO: add control button groups - perhaps a separate component */}
             <Tooltip title="Auto-rotate">
-                <ButtonIcon
+                <Button
                     icon="DNA"
                     sdsSize="large"
-                    sdsType="primary"
-                    on={props.autoRotate}
+                    sdsType={props.autoRotate ? "primary" : "secondary"} // Use a different `sdsType` to change color upon toggle
+                    sdsStyle="icon"
                     disabled={!props.enabled}
                     onClick={() => props.setAutoRotate(!props.autoRotate)}
                 />

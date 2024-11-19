@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Box, Popover, Snackbar, Stack, Tooltip } from "@mui/material";
 
-import { Button, ButtonIcon, InputText } from "@czi-sds/components";
+import { Button, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
 import { TrackManager } from "@/lib/TrackManager";
 
@@ -88,10 +88,11 @@ export default function DataControls(props: DataControlsProps) {
         >
             {/* TODO: make this do something */}
             <Tooltip title="More info">
-                <ButtonIcon
+                <Button
                     icon="InfoCircle"
                     sdsSize="large"
                     sdsType="secondary"
+                    sdsStyle="icon"
                     onClick={() => {
                         if (window.confirm("For documentation go to Github (click OK to open Github in a new tab)")) {
                             window.open("https://github.com/royerlab/inTRACKtive", "_blank");
@@ -101,15 +102,22 @@ export default function DataControls(props: DataControlsProps) {
             </Tooltip>
 
             <Tooltip title="Refresh page to initial settings">
-                <ButtonIcon icon="Refresh" sdsSize="large" sdsType="secondary" onClick={refreshPageCallBack} />
+                <Button
+                    icon="Refresh"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    sdsStyle="icon"
+                    onClick={refreshPageCallBack}
+                />
             </Tooltip>
 
             <Tooltip title="Copy a shareable URL for this view to your clipboard">
                 <span>
-                    <ButtonIcon
+                    <Button
                         icon="Share"
                         sdsSize="large"
                         sdsType="secondary"
+                        sdsStyle="icon"
                         disabled={!props.trackManager}
                         onClick={copyShareableUrlToClipBoard}
                     />
@@ -135,7 +143,13 @@ export default function DataControls(props: DataControlsProps) {
             </Snackbar>
 
             <Tooltip title="Change link to another dataset">
-                <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+                <Button
+                    icon="GlobeBasic"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    sdsStyle="icon"
+                    onClick={showUrlPopover}
+                />
             </Tooltip>
 
             {urlPopoverAnchor && (
