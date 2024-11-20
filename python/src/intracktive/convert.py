@@ -107,7 +107,7 @@ def convert_dataframe_to_zarr(
     """
     start = time.monotonic()
 
-    if "z" in df.columns: 
+    if "z" in df.columns:
         flag_2D = False
     else:
         flag_2D = True
