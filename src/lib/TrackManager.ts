@@ -242,7 +242,6 @@ export async function loadTrackManager(url: string) {
             scaleSettings.meanY = zattrs["mean_y"];
             scaleSettings.meanZ = zattrs["mean_z"];
             scaleSettings.extentXYZ = zattrs["extent_xyz"];
-            console.log("TM scaleSettings from zattrs", scaleSettings);
         } catch (error) {
             numberOfValuesPerPoint = 3;
         }
