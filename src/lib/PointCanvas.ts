@@ -134,6 +134,10 @@ export class PointCanvas {
 
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
+        if (detectedDevice.isPhone) {
+            this.toggleAxesHelper();
+        }
+
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
@@ -214,11 +218,14 @@ export class PointCanvas {
         this.controls.update();
     };
 
+    // camera only resetted upon trackManager change (new data)
     resetCamera(ndim: number) {
         const cameraPosition = new ViewerState().cameraPosition;
         const cameraTarget = new ViewerState().cameraTarget;
         this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
         this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+        this.controls.autoRotate = false;
+        this.curTime = 0;
 
         if (ndim == 2) {
             this.controls.enableRotate = false;

@@ -1,0 +1,11 @@
+name: intracktive
+display_name: inTRACKtive
+contributions:
+  commands:
+    - id: intracktive.widget
+      python_name: intracktive.widget:IntracktiveWidget
+      title: inTRACKtive
+
+  widgets:
+    - command: intracktive.widget
+      display_name: inTRACKtive

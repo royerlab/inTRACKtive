@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Box, Popover, Snackbar, Stack, Tooltip } from "@mui/material";
 
-import { Button, ButtonIcon, InputText } from "@czi-sds/components";
+import { Button, InputText } from "@czi-sds/components";
 import { ControlLabel, Note } from "@/components/Styled";
 import { TrackManager } from "@/lib/TrackManager";
 
@@ -88,10 +88,11 @@ export default function DataControls(props: DataControlsProps) {
         >
             {/* TODO: make this do something */}
             <Tooltip title="More info">
-                <ButtonIcon
+                <Button
                     icon="InfoCircle"
                     sdsSize="large"
                     sdsType="secondary"
+                    sdsStyle="icon"
                     onClick={() => {
                         if (window.confirm("For documentation go to Github (click OK to open Github in a new tab)")) {
                             window.open("https://github.com/royerlab/inTRACKtive", "_blank");
@@ -101,15 +102,22 @@ export default function DataControls(props: DataControlsProps) {
             </Tooltip>
 
             <Tooltip title="Refresh page to initial settings">
-                <ButtonIcon icon="Refresh" sdsSize="large" sdsType="secondary" onClick={refreshPageCallBack} />
+                <Button
+                    icon="Refresh"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    sdsStyle="icon"
+                    onClick={refreshPageCallBack}
+                />
             </Tooltip>
 
             <Tooltip title="Copy a shareable URL for this view to your clipboard">
                 <span>
-                    <ButtonIcon
+                    <Button
                         icon="Share"
                         sdsSize="large"
                         sdsType="secondary"
+                        sdsStyle="icon"
                         disabled={!props.trackManager}
                         onClick={copyShareableUrlToClipBoard}
                     />
@@ -135,58 +143,66 @@ export default function DataControls(props: DataControlsProps) {
             </Snackbar>
 
             <Tooltip title="Change link to another dataset">
-                <ButtonIcon icon="GlobeBasic" sdsSize="large" sdsType="secondary" onClick={showUrlPopover} />
+                <Button
+                    icon="GlobeBasic"
+                    sdsSize="large"
+                    sdsType="secondary"
+                    sdsStyle="icon"
+                    onClick={showUrlPopover}
+                />
             </Tooltip>
 
-            <Popover
-                open={!!urlPopoverAnchor}
-                anchorEl={urlPopoverAnchor}
-                onClose={handleUrlPopoverClose}
-                anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                }}
-                transformOrigin={{
-                    vertical: "bottom",
-                    horizontal: "left",
-                }}
-                disableRestoreFocus // this is needed to autofocus the input when opening
-            >
-                <form onSubmit={handleDataUrlSubmit}>
-                    <Stack
-                        spacing={"2em"}
-                        sx={{
-                            padding: "1em",
-                            width: "50vw",
-                        }}
-                    >
-                        <label htmlFor="data-url-input">
-                            <ControlLabel>Zarr URL</ControlLabel>
-                        </label>
-                        <InputText
-                            id="data-url-input"
-                            autoFocus
-                            label="Zarr URL"
-                            hideLabel
-                            placeholder={props.initialDataUrl}
-                            defaultValue={props.dataUrl}
-                            fullWidth={true}
-                            intent={props.trackManager ? "default" : "error"}
-                        />
-                        <Note>
-                            <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
-                        </Note>
-                        <Stack direction="row" spacing={"2em"}>
-                            <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
-                                Cancel
-                            </Button>
-                            <Button sdsStyle="square" sdsType="primary" type="submit">
-                                Apply
-                            </Button>
+            {urlPopoverAnchor && (
+                <Popover
+                    open={!!urlPopoverAnchor}
+                    anchorEl={urlPopoverAnchor}
+                    onClose={handleUrlPopoverClose}
+                    anchorOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                    }}
+                    transformOrigin={{
+                        vertical: "bottom",
+                        horizontal: "left",
+                    }}
+                    disableRestoreFocus // this is needed to autofocus the input when opening
+                >
+                    <form onSubmit={handleDataUrlSubmit}>
+                        <Stack
+                            spacing={"2em"}
+                            sx={{
+                                padding: "1em",
+                                width: "50vw",
+                            }}
+                        >
+                            <label htmlFor="data-url-input">
+                                <ControlLabel>Zarr URL</ControlLabel>
+                            </label>
+                            <InputText
+                                id="data-url-input"
+                                autoFocus
+                                label="Zarr URL"
+                                hideLabel
+                                placeholder={props.initialDataUrl}
+                                defaultValue={props.dataUrl}
+                                fullWidth={true}
+                                intent={props.trackManager ? "default" : "negative"}
+                            />
+                            <Note>
+                                <strong>Note:</strong> Changing this URL will replace the image and reset the canvas.
+                            </Note>
+                            <Stack direction="row" spacing={"2em"}>
+                                <Button sdsStyle="square" sdsType="secondary" onClick={handleUrlPopoverClose}>
+                                    Cancel
+                                </Button>
+                                <Button sdsStyle="square" sdsType="primary" type="submit">
+                                    Apply
+                                </Button>
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </form>
-            </Popover>
+                    </form>
+                </Popover>
+            )}
         </Box>
     );
 }

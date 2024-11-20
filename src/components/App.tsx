@@ -388,6 +388,7 @@ export default function App() {
                             sx={{
                                 flexGrow: 1, // CHANGED: Allows the middle section to expand
                                 overflowY: "auto", // CHANGED: Makes this section scrollable
+                                overflowX: "hidden",
                                 padding: "2em",
                             }}
                         >
@@ -502,7 +503,8 @@ export default function App() {
                     }}
                 >
                     <PlaybackControls
-                        enabled={true}
+                        enabledPlaySlider={true}
+                        enabledRotation={trackManager?.ndim === 3}
                         autoRotate={canvas.controls.autoRotate}
                         playing={playing}
                         curTime={canvas.curTime}

@@ -1,5 +1,5 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
+import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -236,23 +236,20 @@ export async function loadTrackManager(url: string) {
         // load the zarr metadata (to know is radius is included)
         const scaleSettings = new ScaleSettings();
         try {
-            const store = new HTTPStore(url);
-            const zattrsResponse = await store.getItem("points/.zattrs");
-            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            const zattrs = await points.attrs.asObject();
             numberOfValuesPerPoint = zattrs["values_per_point"];
             scaleSettings.meanX = zattrs["mean_x"];
             scaleSettings.meanY = zattrs["mean_y"];
             scaleSettings.meanZ = zattrs["mean_z"];
             scaleSettings.extentXYZ = zattrs["extent_xyz"];
+            console.log("TM scaleSettings from zattrs", scaleSettings);
         } catch (error) {
             numberOfValuesPerPoint = 3;
         }
 
         let datasetNdim = 3;
         try {
-            const store = new HTTPStore(url);
-            const zattrsResponse = await store.getItem("points/.zattrs");
-            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            const zattrs = await points.attrs.asObject();
             datasetNdim = zattrs["ndim"];
         } catch (error) {
             console.error("Error getting ndim from zattrs: %s", error);
