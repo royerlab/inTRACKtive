@@ -107,7 +107,10 @@ def convert_dataframe_to_zarr(
     """
     start = time.monotonic()
 
-    if "z" not in df.columns:
+    if "z" in df.columns:
+        flag_2D = False
+    else:
+        flag_2D = True
         df["z"] = 0.0
 
     extra_cols = list(extra_cols)
@@ -238,9 +241,9 @@ def convert_dataframe_to_zarr(
 
     for col in ("z", "y", "x"):
         points.attrs[f"mean_{col}"] = mean[col]
-
     points.attrs["extent_xyz"] = extent_xyz
     points.attrs["fields"] = ["z", "y", "x"] + extra_cols
+    points.attrs["ndim"] = 2 if flag_2D else 3
 
     top_level_group.create_groups(
         "points_to_tracks", "tracks_to_points", "tracks_to_tracks"

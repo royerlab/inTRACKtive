@@ -49,7 +49,7 @@ export class PointCanvas {
     readonly bloomPass: UnrealBloomPass;
     readonly selector: PointSelector;
     private axesHelper: AxesHelper | null = null;
-    axesVisible: boolean = true; // Track the visibility of the axes helper
+    showAxes: boolean = true; // Track the visibility of the axes helper
 
     // Maps from track ID to three.js Track objects.
     // This contains all tracks or tracklets across the lineages of all
@@ -217,6 +217,29 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    // camera only resetted upon trackManager change (new data)
+    checkCameraLock(ndim: number) {
+        this.controls.autoRotate = false;
+
+        if (ndim == 2) {
+            this.controls.enableRotate = false;
+        } else if (ndim == 3) {
+            this.controls.enableRotate = true;
+        } else {
+            console.error("Invalid ndim value: " + ndim);
+        }
+        console.debug("Rotation locked because 2D datast detected");
+    }
+
+    // ran upon new data load
+    resetCamera() {
+        const cameraPosition = new ViewerState().cameraPosition;
+        const cameraTarget = new ViewerState().cameraTarget;
+        this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+        this.curTime = 0;
+    }
 
     updateSelectedPointIndices() {
         const cacheKey = this.createCacheKey();
@@ -463,11 +486,11 @@ export class PointCanvas {
     // Method to toggle the axes helper visibility
     toggleAxesHelper() {
         if (this.axesHelper) {
-            this.axesVisible = !this.axesVisible; // Toggle the visibility flag
-            if (this.axesVisible) {
+            this.showAxes = !this.showAxes; // Toggle the visibility flag
+            if (this.showAxes) {
                 this.scene.add(this.axesHelper); // Add to the scene if visible
             } else {
-                this.scene.remove(this.axesHelper); // Remove from the scene if not visible
+                this.scene.remove(this.axesHelper); // Remove from the scene if not visiblev
             }
         }
     }

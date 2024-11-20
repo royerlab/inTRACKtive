@@ -9,5 +9,6 @@
     "mean_x": 51.2,
     "mean_y": 32.8,
     "mean_z": 32.4,
+    "ndim": 3,
     "values_per_point": 4
 }
