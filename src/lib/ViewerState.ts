@@ -28,7 +28,6 @@ export class ViewerState {
     cameraPosition = [-4, 0, 0]; // was  [-1250, 500, 500];
     cameraTarget = [0, 0, 0]; // was  [500, 500, 500];
     pointSize: number = initialPointSize;
-    // trackWidth: number = 0.5;
     trackWidthFactor: number = 1;
 
     toUrlHash(): string {
