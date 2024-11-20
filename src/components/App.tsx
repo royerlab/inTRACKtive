@@ -455,7 +455,6 @@ export default function App() {
                                         factor,
                                     });
                                 }}
-
                                 axesVisible={canvas.showAxes}
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
