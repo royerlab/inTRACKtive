@@ -107,7 +107,6 @@ export default function App() {
         // need to update the value in initialViewerState because that is used by the reset button
         // which may not change the dataUrl and thus may not load a new TrackManager.
         initialViewerState.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
-        console.log("refreshPage", initialViewerState);
         setDataUrl(initialViewerState.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: initialViewerState });
     };
@@ -130,7 +129,6 @@ export default function App() {
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
-        console.log("setStateFromHash");
     }, [dispatchCanvas]);
     const removeTracksUponNewData = () => {
         dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
@@ -159,7 +157,7 @@ export default function App() {
                     // adding the track *in* the dispatcher creates issues with duplicate fetching
                     // but we refresh so the selected/loaded count is updated
                     canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                    dispatchCanvas({ type: ActionType.REFRESH });
+                    // dispatchCanvas({ type: ActionType.REFRESH });
                 });
             });
             setNumLoadingTracks((n) => n - 1);
