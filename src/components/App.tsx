@@ -449,6 +449,12 @@ export default function App() {
                                 setPointSize={(pointSize: number) => {
                                     dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
                                 }}
+                                setTrackWidth={(factor: number) => {
+                                    dispatchCanvas({
+                                        type: ActionType.TRACK_WIDTH,
+                                        factor,
+                                    });
+                                }}
                                 axesVisible={canvas.showAxes}
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });

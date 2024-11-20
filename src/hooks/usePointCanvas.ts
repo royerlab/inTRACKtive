@@ -10,6 +10,7 @@ enum ActionType {
     CHECK_CAMERA_LOCK = "CHECK_CAMERA_LOCK",
     RESET_CAMERA = "RESET_CAMERA",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
+    TRACK_WIDTH = "TRACK_WIDTH",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
     RESET_POINTS_COLORS = "POINT_COLORS",
@@ -52,6 +53,11 @@ interface ResetCamera {
 interface InitPointsGeometry {
     type: ActionType.INIT_POINTS_GEOMETRY;
     maxPointsPerTimepoint: number;
+}
+
+interface TrackWidth {
+    type: ActionType.TRACK_WIDTH;
+    factor: number;
 }
 
 interface PointBrightness {
@@ -148,6 +154,7 @@ type PointCanvasAction =
     | CheckCameraLock
     | ResetCamera
     | InitPointsGeometry
+    | TrackWidth
     | PointBrightness
     | PointSizes
     | PointsPositions
@@ -195,6 +202,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            break;
+        case ActionType.TRACK_WIDTH:
+            newCanvas.trackWidthFactor = action.factor;
+            newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;
