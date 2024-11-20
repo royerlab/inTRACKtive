@@ -107,6 +107,8 @@ export default function App() {
         // need to update the value in initialViewerState because that is used by the reset button
         // which may not change the dataUrl and thus may not load a new TrackManager.
         initialViewerState.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
+        console.log("refreshPage", initialViewerState);
+        setDataUrl(initialViewerState.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: initialViewerState });
     };
     // show a warning dialog before fetching lots of tracks
@@ -128,9 +130,13 @@ export default function App() {
         clearUrlHash();
         setDataUrl(state.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: state });
+        console.log("setStateFromHash");
     }, [dispatchCanvas]);
     const removeTracksUponNewData = () => {
         dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
+    };
+    const resetCamera = () => {
+        dispatchCanvas({ type: ActionType.RESET_CAMERA });
     };
 
     // this function fetches the entire lineage for each track
@@ -200,7 +206,7 @@ export default function App() {
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
         });
         dispatchCanvas({
-            type: ActionType.RESET_CAMERA,
+            type: ActionType.CHECK_CAMERA_LOCK,
             ndim: trackManager.ndim,
         });
     }, [dispatchCanvas, trackManager]);
@@ -445,7 +451,7 @@ export default function App() {
                                 setPointSize={(pointSize: number) => {
                                     dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
                                 }}
-                                axesVisible={canvas.axesVisible}
+                                axesVisible={canvas.showAxes}
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
@@ -458,6 +464,7 @@ export default function App() {
                                 initialDataUrl={initialViewerState.dataUrl}
                                 setDataUrl={setDataUrl}
                                 removeTracksUponNewData={removeTracksUponNewData}
+                                resetCamera={resetCamera}
                                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                                 refreshPage={refreshPage}
                                 trackManager={trackManager}

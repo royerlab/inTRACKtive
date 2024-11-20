@@ -13,6 +13,7 @@ interface DataControlsProps {
     copyShareableUrlToClipboard: () => void;
     refreshPage: () => void;
     removeTracksUponNewData: () => void;
+    resetCamera: () => void;
     trackManager: TrackManager | null;
 }
 
@@ -52,6 +53,7 @@ export default function DataControls(props: DataControlsProps) {
 
     const setDataUrl = props.setDataUrl;
     const removeTracksUponNewData = props.removeTracksUponNewData;
+    const resetCamera = props.resetCamera;
     const handleDataUrlSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
@@ -59,12 +61,13 @@ export default function DataControls(props: DataControlsProps) {
             if (urlInput && urlInput.value) {
                 setDataUrl(urlInput.value);
                 removeTracksUponNewData();
+                resetCamera();
             } else {
                 // set to the initial URL if the input is empty or can't be found
                 setDataUrl(props.initialDataUrl);
             }
         },
-        [props.initialDataUrl, setDataUrl, removeTracksUponNewData],
+        [props.initialDataUrl, setDataUrl, removeTracksUponNewData, resetCamera],
     );
 
     // only close the popover if the URL gives a valid track manager
