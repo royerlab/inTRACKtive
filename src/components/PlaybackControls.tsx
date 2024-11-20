@@ -1,8 +1,9 @@
 import { Box, Tooltip } from "@mui/material";
-import { ButtonIcon, InputSlider } from "@czi-sds/components";
+import { Button, InputSlider } from "@czi-sds/components";
 
 interface PlaybackControlsProps {
-    enabled: boolean;
+    enabledPlaySlider: boolean;
+    enabledRotation: boolean;
     autoRotate: boolean;
     playing: boolean;
     curTime: number;
@@ -15,19 +16,19 @@ interface PlaybackControlsProps {
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
-            <ButtonIcon
+            <Button
                 icon="Play"
                 sdsSize="large"
-                sdsType="primary"
-                on={props.playing}
-                disabled={!props.enabled}
+                sdsType={props.playing ? "primary" : "secondary"} // Use a different `sdsType` to change color upon toggle
+                sdsStyle="icon"
+                disabled={!props.enabledPlaySlider}
                 onClick={() => props.setPlaying(!props.playing)}
             />
 
             <InputSlider
                 id="time-frame-slider"
                 aria-labelledby="input-slider-time-frame"
-                disabled={!props.enabled}
+                disabled={!props.enabledPlaySlider}
                 min={0}
                 max={props.numTimes - 1}
                 valueLabelDisplay="on"
@@ -35,16 +36,17 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
                 value={props.curTime}
                 sx={{ alignSelf: "flex-end" }}
             />
-            {/* TODO: add control button groups - perhaps a separate component */}
             <Tooltip title="Auto-rotate">
-                <ButtonIcon
-                    icon="DNA"
-                    sdsSize="large"
-                    sdsType="primary"
-                    on={props.autoRotate}
-                    disabled={!props.enabled}
-                    onClick={() => props.setAutoRotate(!props.autoRotate)}
-                />
+                <span>
+                    <Button
+                        icon="DNA"
+                        sdsSize="large"
+                        sdsType={props.autoRotate ? "primary" : "secondary"} // Use a different `sdsType` to change color upon toggle
+                        sdsStyle="icon"
+                        disabled={!props.enabledRotation}
+                        onClick={() => props.setAutoRotate(!props.autoRotate)}
+                    />
+                </span>
             </Tooltip>
         </Box>
     );
