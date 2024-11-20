@@ -32,6 +32,10 @@ const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
 const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
 
+const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
+const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+const factorTrackWidthVsHighlight = 3; // choice to make the tracks 7x thinner than the track highlights
+
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
     threeTrack: Track;
@@ -77,9 +81,6 @@ export class PointCanvas {
     pointBrightness = 1.0;
     pointSize = initialPointSize;
     trackWidthFactor = 1; // changed by track-width slider
-    trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
-    factorTrackWidthVsHighlight = 7; // choice to make the tracks 7x thinner than the track highlights
-    factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -382,15 +383,15 @@ export class PointCanvas {
 
         for (const track of this.tracks.values()) {
             track.threeTrack.material.trackwidth =
-                (this.pointSize * this.trackWidthRatio * this.trackWidthFactor) / this.factorTrackWidthVsHighlight;
-            track.threeTrack.material.highlightwidth = this.pointSize * this.trackWidthRatio * this.trackWidthFactor;
+                (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight;
+            track.threeTrack.material.highlightwidth = this.pointSize * trackWidthRatio * this.trackWidthFactor;
         }
     }
 
     calculateMeanCellSize(data: Float32Array, numPoints: number, num: number): number {
         let cellSizeTotal = 0;
         for (let i = 0; i < numPoints; i++) {
-            cellSizeTotal = cellSizeTotal + this.factorPointSizeVsCellSize * data[num * i + 3];
+            cellSizeTotal = cellSizeTotal + factorPointSizeVsCellSize * data[num * i + 3];
         }
         const cellSize = cellSizeTotal / numPoints;
         return cellSize;
@@ -412,7 +413,7 @@ export class PointCanvas {
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i + 0], data[num * i + 1], data[num * i + 2]);
             if (num == 4) {
-                sizes.setX(i, this.factorPointSizeVsCellSize * data[num * i + 3]);
+                sizes.setX(i, factorPointSizeVsCellSize * data[num * i + 3]);
             } else {
                 sizes.setX(i, this.pointSize);
             }
@@ -435,8 +436,8 @@ export class PointCanvas {
             this.showTrackHighlights,
             this.minTime,
             this.maxTime,
-            (this.pointSize * this.trackWidthRatio * this.trackWidthFactor) / this.factorTrackWidthVsHighlight, // trackWidth
-            this.pointSize * this.trackWidthRatio * this.trackWidthFactor, // highlightWidth
+            (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight, // trackWidth
+            this.pointSize * trackWidthRatio * this.trackWidthFactor, // highlightWidth
         );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
@@ -450,8 +451,8 @@ export class PointCanvas {
                 this.showTrackHighlights,
                 this.minTime,
                 this.maxTime,
-                (this.pointSize * this.trackWidthRatio * this.trackWidthFactor) / this.factorTrackWidthVsHighlight, // trackWidth
-                this.pointSize * this.trackWidthRatio * this.trackWidthFactor, // highlightWidth
+                (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight, // trackWidth
+                this.pointSize * trackWidthRatio * this.trackWidthFactor, // highlightWidth
             );
         });
     }
