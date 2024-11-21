@@ -35,6 +35,10 @@ const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
 const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
 
+const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
+const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+const factorTrackWidthVsHighlight = 3; // choice to make the tracks 7x thinner than the track highlights
+
 // TrackType is a place to store the visual information about a track and any track-specific attributes
 type TrackType = {
     threeTrack: Track;
@@ -52,7 +56,7 @@ export class PointCanvas {
     readonly bloomPass: UnrealBloomPass;
     readonly selector: PointSelector;
     private axesHelper: AxesHelper | null = null;
-    axesVisible: boolean = true; // Track the visibility of the axes helper
+    showAxes: boolean = true; // Track the visibility of the axes helper
 
     // Maps from track ID to three.js Track objects.
     // This contains all tracks or tracklets across the lineages of all
@@ -79,6 +83,7 @@ export class PointCanvas {
     maxTime: number = 5;
     pointBrightness = 1.0;
     pointSize = initialPointSize;
+    trackWidthFactor = 1; // changed by track-width slider
     // this is used to initialize the points geometry, and kept to initialize the
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
@@ -193,6 +198,8 @@ export class PointCanvas {
         state.selectedPointIds = Array.from(this.selectedPointIds);
         state.cameraPosition = this.camera.position.toArray();
         state.cameraTarget = this.controls.target.toArray();
+        state.pointSize = this.pointSize;
+        state.trackWidthFactor = this.trackWidthFactor;
         return state;
     }
 
@@ -208,6 +215,8 @@ export class PointCanvas {
         this.selectedPointIds = new Set(state.selectedPointIds);
         this.camera.position.fromArray(state.cameraPosition);
         this.controls.target.fromArray(state.cameraTarget);
+        this.pointSize = state.pointSize;
+        this.trackWidthFactor = state.trackWidthFactor;
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
@@ -222,6 +231,29 @@ export class PointCanvas {
         this.composer.render();
         this.controls.update();
     };
+
+    // camera only resetted upon trackManager change (new data)
+    checkCameraLock(ndim: number) {
+        this.controls.autoRotate = false;
+
+        if (ndim == 2) {
+            this.controls.enableRotate = false;
+        } else if (ndim == 3) {
+            this.controls.enableRotate = true;
+        } else {
+            console.error("Invalid ndim value: " + ndim);
+        }
+        console.debug("Rotation locked because 2D datast detected");
+    }
+
+    // ran upon new data load
+    resetCamera() {
+        const cameraPosition = new ViewerState().cameraPosition;
+        const cameraTarget = new ViewerState().cameraTarget;
+        this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+        this.curTime = 0;
+    }
 
     updateSelectedPointIndices() {
         const cacheKey = this.createCacheKey();
@@ -500,9 +532,19 @@ export class PointCanvas {
         sizes.needsUpdate = true;
 
         for (const track of this.tracks.values()) {
-            track.threeTrack.material.trackwidth = this.pointSize / 100;
-            track.threeTrack.material.highlightwidth = this.pointSize / 15;
+            track.threeTrack.material.trackwidth =
+                (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight;
+            track.threeTrack.material.highlightwidth = this.pointSize * trackWidthRatio * this.trackWidthFactor;
         }
+    }
+
+    calculateMeanCellSize(data: Float32Array, numPoints: number, num: number): number {
+        let cellSizeTotal = 0;
+        for (let i = 0; i < numPoints; i++) {
+            cellSizeTotal = cellSizeTotal + factorPointSizeVsCellSize * data[num * i + 3];
+        }
+        const cellSize = cellSizeTotal / numPoints;
+        return cellSize;
     }
 
     setPointsPositions(data: Float32Array) {
@@ -512,11 +554,17 @@ export class PointCanvas {
         const sizes = geometry.getAttribute("size");
 
         const num = numberOfValuesPerPoint;
+
+        // if the point size is the initial point size and radius is provided, then we need to calculate the mean cell size once
+        if (num == 4 && this.pointSize == initialPointSize) {
+            this.pointSize = this.calculateMeanCellSize(data, numPoints, num);
+            console.debug("mean cell size calculated: ", this.pointSize);
+        }
+
         for (let i = 0; i < numPoints; i++) {
             positions.setXYZ(i, data[num * i + 0], data[num * i + 1], data[num * i + 2]);
-            // positions.setXYZ(i, data[num * i + 2], data[num * i + 1], data[num * i + 0]);
             if (num == 4) {
-                sizes.setX(i, 0.078 * data[num * i + 3]); // the value of 0.078 relates the actual size of the points to the size of the points in the viewer
+                sizes.setX(i, factorPointSizeVsCellSize * data[num * i + 3]);
             } else {
                 sizes.setX(i, this.pointSize);
             }
@@ -539,8 +587,8 @@ export class PointCanvas {
             this.showTrackHighlights,
             this.minTime,
             this.maxTime,
-            this.pointSize / 100,
-            this.pointSize / 15,
+            (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight, // trackWidth
+            this.pointSize * trackWidthRatio * this.trackWidthFactor, // highlightWidth
         );
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
@@ -554,8 +602,8 @@ export class PointCanvas {
                 this.showTrackHighlights,
                 this.minTime,
                 this.maxTime,
-                this.pointSize / 100,
-                this.pointSize / 15,
+                (this.pointSize * trackWidthRatio * this.trackWidthFactor) / factorTrackWidthVsHighlight, // trackWidth
+                this.pointSize * trackWidthRatio * this.trackWidthFactor, // highlightWidth
             );
         });
     }
@@ -614,11 +662,11 @@ export class PointCanvas {
     // Method to toggle the axes helper visibility
     toggleAxesHelper() {
         if (this.axesHelper) {
-            this.axesVisible = !this.axesVisible; // Toggle the visibility flag
-            if (this.axesVisible) {
+            this.showAxes = !this.showAxes; // Toggle the visibility flag
+            if (this.showAxes) {
                 this.scene.add(this.axesHelper); // Add to the scene if visible
             } else {
-                this.scene.remove(this.axesHelper); // Remove from the scene if not visible
+                this.scene.remove(this.axesHelper); // Remove from the scene if not visiblev
             }
         }
     }

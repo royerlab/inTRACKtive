@@ -107,6 +107,7 @@ export default function App() {
         // need to update the value in initialViewerState because that is used by the reset button
         // which may not change the dataUrl and thus may not load a new TrackManager.
         initialViewerState.maxPointsPerTimepoint = canvas.maxPointsPerTimepoint;
+        setDataUrl(initialViewerState.dataUrl);
         dispatchCanvas({ type: ActionType.UPDATE_WITH_STATE, state: initialViewerState });
     };
     // show a warning dialog before fetching lots of tracks
@@ -132,6 +133,9 @@ export default function App() {
     const removeTracksUponNewData = () => {
         dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
     };
+    const resetCamera = () => {
+        dispatchCanvas({ type: ActionType.RESET_CAMERA });
+    };
 
     // this function fetches the entire lineage for each track
     const updateTracks = async () => {
@@ -153,7 +157,7 @@ export default function App() {
                     // adding the track *in* the dispatcher creates issues with duplicate fetching
                     // but we refresh so the selected/loaded count is updated
                     canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                    dispatchCanvas({ type: ActionType.REFRESH });
+                    // dispatchCanvas({ type: ActionType.REFRESH });
                 });
             });
             setNumLoadingTracks((n) => n - 1);
@@ -192,14 +196,16 @@ export default function App() {
         });
     }, [dispatchCanvas, dataUrl]);
 
-    // update the geometry buffers when the array changes
-    // TODO: do this in the above useEffect
     useEffect(() => {
         console.debug("effect-trackmanager");
         if (!trackManager) return;
         dispatchCanvas({
             type: ActionType.INIT_POINTS_GEOMETRY,
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+        });
+        dispatchCanvas({
+            type: ActionType.CHECK_CAMERA_LOCK,
+            ndim: trackManager.ndim,
         });
     }, [dispatchCanvas, trackManager]);
 
@@ -392,6 +398,7 @@ export default function App() {
                             sx={{
                                 flexGrow: 1, // CHANGED: Allows the middle section to expand
                                 overflowY: "auto", // CHANGED: Makes this section scrollable
+                                overflowX: "hidden",
                                 padding: "2em",
                             }}
                         >
@@ -448,7 +455,13 @@ export default function App() {
                                 setPointSize={(pointSize: number) => {
                                     dispatchCanvas({ type: ActionType.POINT_SIZES, pointSize });
                                 }}
-                                axesVisible={canvas.axesVisible}
+                                setTrackWidth={(factor: number) => {
+                                    dispatchCanvas({
+                                        type: ActionType.TRACK_WIDTH,
+                                        factor,
+                                    });
+                                }}
+                                axesVisible={canvas.showAxes}
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
@@ -464,6 +477,7 @@ export default function App() {
                                 initialDataUrl={initialViewerState.dataUrl}
                                 setDataUrl={setDataUrl}
                                 removeTracksUponNewData={removeTracksUponNewData}
+                                resetCamera={resetCamera}
                                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                                 refreshPage={refreshPage}
                                 trackManager={trackManager}
@@ -509,7 +523,8 @@ export default function App() {
                     }}
                 >
                     <PlaybackControls
-                        enabled={true}
+                        enabledPlaySlider={true}
+                        enabledRotation={trackManager?.ndim === 3}
                         autoRotate={canvas.controls.autoRotate}
                         playing={playing}
                         curTime={canvas.curTime}

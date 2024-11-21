@@ -7,7 +7,10 @@ import { ViewerState } from "@/lib/ViewerState";
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
     CUR_TIME = "CUR_TIME",
+    CHECK_CAMERA_LOCK = "CHECK_CAMERA_LOCK",
+    RESET_CAMERA = "RESET_CAMERA",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
+    TRACK_WIDTH = "TRACK_WIDTH",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
     POINTS_POSITIONS = "POINTS_POSITIONS",
     RESET_POINTS_COLORS = "POINT_COLORS",
@@ -39,9 +42,23 @@ interface CurTime {
     curTime: number | ((curTime: number) => number);
 }
 
+interface CheckCameraLock {
+    type: ActionType.CHECK_CAMERA_LOCK;
+    ndim: number;
+}
+
+interface ResetCamera {
+    type: ActionType.RESET_CAMERA;
+}
+
 interface InitPointsGeometry {
     type: ActionType.INIT_POINTS_GEOMETRY;
     maxPointsPerTimepoint: number;
+}
+
+interface TrackWidth {
+    type: ActionType.TRACK_WIDTH;
+    factor: number;
 }
 
 interface PointBrightness {
@@ -141,7 +158,10 @@ interface ChangeColorBy {
 type PointCanvasAction =
     | AutoRotate
     | CurTime
+    | CheckCameraLock
+    | ResetCamera
     | InitPointsGeometry
+    | TrackWidth
     | PointBrightness
     | PointSizes
     | PointsPositions
@@ -168,7 +188,12 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     switch (action.type) {
         case ActionType.REFRESH:
             break;
-
+        case ActionType.CHECK_CAMERA_LOCK:
+            newCanvas.checkCameraLock(action.ndim);
+            break;
+        case ActionType.RESET_CAMERA:
+            newCanvas.resetCamera();
+            break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
             if (typeof action.curTime === "function") {
@@ -185,6 +210,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            break;
+        case ActionType.TRACK_WIDTH:
+            newCanvas.trackWidthFactor = action.factor;
+            newCanvas.updateAllTrackHighlights();
             break;
         case ActionType.POINT_BRIGHTNESS:
             newCanvas.pointBrightness = action.brightness;

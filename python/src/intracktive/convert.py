@@ -1,5 +1,7 @@
 import logging
+import tempfile
 import time
+import webbrowser
 from pathlib import Path
 from typing import Iterable
 
@@ -7,6 +9,8 @@ import click
 import numpy as np
 import pandas as pd
 import zarr
+from intracktive.createHash import generate_viewer_state_hash
+from intracktive.server import serve_directory
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
 
@@ -21,6 +25,22 @@ def _transitive_closure(
     graph: lil_matrix,
     direction: str,
 ) -> csr_matrix:
+
+    """
+    Calculate the transitive closure of a graph
+
+    Parameters
+    ----------
+    graph : lil_matrix
+        The graph to calculate the transitive closure of
+    direction : str
+        The direction to calculate the transitive closure in, either 'forward' or 'backward'
+
+    Returns
+    -------
+    csr_matrix
+        The transitive closure of the graph in the specified direction as a CSR matrix
+    """
     graph.setdiag(1)
     graph = graph.tocsr()
 
@@ -35,14 +55,38 @@ def _transitive_closure(
         f"Chased track lineage {direction} in {time.monotonic() - start} seconds ({iter} iterations)"
     )
     return graph
+  
+def get_unique_zarr_path(zarr_path: Path) -> Path:
+    """
+    Ensure the Zarr path is unique by appending a counter to the name
 
+    Parameters
+    ----------
+    zarr_path : Path
+        The path to the Zarr store, including the name of the store (for example: /path/to/zarr_bundle.zarr)
+    """
+    zarr_path = Path(zarr_path)
+    base_path = zarr_path.parent / zarr_path.stem
+    extension = zarr_path.suffix
 
-def convert_dataframe(
+    counter = 1
+    unique_path = zarr_path
+
+    # Increment the counter until we find a path that doesn't exist
+    while unique_path.exists():
+        unique_path = base_path.with_name(f"{base_path.name}_{counter}").with_suffix(
+            extension
+        )
+        counter += 1
+
+    return unique_path
+
+def convert_dataframe_to_zarr(
     df: pd.DataFrame,
-    out_path: Path,
+    zarr_path: Path,
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
-) -> None:
+) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
 
@@ -56,16 +100,19 @@ def convert_dataframe(
         - y: float
         - x: float
         - parent_track_id: int
-    out_path : Path
-        Path to the output Zarr store
+    zarr_path : Path
+        Path to the zarr store, including name of Zarr store ('example: /path/to/zarr_bundle.zarr')
     extra_cols : Iterable[str], optional
         List of extra columns to include in the Zarr store, by default ()
     """
     start = time.monotonic()
 
-    if "z" not in df.columns:
+    if "z" in df.columns:
+        flag_2D = False
+    else:
+        flag_2D = True
         df["z"] = 0.0
-
+        
     points_cols = ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"] # columns to store in the points array
     extra_cols = list(extra_cols)
     columns_to_check = REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS # columns to check for in the DataFrame
@@ -119,6 +166,7 @@ def convert_dataframe(
     )
     attribute_arrays = {}
 
+
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
     )
@@ -129,7 +177,7 @@ def convert_dataframe(
         points_array[t, : group_size * num_values_per_point] = (
             group[points_cols].to_numpy().ravel()
         )
-        
+
         points_ids = t * max_values_per_time_point + np.arange(group_size)
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
@@ -142,7 +190,6 @@ def convert_dataframe(
                 group[col].to_numpy().ravel()
             )
         attribute_arrays[col] = attribute_array
-
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
 
@@ -183,7 +230,6 @@ def convert_dataframe(
             non_zero[1][i] + 1
         ]
 
-    # @jordao NOTE: didn't modify the original code, from this point below
     # Convert to CSR format for efficient row slicing
     tracks_to_points = points_to_tracks.T.tocsr()
     points_to_tracks = points_to_tracks.tocsr()
@@ -194,9 +240,13 @@ def convert_dataframe(
     )
     start = time.monotonic()
 
+
+    # Ensure the Zarr path is unique
+    zarr_path = get_unique_zarr_path(zarr_path)
+
     # save the points array
     top_level_group: zarr.Group = zarr.hierarchy.group(
-        zarr.storage.DirectoryStore(out_path.as_posix()),
+        zarr.storage.DirectoryStore(zarr_path.as_posix()),
         overwrite=True,
     )
 
@@ -219,6 +269,7 @@ def convert_dataframe(
         )
         attributes.attrs["columns"] = extra_cols
 
+
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
     extent_xyz = extent.max()
@@ -228,6 +279,7 @@ def convert_dataframe(
 
     points.attrs["extent_xyz"] = extent_xyz
     points.attrs["fields"] = points_cols
+    points.attrs["ndim"] = 2 if flag_2D else 3
 
     top_level_group.create_groups(
         "points_to_tracks", "tracks_to_points", "tracks_to_tracks"
@@ -270,6 +322,53 @@ def convert_dataframe(
 
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
+def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
+    """
+    Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
+    1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
+    3) host the outpat path as localhost, 4) open the localhost in the browser with inTRACKtive.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
+    zarr_dir : Path
+        The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
+    """
+
+    if str(zarr_dir) in (".", None):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            zarr_dir = Path(temp_dir)
+            logging.info("Temporary directory used for localhost:", zarr_dir)
+    else:
+        logging.info("Provided directory used used for localhost:", zarr_dir)
+
+    extra_cols = []
+    zarr_path = (
+        zarr_dir / "zarr_bundle.zarr"
+    )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
+
+    zarr_dir_with_storename = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=zarr_path,
+        extra_cols=extra_cols,
+    )
+
+    hostURL = serve_directory(
+        path=zarr_dir,
+        threaded=True,
+    )
+
+    logging.info("localhost successfully launched, serving:", zarr_dir_with_storename)
+
+    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
+    dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
+    fullUrl = baseUrl + generate_viewer_state_hash(
+        data_url=str(dataUrl)
+    )  # full hash that encodes viewerState
+    logging.info("full URL", fullUrl)
+    webbrowser.open(fullUrl)
+
 
 @click.command(name="convert")
 @click.option(
@@ -298,6 +397,7 @@ def convert_dataframe(
     default=False,
     type=bool,
 )
+
 def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
@@ -316,14 +416,15 @@ def convert_cli(
 
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    tracks_df = pd.read_csv(csv_file)
-
     # find the extra columns in the df
     extra_cols = []
     if add_attributes:
         columns_standard = REQUIRED_COLUMNS
         extra_cols = tracks_df.columns.difference(columns_standard).to_list()
         print('extra_cols:', extra_cols)
+
+      
+    tracks_df = pd.read_csv(csv_file)
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
@@ -347,8 +448,8 @@ if __name__ == "__main__":
 # # tracks_bundle.zarr
 # # ├── points (198M)
 # # ├── points_to_tracks (62M)
-# # │   ├── indices (61M)
-# # │   └── indptr (1M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
 # # ├── tracks_to_points (259M)
 # # │   ├── data (207M)
 # # │   ├── indices (50M)

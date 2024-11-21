@@ -36,12 +36,17 @@ export class Track extends Mesh {
         const time: number[] = [];
         const pos = Array.from(positions);
         const colors: number[] = [];
-        const n = pos.length / 3;
-        for (const [i, id] of pointIDs.entries()) {
+        // const n = pos.length / 3;
+        // for (const [i, id] of pointIDs.entries()) {
+        for (const [, id] of pointIDs.entries()) {
             const t = Math.floor(id / maxPointsPerTimepoint);
             time.push(t);
             // TODO: use a LUT for the main track, too
-            colors.push(((0.9 * (n - i)) / n) ** 3, ((0.9 * (n - i)) / n) ** 3, (0.9 * (n - i)) / n);
+            // colors.push(
+            // ((0.9 * (n - i)) / n) ** 3,
+            // ((0.9 * (n - i)) / n) ** 3,
+            // (0.9 * (n - i)) / n);
+            colors.push((0.9 * 0.7) ** 3, (0.9 * 0.7) ** 3, 0.9 * 0.7);
         }
 
         // if this track has a single point, in order to keep this point in our data,
