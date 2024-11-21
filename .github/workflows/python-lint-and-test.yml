@@ -1,0 +1,43 @@
+name: Python linting & tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: tlambert03/setup-qt-libs@v1
+      
+      - name: Install dependencies
+        run: |
+          cd python # NOTE: move to python directory
+          python -m pip install --upgrade pip
+          pip install pre-commit pytest pytest-qt napari[all]
+          pip install .
+
+      # Update output format to enable automatic inline annotations.
+      - name: Run pre-commit
+        run: |
+          cd python
+          pre-commit run --all-files
+
+      - name: Run tests
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: |
+            cd python
+            pytest -vv .
+        env:
+          PLATFORM: ubuntu-latest
+          BACKEND: pyqt5
+

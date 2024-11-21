@@ -5,7 +5,7 @@
 
 # inTRACKtive
 
-`inTRACKtive` is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous lazy data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/)
@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/4d674696-0add-4f03-8f38-600b44c987e7
 <br/>
 
 # Table of contents
-`inTRACKtive` has three main use-cases: 
+`inTRACKtive` ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) has three main use-cases: 
 
 1. Explore the Virtual Embryo Zoo ([↓1. Explore the Virtual Embryo Zoo↓](#1-explore-the-virtual-embryo-zoo))
 
@@ -35,7 +35,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
@@ -63,11 +63,12 @@ See the image below with the explanation of the `inTRACKtive` UI:
 <details open>
     <summary>collapse</summary></br>
 
-If you want to visualize your own data with `inTRACKtive`, you need to do two things: 
+We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow: _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
 
-### i) Convert the cell tracking data into our Zarr format
 
-In order to view your own cell tracking data with `inTRACKtive`, you need to convert your data into our Zarr format. Make sure your cell tracking data is saved as `tracks.csv` and has the following format (which is the standard [Ultrack](https://github.com/royerlab/ultrack) format):
+#### Note: Tracking data format
+
+In order to view your own cell tracking data with `inTRACKtive`, make sure your data is in the following format (which is the standard [Ultrack](https://github.com/royerlab/ultrack) format):
 
 ```
 |   track_id |   t |   z |   y |   x |   parent_track_id |
@@ -82,39 +83,84 @@ In order to view your own cell tracking data with `inTRACKtive`, you need to con
 |          3 |   4 | 419 | 398 | 302 |                 1 |
 ```
 
-where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`.
+where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. The can be in a `csv` format, or `pandas.dataFrame`, or anything equivalent. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
 
-This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/tools/convert_tracks_csv_to_sparse_zarr.py](tools/convert_tracks_csv_to_sparse_zarr.py)):
+For `inTRACKtive`, the data described above needs to be converted into our specialized Zarr format. We have python and command-line functions (see below at point _i_), while the napari and Jupyter Notebook solutions do this under the hood. 
 
-```
-cd tools
-python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv
-```
-
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` to the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `output_directory` is specified as the second parameter to the function call (see the [function itself](tools/convert_tracks_csv_to_sparse_zarr.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
-
-By default, all the cells are represented by equally-sized dots in inTRACKtive. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
+The common first step for all three approaches is to start with a clean conda environment, and git install the package: 
 
 ```
-python convert_tracks_csv_to_sparse_zarr.py /path/to/tracks.csv --add_radius
+conda create -n intracktive python
+conda activate intracktive
+pip install git+https://github.com/royerlab/inTRACKtive.git@main#subdirectory=python
 ```
 
-### ii) Host the data
+---
 
-In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](tools/serve_directory_http.py) to host the data locally:
+### i) Command-line interface to convert and host your own data for `inTRACKtive`
+
+This approach consists of two steps: converting the tracking data into our specialized Zarr format, and hosting the data to make it accessible for the browser. 
+
+For the first step, we assume your cell tracking data is saved as `tracks.csv` in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, parent_track_id]`), where `z` is optional. This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
 
 ```
-cd tools
-python serve_directory_http.py path/to/data
+intracktive convert --csv_file /path/to/tracks.csv
 ```
 
-where `path/to/data` is the full path to the folder containing your data (`tracks_bundle.zarr`). The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. Open this link in the browser, navigate to the exact dataset, right-click on the dataset and `copy link` (depending on the browser). Then, open [the viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
+
+By default, all the cells are represented by equally-sized dots in `inTRACKtive`. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
+
+```
+intracktive convert --csv_file path/to/tracks.csv --add_radius
+```
+
+Or use `intracktive convert --help` for the documentation on the inputs and outputs
+
+
+In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
+
+```
+intracktive serve path/to/data
+```
+
+where `path/to/data` is the full path to the folder containing your data (e.g., `tracks_bundle.zarr`). Note that the path should **not** include the Zarr filename, so if the `tracks_bundle.zarr` is located in your Downloads folder, use `intracktive server ~/Downloads`. The tool will create a `localhost` with a name similar to `http://127.0.0.1:8000/`. 
+
+Open this link in the browser, navigate to the exact dataset, right-click on the dataset (`tracks-bundle.zarr`) and `copy link` (depending on the browser). Then, open [the `inTRACKtive` viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
+
+---
+
+### ii) Open `inTRACKtive` using a Jupyter Notebook
+
+To make the previous two proccesses (conversion + hosting data) easiest, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
+
+```
+dataframe_to_browser(data, zarr_dir)
+```
+
+where `data` is a `pandas.dataFrame` containing the tracking data, and `zarr_dir` to directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
+
+### iii) Open `inTRACKtive` using the napari widget
+
+Using the same capabilities of the `dataframe_to_browser`, we made a [napari](https://napari.org/stable/) widget. The widget (`intracktiveWidget`) is part of the python package after `pip install`, and automatically shows up in the napari widget list (`plugins>inTRACKtive`). To keep the `inTRACKtive` python package light-weight, napari is not listed as one of it's dependecies. To make use of the napari widget, please `pip install napari[all]` in the same conda environment as `inTRACKtive`. The widget takes the tracking data from a [`tracks`](https://napari.org/dev/howtos/layers/tracks.html) layer in napari and opens an `inTRACKtive` browser window with the data. We provide an example of how to use the widget in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook2_inTRACKtive_from_napari.ipynb). 
+
+<p align="center">
+  <img src="/public/docs/images/napari_widget.png" width="75%">
+  <p align="center">
+    <em>Figure 2 - the inTRACKtive napari widget</em>
+  </p>
+</p>
+
+Some notes: 
+- The user can select a tracks layer to open in `inTRACKtive`
+- The user can choose the directory of where to save the Zarr (either provide a directory, or leave black, and the widget will save in a temporary location)
 
 ([↑Back to table of contents↑](#table-of-contents))
 
 
 
 </details><br/>
+
 
 
 
@@ -194,7 +240,7 @@ Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/)
 
 # Citation
 
-If you use `inTRACKtive` in your research, please cite the following preprint:
+If you use `inTRACKtive` in your research, please cite the following [preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1):
 ```
 @article {Huijben2024.10.18.618998,
 	author = {Huijben, Teun A.P.M. and Anderson, Ashley G. and Sweet, Andrew and Hoops, Erin and Larsen, Connor and Awayan, Kyle and Bragantini, Jordao and Chiu, Chi-Li and Royer, Loic A.},

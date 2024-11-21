@@ -1,6 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray, HTTPStore } from "zarr";
 import { addDropDownOption, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
+import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -112,6 +112,7 @@ export class TrackManager {
     maxPointsPerTimepoint: number;
     scaleSettings: ScaleSettings;
     defaultExtent: number;
+    ndim: number;
 
     constructor(
         store: string,
@@ -132,6 +133,7 @@ export class TrackManager {
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
         this.scaleSettings = scaleSettings;
         this.defaultExtent = 1; // pointcloud is centered around (0,0,0) with an extent of 1
+        this.ndim = 3;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -261,9 +263,7 @@ export async function loadTrackManager(url: string) {
         // load the zarr metadata (to know is radius is included)
         const scaleSettings = new ScaleSettings();
         try {
-            const store = new HTTPStore(url);
-            const zattrsResponse = await store.getItem("points/.zattrs");
-            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            const zattrs = await points.attrs.asObject();
             numberOfValuesPerPoint = zattrs["values_per_point"];
             console.log("numberOfValuesPerPoint:", numberOfValuesPerPoint);
             scaleSettings.meanX = zattrs["mean_x"];
@@ -272,6 +272,14 @@ export async function loadTrackManager(url: string) {
             scaleSettings.extentXYZ = zattrs["extent_xyz"];
         } catch (error) {
             numberOfValuesPerPoint = 3;
+        }
+
+        let datasetNdim = 3;
+        try {
+            const zattrs = await points.attrs.asObject();
+            datasetNdim = zattrs["ndim"];
+        } catch (error) {
+            console.error("Error getting ndim from zattrs: %s", error);
         }
 
         const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
@@ -315,6 +323,10 @@ export async function loadTrackManager(url: string) {
         );
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
+        }
+        if (datasetNdim == 2) {
+            trackManager.ndim = 2;
+            console.debug("2D datast detected in loadTrackManager");
         }
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);
