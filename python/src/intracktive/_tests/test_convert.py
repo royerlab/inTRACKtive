@@ -43,7 +43,8 @@ def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> 
     convert_dataframe_to_zarr(
         df=df,
         zarr_path=new_path,
-        extra_cols=["radius"],
+        add_radius=True,
+        extra_cols=(),
     )
 
     new_data = zarr.open(new_path)
