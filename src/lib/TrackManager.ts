@@ -1,6 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { addDropDownOption, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
+import { addDropDownOption, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -293,16 +293,14 @@ export async function loadTrackManager(url: string) {
                 path: "attributes",
                 mode: "r",
             });
-            const store = new HTTPStore(url);
-            const zattrsResponse = await store.getItem("attributes/.zattrs");
-            const zattrs = JSON.parse(new TextDecoder().decode(zattrsResponse));
+            const zattrs = await attributes.attrs.asObject();
             console.debug("attributes found: %s", zattrs["columns"]);
 
             for (let column = 0; column < zattrs["columns"].length; column++) {
                 addDropDownOption({
                     name: zattrs["columns"][column],
                     label: dropDownOptions.length,
-                    type: "continuous",
+                    type: "continuous", // TODO: decide this in conversion script!
                     action: "provided",
                 });
             }
