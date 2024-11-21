@@ -18,6 +18,7 @@ import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMap } from "./overlays/ColorMap";
 import { TrackDownloadData } from "./DownloadButton";
+import { numberOfDefaultColorByOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
@@ -232,7 +233,10 @@ export default function App() {
 
                 let attributes;
                 if (canvas.colorByEvent.action === "provided") {
-                    attributes = await trackManager.fetchAttributessAtTime(time, canvas.colorByEvent.label - 6);
+                    attributes = await trackManager.fetchAttributessAtTime(
+                        time,
+                        canvas.colorByEvent.label - numberOfDefaultColorByOptions,
+                    );
                 }
 
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast

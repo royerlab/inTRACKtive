@@ -14,8 +14,8 @@ interface DropdownProps {
     onClick: (event: string) => void;
 }
 
-export const dropDownOptions: Option[] = [
-    // built-in attributes (computed at execution time)
+// Define a constant for the default list of options
+const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
     { name: "uniform", label: 0, type: "default", action: "default" },
     { name: "x-position", label: 1, type: "continuous", action: "calculate" },
     { name: "y-position", label: 2, type: "continuous", action: "calculate" },
@@ -23,6 +23,19 @@ export const dropDownOptions: Option[] = [
     { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate" },
     { name: "quadrants", label: 5, type: "categorical", action: "calculate" },
 ];
+
+export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
+console.log("numberOfDefaultColorByOptions in DDD:", numberOfDefaultColorByOptions);
+// Initialize the mutable dropdown options with the default options
+export const dropDownOptions: Option[] = [...DEFAULT_DROPDOWN_OPTIONS];
+
+// Function to reset the dropdown options to the default list
+export function resetDropDownOptions() {
+    // Clear the current array and reset it to the default options
+    dropDownOptions.length = 0;
+    dropDownOptions.push(...DEFAULT_DROPDOWN_OPTIONS);
+    console.debug("DropDownOptions reset to default.");
+}
 
 export function addDropDownOption(option: Option) {
     // Check if an option with the same name or label already exists
