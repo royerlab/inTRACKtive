@@ -25,7 +25,6 @@ def _transitive_closure(
     graph: lil_matrix,
     direction: str,
 ) -> csr_matrix:
-
     """
     Calculate the transitive closure of a graph
 
@@ -55,7 +54,8 @@ def _transitive_closure(
         f"Chased track lineage {direction} in {time.monotonic() - start} seconds ({iter} iterations)"
     )
     return graph
-  
+
+
 def get_unique_zarr_path(zarr_path: Path) -> Path:
     """
     Ensure the Zarr path is unique by appending a counter to the name
@@ -80,6 +80,7 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
         counter += 1
 
     return unique_path
+
 
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
@@ -112,13 +113,17 @@ def convert_dataframe_to_zarr(
     else:
         flag_2D = True
         df["z"] = 0.0
-        
-    points_cols = ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"] # columns to store in the points array
+
+    points_cols = (
+        ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"]
+    )  # columns to store in the points array
     extra_cols = list(extra_cols)
-    columns_to_check = REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS # columns to check for in the DataFrame
+    columns_to_check = (
+        REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS
+    )  # columns to check for in the DataFrame
     columns_to_check = columns_to_check + extra_cols
-    print('point_cols:', points_cols)
-    print('columns_to_check:', columns_to_check)
+    print("point_cols:", points_cols)
+    print("columns_to_check:", columns_to_check)
 
     for col in columns_to_check:
         if col not in df.columns:
@@ -166,7 +171,6 @@ def convert_dataframe_to_zarr(
     )
     attribute_arrays = {}
 
-
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
     )
@@ -186,9 +190,7 @@ def convert_dataframe_to_zarr(
         attribute_array = attribute_array_empty.copy()
         for t, group in df.groupby("t"):
             group_size = len(group)
-            attribute_array[t, : group_size] = (
-                group[col].to_numpy().ravel()
-            )
+            attribute_array[t, :group_size] = group[col].to_numpy().ravel()
         attribute_arrays[col] = attribute_array
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
@@ -240,7 +242,6 @@ def convert_dataframe_to_zarr(
     )
     start = time.monotonic()
 
-
     # Ensure the Zarr path is unique
     zarr_path = get_unique_zarr_path(zarr_path)
 
@@ -256,11 +257,13 @@ def convert_dataframe_to_zarr(
         chunks=(1, points_array.shape[1]),
         dtype=np.float32,
     )
-    print('points shape:', points.shape)
+    print("points shape:", points.shape)
     points.attrs["values_per_point"] = num_values_per_point
 
     if len(extra_cols) > 0:
-        attributes_matrix = np.hstack([attribute_arrays[attr] for attr in attribute_arrays])
+        attributes_matrix = np.hstack(
+            [attribute_arrays[attr] for attr in attribute_arrays]
+        )
         attributes = top_level_group.create_dataset(
             "attributes",
             data=attributes_matrix,
@@ -268,7 +271,6 @@ def convert_dataframe_to_zarr(
             dtype=np.float32,
         )
         attributes.attrs["columns"] = extra_cols
-
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
@@ -321,6 +323,7 @@ def convert_dataframe_to_zarr(
     tracks_to_tracks_zarr.create_dataset("data", data=tracks_to_tracks.data)
 
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
+
 
 def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     """
@@ -397,7 +400,6 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     default=False,
     type=bool,
 )
-
 def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
@@ -416,19 +418,17 @@ def convert_cli(
 
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    # find the extra columns in the df
+    tracks_df = pd.read_csv(csv_file)
+
     extra_cols = []
     if add_attributes:
         columns_standard = REQUIRED_COLUMNS
         extra_cols = tracks_df.columns.difference(columns_standard).to_list()
-        print('extra_cols:', extra_cols)
-
-      
-    tracks_df = pd.read_csv(csv_file)
+        print("extra_cols:", extra_cols)
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
-    convert_dataframe(
+    convert_dataframe_to_zarr(
         tracks_df,
         zarr_path,
         add_radius,
