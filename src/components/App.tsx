@@ -518,7 +518,7 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
-                    <ColorMapTracks />
+                    {numSelectedCells > 0 && <ColorMapTracks />}
                     {canvas.colorByEvent.type !== "default" && <ColorMapCells colorByEvent={canvas.colorByEvent} />}
                 </Box>
 
