@@ -22,6 +22,8 @@ interface LeftSidebarWrapperProps {
     setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    colorBy: boolean;
+    toggleColorBy: (colorBy: boolean) => void;
     changeColorBy: (value: string) => void;
 }
 
@@ -42,6 +44,8 @@ export default function LeftSidebarWrapper({
     setTrackWidth,
     axesVisible,
     toggleAxesVisible,
+    colorBy,
+    toggleColorBy,
     changeColorBy,
 }: LeftSidebarWrapperProps) {
     return (
@@ -63,6 +67,8 @@ export default function LeftSidebarWrapper({
                 setTrackWidth={setTrackWidth}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
+                colorBy={colorBy}
+                toggleColorBy={toggleColorBy}
                 changeColorBy={changeColorBy}
             />
             <Divider />

@@ -265,7 +265,6 @@ export async function loadTrackManager(url: string) {
         try {
             const zattrs = await points.attrs.asObject();
             numberOfValuesPerPoint = zattrs["values_per_point"];
-            console.log("numberOfValuesPerPoint:", numberOfValuesPerPoint);
             scaleSettings.meanX = zattrs["mean_x"];
             scaleSettings.meanY = zattrs["mean_y"];
             scaleSettings.meanZ = zattrs["mean_z"];
@@ -303,11 +302,12 @@ export async function loadTrackManager(url: string) {
                     label: dropDownOptions.length,
                     type: "continuous", // TODO: decide this in conversion script!
                     action: "provided",
+                    numCategorical: undefined,
                 });
             }
             console.debug("dropDownOptions:", dropDownOptions);
         } catch (error) {
-            console.debug("No attributes found in Zarr");
+            console.log("No attributes found in Zarr");
         }
 
         // make trackManager, and reset "maxPointsPerTimepoint", because tm constructor does points/3

@@ -16,7 +16,7 @@ import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
-import { ColorMap } from "./overlays/ColorMap";
+import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
 import { numberOfDefaultColorByOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 
@@ -469,6 +469,10 @@ export default function App() {
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
+                                colorBy={canvas.colorBy}
+                                toggleColorBy={(colorBy: boolean) => {
+                                    dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy });
+                                }}
                                 changeColorBy={(event: string) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, event });
                                 }}
@@ -514,7 +518,8 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
-                    <ColorMap />
+                    <ColorMapTracks />
+                    {canvas.colorByEvent.type !== "default" && <ColorMapCells colorByEvent={canvas.colorByEvent} />}
                 </Box>
 
                 {/* The playback controls */}

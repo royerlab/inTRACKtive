@@ -7,6 +7,7 @@ export type Option = {
     label: number;
     type: "default" | "categorical" | "continuous";
     action: "default" | "calculate" | "provided";
+    numCategorical: number | undefined;
 };
 
 interface DropdownProps {
@@ -16,16 +17,15 @@ interface DropdownProps {
 
 // Define a constant for the default list of options
 const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
-    { name: "uniform", label: 0, type: "default", action: "default" },
-    { name: "x-position", label: 1, type: "continuous", action: "calculate" },
-    { name: "y-position", label: 2, type: "continuous", action: "calculate" },
-    { name: "z-position", label: 3, type: "continuous", action: "calculate" },
-    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate" },
-    { name: "quadrants", label: 5, type: "categorical", action: "calculate" },
+    { name: "uniform", label: 0, type: "default", action: "default", numCategorical: undefined },
+    { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
+    { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
 ];
 
 export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
-console.log("numberOfDefaultColorByOptions in DDD:", numberOfDefaultColorByOptions);
 // Initialize the mutable dropdown options with the default options
 export const dropDownOptions: Option[] = [...DEFAULT_DROPDOWN_OPTIONS];
 
@@ -86,7 +86,7 @@ export default function DynamicDropdown({ options, onClick }: DropdownProps) {
         setValue(newValue);
 
         if (newValue) {
-            setInputDropdownValue(newValue.name);
+            setInputDropdownValue(newValue.name.substring(0, 14)); // only print the first 14 characters to prevent overflow
             onClick(newValue.name);
         } else {
             setInputDropdownValue(undefined);

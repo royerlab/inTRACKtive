@@ -21,6 +21,8 @@ interface TrackControlsProps {
     setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    colorBy: boolean;
+    toggleColorBy: (colorBy: boolean) => void;
     changeColorBy: (value: string) => void;
 }
 
@@ -30,11 +32,6 @@ export default function TrackControls(props: TrackControlsProps) {
     return (
         <Stack spacing={"1.1em"}>
             <ControlLabel>Visualization options</ControlLabel>
-
-            {/* Color cells by dropdown */}
-            <div>
-                <DynamicDropdown options={dropDownOptions} onClick={props.changeColorBy} />
-            </div>
 
             {/* Tracks toggle */}
             {props.hasTracks && (
@@ -86,6 +83,29 @@ export default function TrackControls(props: TrackControlsProps) {
                 </Box>
             </Box>
 
+            {/* ColorBy toggle */}
+            <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                <label htmlFor="color-cells">
+                    <FontS>Color cells</FontS>
+                </label>
+                <Box>
+                    <InputToggle
+                        id="color-cells"
+                        checked={props.colorBy}
+                        onChange={(e) => {
+                            props.toggleColorBy((e.target as HTMLInputElement).checked);
+                        }}
+                    />
+                </Box>
+            </Box>
+
+            {/* Color cells by dropdown */}
+            {props.colorBy == true && (
+                <div>
+                    <DynamicDropdown options={dropDownOptions} onClick={props.changeColorBy} />
+                </div>
+            )}
+
             {/* Cell size slider */}
             {numberOfValuesPerPoint !== 4 && (
                 <>
@@ -111,7 +131,7 @@ export default function TrackControls(props: TrackControlsProps) {
             )}
 
             {/* Cell brightness slider */}
-            <label htmlFor="points-brightness-slider" style={{ marginTop: "0.0em" }}>
+            <label htmlFor="points-brightness-slider" style={{ marginTop: "1.0em" }}>
                 <FontS id="input-slider-points-brightness-slider">Cell Brightness</FontS>
             </label>
             <InputSlider

@@ -27,6 +27,7 @@ import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint } from "./TrackManager";
 import { Option, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown";
+import { colormaps } from "@/lib/Colormaps";
 
 import { detectedDevice } from "@/components/App.tsx";
 import config from "../../CONFIG.ts";
@@ -34,6 +35,8 @@ const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
 const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
+const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
+const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
 
 const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
 const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
@@ -88,6 +91,7 @@ export class PointCanvas {
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
     private pointIndicesCache: Map<number, number[]> = new Map();
+    colorBy: boolean = false;
     colorByEvent: Option = dropDownOptions[0];
     currentAttributes: number[] | Float32Array = new Float32Array();
 
@@ -352,15 +356,15 @@ export class PointCanvas {
 
         let attributes;
         if (this.colorByEvent.action === "default") {
-            attributes = new Float32Array(numPoints).fill(1);
+            attributes = new Float32Array(numPoints).fill(1); // all 1
             console.debug("Default attributes (1)");
         } else {
             if (this.colorByEvent.action === "calculate") {
-                attributes = this.getAttributeVector(positions, this.colorByEvent, numPoints);
+                attributes = this.getAttributeVector(positions, this.colorByEvent, numPoints); // calculated attributes based on position
                 console.debug("Attributes calculated");
             } else if (this.colorByEvent.action === "provided") {
                 if (attributesInput) {
-                    attributes = attributesInput;
+                    attributes = attributesInput; // take provided attributes fetched from Zarr
                     this.currentAttributes = attributes;
                     console.debug("Attributes provided, using attributesInput");
                 } else {
@@ -378,62 +382,26 @@ export class PointCanvas {
             }
         }
 
-        const viridisColors = [
-            new Color(0.267, 0.005, 0.329), // Dark purple
-            new Color(0.283, 0.141, 0.458),
-            new Color(0.254, 0.265, 0.53),
-            new Color(0.207, 0.372, 0.553),
-            new Color(0.164, 0.471, 0.558),
-            new Color(0.128, 0.567, 0.551),
-            new Color(0.134, 0.66, 0.517),
-            new Color(0.268, 0.746, 0.44),
-            new Color(0.478, 0.821, 0.318),
-            new Color(0.741, 0.873, 0.15), // Bright yellow-green
-        ];
-
-        function interpolateColor(colors: Color[], t: number): Color {
-            const scaledT = t * (colors.length - 1);
-            const index = Math.floor(scaledT);
-            const nextIndex = Math.min(index + 1, colors.length - 1);
-            const localT = scaledT - index;
-
-            // console.log('   index',index,'nextIndex',nextIndex);
-            const color1 = colors[index];
-            const color2 = colors[nextIndex];
-
-            const r = color1.r + (color2.r - color1.r) * localT;
-            const g = color1.g + (color2.g - color1.g) * localT;
-            const b = color1.b + (color2.b - color1.b) * localT;
-
-            return new Color(r, g, b);
-        }
-
-        // categorical colormap
-        if (this.colorByEvent.type === "categorical") {
-            const color = new Color();
-            for (let i = 0; i < numPoints; i++) {
-                const scalar = attributes[i]; // must be [0 1]
-                color.setHSL(scalar * 0.8 + 0.1, 0.8, 0.5); // Generate colors with even hue spacing
-                color.multiplyScalar(this.pointBrightness);
-                colorAttribute.setXYZ(i, color.r, color.g, color.b);
-            }
-        }
-        // continuous colormap
-        else if (this.colorByEvent.type === "continuous") {
-            for (let i = 0; i < numPoints; i++) {
-                const scalar = attributes[i]; // must be [0 1]
-                // console.log('i',i,'scalar',scalar)
-                const color = interpolateColor(viridisColors, scalar);
-                color.multiplyScalar(this.pointBrightness);
-                colorAttribute.setXYZ(i, color.r, color.g, color.b);
-            }
-        }
-        // default constant color
-        else {
+        if (this.colorByEvent.type === "default") {
             const color = new Color();
             color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
             color.multiplyScalar(this.pointBrightness);
-            for (let i = 0; i < positions.count; i++) {
+            for (let i = 0; i < numPoints; i++) {
+                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            }
+        } else {
+            const color = new Color();
+            if (this.colorByEvent.type === "categorical") {
+                colormaps.setColorMap(colormapColorbyCategorical);
+            } else if (this.colorByEvent.type === "continuous") {
+                colormaps.setColorMap(colormapColorbyContinuous);
+            }
+            for (let i = 0; i < numPoints; i++) {
+                const scalar = attributes[i]; // must be [0 1]
+                const colorOfScalar = colormaps.getColor(scalar); // remove the bright/dark edges of colormap
+                // const colorOfScalar = colormaps.getColor(scalar*0.8+0.1); //remove the bright/dark edges of colormap
+                color.setRGB(colorOfScalar.r, colorOfScalar.g, colorOfScalar.b, SRGBColorSpace);
+                color.multiplyScalar(this.pointBrightness);
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
         }

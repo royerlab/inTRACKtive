@@ -11,8 +11,8 @@ const config = {
     // When opening the viewer, or refreshing the page, the viewer will revert to the following default dataset
     data:{
         // Default dataset URL (must be publically accessible)
-        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
-        default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_ascidian_withSize_withFeatures_bundle.zarr/"
+        default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
+        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_ascidian_withSize_withFeatures_bundle.zarr/"
     },
   
     // Default settings for certain parameters
@@ -20,8 +20,15 @@ const config = {
         // Maximum number of cells a user can select without getting a warning
         max_num_selected_cells: 100,
         
-        // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
+        // Choose colormap for the tracks
+        // options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
         colormap_tracks: "cividis-inferno",
+
+        // Choose colormap for coloring the cells, when the attribute is continuous or categorical
+        // options: HSL, viridis, plasma, inferno, magma, cividis
+        colormap_colorby_categorical: "HSL",
+        colormap_colorby_continuous: "plasma",
+
         
         // Point size (arbitrary units), if cell sizes not provided in zarr attributes
         point_size: 0.1,

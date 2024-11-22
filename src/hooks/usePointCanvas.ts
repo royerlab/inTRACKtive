@@ -29,6 +29,7 @@ enum ActionType {
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
     SELECTOR_SCALE = "SELECTOR_SCALE",
     TOGGLE_AXES = "TOGGLE_AXES",
+    TOGGLE_COLOR_BY = "TOGGLE_COLOR_BY",
     CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
 }
 
@@ -149,6 +150,11 @@ interface ToggleAxes {
     type: ActionType.TOGGLE_AXES;
 }
 
+interface ToggleColorBy {
+    type: ActionType.TOGGLE_COLOR_BY;
+    colorBy: boolean;
+}
+
 interface ChangeColorBy {
     type: ActionType.CHANGE_COLOR_BY;
     event: string;
@@ -180,6 +186,7 @@ type PointCanvasAction =
     | MobileSelectCells
     | SelectorScale
     | ToggleAxes
+    | ToggleColorBy
     | ChangeColorBy;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
@@ -311,6 +318,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.TOGGLE_AXES:
             newCanvas.toggleAxesHelper();
+            break;
+        case ActionType.TOGGLE_COLOR_BY:
+            newCanvas.colorBy = action.colorBy;
+            newCanvas.changeColorBy("uniform");
             break;
         case ActionType.CHANGE_COLOR_BY:
             newCanvas.changeColorBy(action.event);
