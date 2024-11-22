@@ -232,7 +232,7 @@ export default function App() {
                 }
 
                 let attributes;
-                if (canvas.colorByEvent.action === "provided") {
+                if (canvas.colorByEvent.action === "provided" || canvas.colorByEvent.action === "provided-normalized") {
                     attributes = await trackManager.fetchAttributessAtTime(
                         time,
                         canvas.colorByEvent.label - numberOfDefaultColorByOptions,

@@ -360,9 +360,9 @@ export class PointCanvas {
             console.debug("Default attributes (1)");
         } else {
             if (this.colorByEvent.action === "calculate") {
-                attributes = this.getAttributeVector(positions, this.colorByEvent, numPoints); // calculated attributes based on position
+                attributes = this.calculateAttributeVector(positions, this.colorByEvent, numPoints); // calculated attributes based on position
                 console.debug("Attributes calculated");
-            } else if (this.colorByEvent.action === "provided") {
+            } else if (this.colorByEvent.action === "provided" || this.colorByEvent.action === "provided-normalized") {
                 if (attributesInput) {
                     attributes = attributesInput; // take provided attributes fetched from Zarr
                     this.currentAttributes = attributes;
@@ -375,7 +375,9 @@ export class PointCanvas {
                 console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
             }
             if (attributes) {
-                attributes = this.normalizeAttributeVector(attributes);
+                if (this.colorByEvent.action != "provided-normalized") {
+                    attributes = this.normalizeAttributeVector(attributes);
+                }
             } else {
                 attributes = new Float32Array(numPoints).fill(1);
                 console.error("No attributes found for colorByEvent:", this.colorByEvent);
@@ -392,9 +394,9 @@ export class PointCanvas {
         } else {
             const color = new Color();
             if (this.colorByEvent.type === "categorical") {
-                colormaps.setColorMap(colormapColorbyCategorical);
+                colormaps.setColorMap(colormapColorbyCategorical, 50);
             } else if (this.colorByEvent.type === "continuous") {
-                colormaps.setColorMap(colormapColorbyContinuous);
+                colormaps.setColorMap(colormapColorbyContinuous, 50);
             }
             for (let i = 0; i < numPoints; i++) {
                 const scalar = attributes[i]; // must be [0 1]
@@ -408,7 +410,7 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    getAttributeVector(
+    calculateAttributeVector(
         positions: BufferAttribute | InterleavedBufferAttribute,
         colorByEvent: Option,
         numPoints: number,
@@ -447,6 +449,7 @@ export class PointCanvas {
     normalizeAttributeVector(attributes: number[] | Float32Array): number[] | Float32Array {
         const min = Math.min(...attributes);
         const max = Math.max(...attributes);
+        // const max = 4000.0;
         const range = max - min;
 
         // Avoid division by zero in case all values are the same

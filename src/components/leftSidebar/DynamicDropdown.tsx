@@ -6,7 +6,7 @@ export type Option = {
     name: string;
     label: number;
     type: "default" | "categorical" | "continuous";
-    action: "default" | "calculate" | "provided";
+    action: "default" | "calculate" | "provided" | "provided-normalized";
     numCategorical: number | undefined;
 };
 

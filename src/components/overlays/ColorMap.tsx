@@ -20,7 +20,7 @@ export const ColorMapTracks = () => {
                 bottom: "0.5rem",
                 right: "0.5rem",
                 width: "4.5rem",
-                height: "8.5rem",
+                height: "9.5rem",
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 zIndex: 100,
                 borderRadius: "var(--sds-corner-m)",
@@ -31,7 +31,8 @@ export const ColorMapTracks = () => {
                 letterSpacing: "var(--sds-font-body-xxxs-400-letter-spacing)",
             }}
         >
-            <Box>Future</Box>
+            <Box sx={{ fontWeight: "bold" }}>Tracks</Box> {/* First line bold */}
+            <Box sx={{ fontWeight: 300 }}>Future</Box> {/* Second line lighter */}
             <Box
                 sx={{
                     height: "4rem",
@@ -44,7 +45,7 @@ export const ColorMapTracks = () => {
                     background: gradient,
                 }}
             />
-            <Box>Past</Box>
+            <Box sx={{ fontWeight: 300 }}>Past</Box> {/* Second line lighter */}
         </Box>
     );
 };
@@ -90,7 +91,7 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
                 bottom: "0.5rem",
                 right: "5.5rem",
                 width: "4.5rem",
-                height: "8.5rem",
+                height: "9.5rem",
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 zIndex: 100,
                 borderRadius: "var(--sds-corner-m)",
@@ -101,7 +102,9 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
                 letterSpacing: "var(--sds-font-body-xxxs-400-letter-spacing)",
             }}
         >
-            <Box>Attribute</Box>
+            <Box sx={{ fontWeight: "bold" }}>Cells</Box> {/* First line bold */}
+            <Box sx={{ fontWeight: 300 }}>{props.colorByEvent.name.substring(0, 8) + "."}</Box>{" "}
+            {/* Second line lighter */}
             <Box
                 sx={{
                     height: "4rem",
@@ -114,7 +117,7 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
                     background: gradient,
                 }}
             />
-            <Box>.</Box>
+            <Box sx={{ fontWeight: 300 }}>.</Box> {/* Second line lighter */}
         </Box>
     );
 };

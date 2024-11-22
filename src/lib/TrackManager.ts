@@ -301,7 +301,7 @@ export async function loadTrackManager(url: string) {
                     name: zattrs["columns"][column],
                     label: dropDownOptions.length,
                     type: "continuous", // TODO: decide this in conversion script!
-                    action: "provided",
+                    action: zattrs["pre_normalized"] ? "provided-normalized" : "provided",
                     numCategorical: undefined,
                 });
             }

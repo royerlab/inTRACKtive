@@ -87,6 +87,7 @@ def convert_dataframe_to_zarr(
     zarr_path: Path,
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
+    pre_normalized: bool = False,
 ) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
@@ -271,6 +272,7 @@ def convert_dataframe_to_zarr(
             dtype=np.float32,
         )
         attributes.attrs["columns"] = extra_cols
+        attributes.attrs["pre_normalized"] = pre_normalized
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
@@ -400,11 +402,19 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     default=False,
     type=bool,
 )
+@click.option(
+    "--pre_normalized",
+    is_flag=True,
+    help="Boolean indicating whether the extra columns with attributes are prenormalized to [0,1]",
+    default=False,
+    type=bool,
+)
 def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
     add_radius: bool,
     add_attributes: bool,
+    pre_normalized: bool,
 ) -> None:
     """
     Convert a CSV of tracks to a sparse Zarr store
@@ -433,6 +443,7 @@ def convert_cli(
         zarr_path,
         add_radius,
         extra_cols=extra_cols,
+        pre_normalized=pre_normalized,
     )
 
     LOG.info(f"Full conversion took {time.monotonic() - start} seconds")
