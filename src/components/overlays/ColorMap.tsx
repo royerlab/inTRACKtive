@@ -117,7 +117,7 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
                     background: gradient,
                 }}
             />
-            <Box sx={{ fontWeight: 300 }}>.</Box> {/* Second line lighter */}
+            <Box sx={{ visibility: "hidden" }}>Placeholder</Box> {/* Invisible, keeps alignment */}
         </Box>
     );
 };
