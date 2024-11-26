@@ -57,7 +57,7 @@ The `points_to_tracks` array encodes the relationship between a given point ID (
 IDs (columns) it is part of. The total shape of the array is then `(n_points, n_tracks)`. Thus,
 fetching a row is used to get all tracks associated with a given point. This is effectively an
 adjacency matrix. In the sample data, each point belongs to at most one track. Values in the array
-don't matter, just the presence of a nonzero element which indicates a connection. This is becasue
+don't matter, just the presence of a nonzero element which indicates a connection. This is because
 the data we're interested in (the track ID) is encoded by the column index.
 
 This is the first query run when points are selected.
