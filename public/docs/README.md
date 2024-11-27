@@ -1,4 +1,4 @@
-# Fate Tracker
+# inTRACKtive
 
 inTRACKtive is an application for vizualizing cell tracking data in the
 browser. It is built on [React](https://react.dev/), [Zarr.js](https://github.com/gzuidhof/zarr.js) and
