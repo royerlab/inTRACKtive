@@ -102,8 +102,8 @@ script, columns in the CSV file should be ordered as follows:
 - z, y, x - 3D coordinates
 - parent_track_id - reference to the parent track, if any (-1 otherwise)
 
-The script requires numpy, scipy, and zarr libraries. This script is not optimized, and takes about
-4 minutes (for the largest Zebrafish dataset) to convert the example dataset on an Apple M1 Pro.
+The script requires numpy, scipy, and zarr libraries. This script is not fully optimized, and takes about
+1 minute (for the largest Zebrafish dataset) to convert the example dataset on an Apple M1 Pro.
 
 ## Lineage computation
 Most of the logic in the script is pretty straightforward, but the lineage computation may require
