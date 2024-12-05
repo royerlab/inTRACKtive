@@ -298,6 +298,7 @@ export async function loadTrackManager(url: string) {
             // console.log("attribute types found: %s", zattrs["attribute_types"]);
 
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
+                console.log("adding option for column", column);
                 addDropDownOption({
                     name: zattrs["attribute_names"][column],
                     label: dropDownOptions.length,
@@ -305,6 +306,7 @@ export async function loadTrackManager(url: string) {
                     action: zattrs["pre_normalized"] ? "provided-normalized" : "provided",
                     numCategorical: undefined,
                 });
+                console.log("dropDownOptions temp:", dropDownOptions);
             }
             console.log("dropDownOptions:", dropDownOptions);
         } catch (error) {

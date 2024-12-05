@@ -21,8 +21,8 @@ const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
     { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
-    // { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
-    // { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
+    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
+    { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
 ];
 
 export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
@@ -47,8 +47,10 @@ export function addDropDownOption(option: Option) {
     if (!exists) {
         dropDownOptions.push(option);
         console.debug(`DropDownOption '${option.name}' added.`);
+        console.log(`DropDownOption '${option.name}' added.`);
     } else {
         console.warn(`Option '${option.name}' already exists in dropDownOptions.`);
+        console.log(`Option '${option.name}' already exists in dropDownOptions.`);
     }
 }
 
