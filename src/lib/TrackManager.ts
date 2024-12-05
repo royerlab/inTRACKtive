@@ -294,18 +294,19 @@ export async function loadTrackManager(url: string) {
                 mode: "r",
             });
             const zattrs = await attributes.attrs.asObject();
-            console.debug("attributes found: %s", zattrs["columns"]);
+            console.log("attribute names found: %s", zattrs["attribute_names"]);
+            // console.log("attribute types found: %s", zattrs["attribute_types"]);
 
-            for (let column = 0; column < zattrs["columns"].length; column++) {
+            for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption({
-                    name: zattrs["columns"][column],
+                    name: zattrs["attribute_names"][column],
                     label: dropDownOptions.length,
-                    type: "continuous", // TODO: decide this in conversion script!
+                    type: zattrs["attribute_types"][column] ? zattrs["attribute_types"][column] : "continuous",
                     action: zattrs["pre_normalized"] ? "provided-normalized" : "provided",
                     numCategorical: undefined,
                 });
             }
-            console.debug("dropDownOptions:", dropDownOptions);
+            console.log("dropDownOptions:", dropDownOptions);
         } catch (error) {
             console.log("No attributes found in Zarr");
         }

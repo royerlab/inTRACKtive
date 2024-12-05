@@ -171,6 +171,7 @@ def convert_dataframe_to_zarr(
         * INF_SPACE
     )
     attribute_arrays = {}
+    attribute_types = [None] * len(extra_cols)
 
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
@@ -187,11 +188,18 @@ def convert_dataframe_to_zarr(
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
-    for col in extra_cols:
+    for index, col in enumerate(extra_cols):
         attribute_array = attribute_array_empty.copy()
         for t, group in df.groupby("t"):
             group_size = len(group)
             attribute_array[t, :group_size] = group[col].to_numpy().ravel()
+        # check if attribute is categorical or continuous
+        if (
+            len(np.unique(attribute_array[attribute_array != INF_SPACE])) <= 10
+        ):  # get number of unique values, excluding INF_SPACE
+            attribute_types[index] = "categorical"
+        else:
+            attribute_types[index] = "continuous"
         attribute_arrays[col] = attribute_array
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
@@ -271,7 +279,8 @@ def convert_dataframe_to_zarr(
             chunks=(1, attribute_array.shape[1]),
             dtype=np.float32,
         )
-        attributes.attrs["columns"] = extra_cols
+        attributes.attrs["attribute_names"] = extra_cols
+        attributes.attrs["attribute_types"] = attribute_types
         attributes.attrs["pre_normalized"] = pre_normalized
 
     mean = df[["z", "y", "x"]].mean()
@@ -396,16 +405,22 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     type=bool,
 )
 @click.option(
-    "--add_attributes",
+    "--add_all_attributes",
     is_flag=True,
     help="Boolean indicating whether to include extra columns of the CSV as attributes for colors the cells in the viewer",
     default=False,
     type=bool,
 )
 @click.option(
+    "--add_attribute",
+    type=str,
+    default=None,
+    help="Comma-separated list of column names to include as attributes (e.g., 'cell_size,diameter,type,label')",
+)
+@click.option(
     "--pre_normalized",
     is_flag=True,
-    help="Boolean indicating whether the extra columns with attributes are prenormalized to [0,1]",
+    help="Boolean indicating whether the extra column/columns with attributes are prenormalized to [0,1]",
     default=False,
     type=bool,
 )
@@ -413,7 +428,8 @@ def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
     add_radius: bool,
-    add_attributes: bool,
+    add_all_attributes: bool,
+    add_attribute: str | None,
     pre_normalized: bool,
 ) -> None:
     """
@@ -430,13 +446,24 @@ def convert_cli(
 
     tracks_df = pd.read_csv(csv_file)
 
+    LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
+
     extra_cols = []
-    if add_attributes:
+    if add_all_attributes:
         columns_standard = REQUIRED_COLUMNS
         extra_cols = tracks_df.columns.difference(columns_standard).to_list()
-        print("extra_cols:", extra_cols)
-
-    LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
+        print("extra columns included as attributes:", extra_cols)
+    elif add_attribute:
+        selected_columns = [col.strip() for col in add_attribute.split(",")]
+        missing_columns = [
+            col for col in selected_columns if col not in tracks_df.columns
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"Columns not found in the CSV file: {', '.join(missing_columns)}"
+            )
+        extra_cols = selected_columns
+        print(f"Selected columns included as attributes: {', '.join(extra_cols)}")
 
     convert_dataframe_to_zarr(
         tracks_df,
