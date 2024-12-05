@@ -207,6 +207,9 @@ export default function App() {
             type: ActionType.CHECK_CAMERA_LOCK,
             ndim: trackManager.ndim,
         });
+        dispatchCanvas({
+            type: ActionType.RESET_POINT_SIZE,
+        });
     }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes
