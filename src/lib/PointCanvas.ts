@@ -233,12 +233,13 @@ export class PointCanvas {
 
         if (ndim == 2) {
             this.controls.enableRotate = false;
+            console.debug("Rotation locked because 2D datast detected");
         } else if (ndim == 3) {
             this.controls.enableRotate = true;
+            console.debug("Rotation enabled because 3D datast detected");
         } else {
             console.error("Invalid ndim value: " + ndim);
         }
-        console.debug("Rotation locked because 2D datast detected");
     }
 
     // ran upon new data load
@@ -411,6 +412,7 @@ export class PointCanvas {
         const num = numberOfValuesPerPoint;
 
         // if the point size is the initial point size and radius is provided, then we need to calculate the mean cell size once
+        // ToDo: this goes wrong when a dataset without pointsize is loaded after a dataset with pointsize (because we go from num=4 to num3, but this function runs before trackManager is loaded)
         if (num == 4 && this.pointSize == initialPointSize) {
             this.pointSize = this.calculateMeanCellSize(data, numPoints, num);
             console.debug("mean cell size calculated: ", this.pointSize);
