@@ -137,6 +137,7 @@ export default function App() {
     const actionsUponNewData = () => {
         dispatchCanvas({ type: ActionType.RESET_CAMERA });
         dispatchCanvas({ type: ActionType.RESET_POINT_SIZE });
+        dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy: false });
     };
 
     // this function fetches the entire lineage for each track
@@ -194,10 +195,6 @@ export default function App() {
                 curTime: (c: number) => {
                     return Math.min(c, tm?.numTimes ? tm.numTimes - 1 : 0);
                 },
-            });
-            dispatchCanvas({
-                type: ActionType.TOGGLE_COLOR_BY,
-                colorBy: false,
             });
         });
     }, [dispatchCanvas, dataUrl]);

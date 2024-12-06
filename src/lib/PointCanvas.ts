@@ -204,6 +204,8 @@ export class PointCanvas {
         state.cameraTarget = this.controls.target.toArray();
         state.pointSize = this.pointSize;
         state.trackWidthFactor = this.trackWidthFactor;
+        state.colorBy = this.colorBy;
+        state.colorByEvent = this.colorByEvent;
         return state;
     }
 
@@ -221,6 +223,8 @@ export class PointCanvas {
         this.controls.target.fromArray(state.cameraTarget);
         this.pointSize = state.pointSize;
         this.trackWidthFactor = state.trackWidthFactor;
+        this.colorBy = state.colorBy;
+        this.colorByEvent = state.colorByEvent;
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
