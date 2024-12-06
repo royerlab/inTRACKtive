@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { AutocompleteValue } from "@mui/base";
 import { InputDropdown, DropdownMenu, SDSAutocompleteOnChange } from "@czi-sds/components";
+import config from "../../../CONFIG.ts";
+
+const showDefaultAttributes = config.settings.showDefaultAttributes;
 
 export type Option = {
     name: string;
@@ -21,7 +24,7 @@ const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
     { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
-    // { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
+    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
     { name: "quadrants", label: 4, type: "categorical", action: "calculate", numCategorical: 8 },
 ];
 
@@ -34,7 +37,7 @@ export function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
     // Clear the current array
     dropDownOptions.length = 0;
 
-    if (useFirstOptionOnly) {
+    if (useFirstOptionOnly || showDefaultAttributes == false) {
         // Reset to only the first default option
         if (DEFAULT_DROPDOWN_OPTIONS.length > 0) {
             dropDownOptions.push(DEFAULT_DROPDOWN_OPTIONS[0]);

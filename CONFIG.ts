@@ -31,6 +31,8 @@ const config = {
         colormap_colorby_categorical: "HSL",
         colormap_colorby_continuous: "plasma",
 
+        // Show default attributes in the left dropdown menu for coloring the cells
+        showDefaultAttributes: false,
         
         // Point size (arbitrary units), if cell sizes not provided in zarr attributes
         point_size: 0.1,
