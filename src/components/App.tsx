@@ -133,8 +133,9 @@ export default function App() {
     const removeTracksUponNewData = () => {
         dispatchCanvas({ type: ActionType.REMOVE_ALL_TRACKS });
     };
-    const resetCamera = () => {
+    const actionsUponNewData = () => {
         dispatchCanvas({ type: ActionType.RESET_CAMERA });
+        dispatchCanvas({ type: ActionType.RESET_POINT_SIZE });
     };
 
     // this function fetches the entire lineage for each track
@@ -180,7 +181,6 @@ export default function App() {
 
     // update the array when the dataUrl changes
     useEffect(() => {
-        console.log("load data from %s", dataUrl);
         const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
@@ -206,9 +206,6 @@ export default function App() {
         dispatchCanvas({
             type: ActionType.CHECK_CAMERA_LOCK,
             ndim: trackManager.ndim,
-        });
-        dispatchCanvas({
-            type: ActionType.RESET_POINT_SIZE,
         });
     }, [dispatchCanvas, trackManager]);
 
@@ -471,7 +468,7 @@ export default function App() {
                                 initialDataUrl={initialViewerState.dataUrl}
                                 setDataUrl={setDataUrl}
                                 removeTracksUponNewData={removeTracksUponNewData}
-                                resetCamera={resetCamera}
+                                actionsUponNewData={actionsUponNewData}
                                 copyShareableUrlToClipboard={copyShareableUrlToClipboard}
                                 refreshPage={refreshPage}
                                 trackManager={trackManager}
