@@ -248,6 +248,12 @@ export class PointCanvas {
         this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
         this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
         this.curTime = 0;
+        console.debug("Camera resetted");
+    }
+
+    resetPointSize() {
+        this.pointSize = initialPointSize;
+        console.debug("point size resetted to: ", this.pointSize);
     }
 
     updateSelectedPointIndices() {
