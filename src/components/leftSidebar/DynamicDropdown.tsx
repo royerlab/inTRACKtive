@@ -47,10 +47,8 @@ export function addDropDownOption(option: Option) {
     if (!exists) {
         dropDownOptions.push(option);
         console.debug(`DropDownOption '${option.name}' added.`);
-        console.log(`DropDownOption '${option.name}' added.`);
     } else {
         console.warn(`Option '${option.name}' already exists in dropDownOptions.`);
-        console.log(`Option '${option.name}' already exists in dropDownOptions.`);
     }
 }
 
