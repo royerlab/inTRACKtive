@@ -194,6 +194,10 @@ export default function App() {
                     return Math.min(c, tm?.numTimes ? tm.numTimes - 1 : 0);
                 },
             });
+            dispatchCanvas({
+                type: ActionType.TOGGLE_COLOR_BY,
+                colorBy: false,
+            });
         });
     }, [dispatchCanvas, dataUrl]);
 
