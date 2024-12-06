@@ -181,6 +181,7 @@ export default function App() {
 
     // update the array when the dataUrl changes
     useEffect(() => {
+        console.debug("effect-dataUrl");
         const trackManager = loadTrackManager(dataUrl);
         // TODO: add clean-up by returning another closure
         trackManager.then((tm: TrackManager | null) => {
