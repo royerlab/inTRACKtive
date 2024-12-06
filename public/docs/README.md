@@ -1,6 +1,6 @@
-# Fate Tracker
+# inTRACKtive
 
-Fate Tracker (name WIP) is an application for vizualizing cell tracking data in the
+inTRACKtive is an application for vizualizing cell tracking data in the
 browser. It is built on [React](https://react.dev/), [Zarr.js](https://github.com/gzuidhof/zarr.js) and
 [Three.js](https://threejs.org/). This project was built to explore light-sheet
 imaging data from [Zebrahub](https://zebrahub.ds.czbiohub.org/), processed with

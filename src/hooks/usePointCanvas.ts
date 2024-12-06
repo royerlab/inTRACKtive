@@ -9,6 +9,7 @@ enum ActionType {
     CUR_TIME = "CUR_TIME",
     CHECK_CAMERA_LOCK = "CHECK_CAMERA_LOCK",
     RESET_CAMERA = "RESET_CAMERA",
+    RESET_POINT_SIZE = "RESET_POINT_SIZE",
     INIT_POINTS_GEOMETRY = "INIT_POINTS_GEOMETRY",
     TRACK_WIDTH = "TRACK_WIDTH",
     POINT_BRIGHTNESS = "POINT_BRIGHTNESS",
@@ -50,6 +51,10 @@ interface CheckCameraLock {
 
 interface ResetCamera {
     type: ActionType.RESET_CAMERA;
+}
+
+interface ResetPointSize {
+    type: ActionType.RESET_POINT_SIZE;
 }
 
 interface InitPointsGeometry {
@@ -166,6 +171,7 @@ type PointCanvasAction =
     | CurTime
     | CheckCameraLock
     | ResetCamera
+    | ResetPointSize
     | InitPointsGeometry
     | TrackWidth
     | PointBrightness
@@ -200,6 +206,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.RESET_CAMERA:
             newCanvas.resetCamera();
+            break;
+        case ActionType.RESET_POINT_SIZE:
+            newCanvas.resetPointSize();
             break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time

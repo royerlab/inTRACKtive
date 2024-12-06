@@ -57,7 +57,7 @@ The `points_to_tracks` array encodes the relationship between a given point ID (
 IDs (columns) it is part of. The total shape of the array is then `(n_points, n_tracks)`. Thus,
 fetching a row is used to get all tracks associated with a given point. This is effectively an
 adjacency matrix. In the sample data, each point belongs to at most one track. Values in the array
-don't matter, just the presence of a nonzero element which indicates a connection. This is becasue
+don't matter, just the presence of a nonzero element which indicates a connection. This is because
 the data we're interested in (the track ID) is encoded by the column index.
 
 This is the first query run when points are selected.
@@ -102,8 +102,8 @@ script, columns in the CSV file should be ordered as follows:
 - z, y, x - 3D coordinates
 - parent_track_id - reference to the parent track, if any (-1 otherwise)
 
-The script requires numpy, scipy, and zarr libraries. This script is not optimized, and takes about
-4 minutes (for the largest Zebrafish dataset) to convert the example dataset on an Apple M1 Pro.
+The script requires numpy, scipy, and zarr libraries. This script is not fully optimized, and takes about
+1 minute (for the largest Zebrafish dataset) to convert the example dataset on an Apple M1 Pro.
 
 ## Lineage computation
 Most of the logic in the script is pretty straightforward, but the lineage computation may require
