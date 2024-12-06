@@ -21,20 +21,30 @@ const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
     { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
-    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
-    { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
+    // { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
+    { name: "quadrants", label: 4, type: "categorical", action: "calculate", numCategorical: 8 },
 ];
 
 export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
 // Initialize the mutable dropdown options with the default options
 export const dropDownOptions: Option[] = [...DEFAULT_DROPDOWN_OPTIONS];
 
-// Function to reset the dropdown options to the default list
-export function resetDropDownOptions() {
-    // Clear the current array and reset it to the default options
+// Function to reset the dropdown options based on an input flag
+export function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
+    // Clear the current array
     dropDownOptions.length = 0;
-    dropDownOptions.push(...DEFAULT_DROPDOWN_OPTIONS);
-    console.debug("DropDownOptions reset to default.");
+
+    if (useFirstOptionOnly) {
+        // Reset to only the first default option
+        if (DEFAULT_DROPDOWN_OPTIONS.length > 0) {
+            dropDownOptions.push(DEFAULT_DROPDOWN_OPTIONS[0]);
+        }
+        console.debug("DropDownOptions reset to only the first default option.");
+    } else {
+        // Reset to the full default options
+        dropDownOptions.push(...DEFAULT_DROPDOWN_OPTIONS);
+        console.debug("DropDownOptions reset to default.");
+    }
 }
 
 export function addDropDownOption(option: Option) {

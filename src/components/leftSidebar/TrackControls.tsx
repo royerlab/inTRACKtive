@@ -84,20 +84,22 @@ export default function TrackControls(props: TrackControlsProps) {
             </Box>
 
             {/* ColorBy toggle */}
-            <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
-                <label htmlFor="color-cells">
-                    <FontS>Color cells</FontS>
-                </label>
-                <Box>
-                    <InputToggle
-                        id="color-cells"
-                        checked={props.colorBy}
-                        onChange={(e) => {
-                            props.toggleColorBy((e.target as HTMLInputElement).checked);
-                        }}
-                    />
+            {dropDownOptions.length > 1 && (
+                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                    <label htmlFor="color-cells">
+                        <FontS>Color cells</FontS>
+                    </label>
+                    <Box>
+                        <InputToggle
+                            id="color-cells"
+                            checked={props.colorBy}
+                            onChange={(e) => {
+                                props.toggleColorBy((e.target as HTMLInputElement).checked);
+                            }}
+                        />
+                    </Box>
                 </Box>
-            </Box>
+            )}
 
             {/* Color cells by dropdown */}
             {props.colorBy == true && (

@@ -308,6 +308,7 @@ export async function loadTrackManager(url: string) {
             }
             console.debug("dropDownOptions:", dropDownOptions);
         } catch (error) {
+            resetDropDownOptions(true);
             console.debug("No attributes found in Zarr");
         }
 
