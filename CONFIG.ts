@@ -12,9 +12,7 @@ const config = {
     data:{
         // Default dataset URL (must be publically accessible)
         // default_dataset: "https://public.czbiohub.org/royerlab/zoo/Zebrafish/tracks_zebrafish_bundle.zarr/"
-        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_ascidian_withSize_withFeatures_bundle.zarr/"
-        // default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_zebrafish_displ_norm_bundle.zarr/"
-        default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_drosophila_displ_norm_bundle.zarr/"
+        default_dataset: "https://public.czbiohub.org/royerlab/zoo/misc/tracks_drosophila_attributes_norm_bundle.zarr/"
     },
   
     // Default settings for certain parameters
@@ -32,7 +30,7 @@ const config = {
         colormap_colorby_continuous: "plasma",
 
         // Show default attributes in the left dropdown menu for coloring the cells
-        showDefaultAttributes: false,
+        showDefaultAttributes: true,
         
         // Point size (arbitrary units), if cell sizes not provided in zarr attributes
         point_size: 0.1,
