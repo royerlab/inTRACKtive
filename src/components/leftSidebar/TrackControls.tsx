@@ -3,6 +3,9 @@ import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
 import DynamicDropdown, { dropDownOptions } from "./DynamicDropdown";
 import { ControlLabel, FontS } from "@/components/Styled";
+import config from "../../../CONFIG.ts";
+
+const allowColorByAttribute = config.permission.allowColorByAttribute;
 
 interface TrackControlsProps {
     trackManager: TrackManager | null;
@@ -84,7 +87,7 @@ export default function TrackControls(props: TrackControlsProps) {
             </Box>
 
             {/* ColorBy toggle */}
-            {dropDownOptions.length > 1 && (
+            {dropDownOptions.length > 1 && allowColorByAttribute && (
                 <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
                     <label htmlFor="color-cells">
                         <FontS>Color cells</FontS>

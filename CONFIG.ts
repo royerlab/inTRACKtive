@@ -45,7 +45,11 @@ const config = {
 
         // Point color (when selector hovers over)
         preview_hightlight_point_color: [0.8, 0.8, 0], //yellow
+    },
 
+    permission:{
+        // Allow users to color cells by attributes
+        allowColorByAttribute: true
     }
 }
 
