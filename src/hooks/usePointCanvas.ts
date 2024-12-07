@@ -30,6 +30,8 @@ enum ActionType {
     MOBILE_SELECT_CELLS = "MOBILE_SELECT_CELLS",
     SELECTOR_SCALE = "SELECTOR_SCALE",
     TOGGLE_AXES = "TOGGLE_AXES",
+    TOGGLE_COLOR_BY = "TOGGLE_COLOR_BY",
+    CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
 }
 
 interface AutoRotate {
@@ -78,9 +80,10 @@ interface PointSizes {
 interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
+    attributes: Float32Array | undefined;
 }
 
-interface PointColors {
+interface ResetPointColors {
     type: ActionType.RESET_POINTS_COLORS;
 }
 
@@ -152,6 +155,16 @@ interface ToggleAxes {
     type: ActionType.TOGGLE_AXES;
 }
 
+interface ToggleColorBy {
+    type: ActionType.TOGGLE_COLOR_BY;
+    colorBy: boolean;
+}
+
+interface ChangeColorBy {
+    type: ActionType.CHANGE_COLOR_BY;
+    event: string;
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -164,7 +177,7 @@ type PointCanvasAction =
     | PointBrightness
     | PointSizes
     | PointsPositions
-    | PointColors
+    | ResetPointColors
     | RemoveLastSelection
     | Refresh
     | RemoveAllTracks
@@ -178,7 +191,9 @@ type PointCanvasAction =
     | UpdateWithState
     | MobileSelectCells
     | SelectorScale
-    | ToggleAxes;
+    | ToggleAxes
+    | ToggleColorBy
+    | ChangeColorBy;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -224,11 +239,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.POINT_SIZES:
             newCanvas.pointSize = action.pointSize;
-            newCanvas.setPointsSizes();
+            newCanvas.updatePointsSizes();
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
-            newCanvas.resetPointColors();
+            newCanvas.resetPointColors(action.attributes);
             newCanvas.updateSelectedPointIndices();
             newCanvas.updatePreviewPoints();
             break;
@@ -312,6 +327,14 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.TOGGLE_AXES:
             newCanvas.toggleAxesHelper();
+            break;
+        case ActionType.TOGGLE_COLOR_BY:
+            newCanvas.colorBy = action.colorBy;
+            newCanvas.changeColorBy("uniform");
+            break;
+        case ActionType.CHANGE_COLOR_BY:
+            newCanvas.changeColorBy(action.event);
+            // newCanvas.resetPointColors(); //happens now with useEffect in App.tsx
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

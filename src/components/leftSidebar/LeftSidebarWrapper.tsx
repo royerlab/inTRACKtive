@@ -5,13 +5,6 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import { PointCanvas } from "@/lib/PointCanvas";
 import { Divider } from "@mui/material";
 
-// interface Action {
-//     type: ActionType;
-//     brightness?: number;
-//     pointSize?: number;
-//     // Add more fields for other actions as needed
-// }
-
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
     trackManager: TrackManager | null;
@@ -29,6 +22,9 @@ interface LeftSidebarWrapperProps {
     setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    colorBy: boolean;
+    toggleColorBy: (colorBy: boolean) => void;
+    changeColorBy: (value: string) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -48,6 +44,9 @@ export default function LeftSidebarWrapper({
     setTrackWidth,
     axesVisible,
     toggleAxesVisible,
+    colorBy,
+    toggleColorBy,
+    changeColorBy,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -68,6 +67,9 @@ export default function LeftSidebarWrapper({
                 setTrackWidth={setTrackWidth}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
+                colorBy={colorBy}
+                toggleColorBy={toggleColorBy}
+                changeColorBy={changeColorBy}
             />
             <Divider />
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}

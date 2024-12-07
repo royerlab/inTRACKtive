@@ -117,6 +117,13 @@ intracktive convert --csv_file path/to/tracks.csv --add_radius
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
 
+**ToDo: explain how to add attributes**
+```
+intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
+intracktive convert --csv_file path/to/file.csv --add_attribute cell_size
+intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,diameter,color
+```
+
 
 In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
 

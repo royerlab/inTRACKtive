@@ -16,8 +16,9 @@ import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
-import { ColorMap } from "./overlays/ColorMap";
+import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
+import { numberOfDefaultColorByOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
@@ -136,6 +137,7 @@ export default function App() {
     const actionsUponNewData = () => {
         dispatchCanvas({ type: ActionType.RESET_CAMERA });
         dispatchCanvas({ type: ActionType.RESET_POINT_SIZE });
+        dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy: false });
     };
 
     // this function fetches the entire lineage for each track
@@ -223,6 +225,7 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
+                // console.log('data shape:', data.length, 'attributes shape:', attributes.length);
                 console.debug("got %d points for time %d", data.length / 3, time);
 
                 if (ignore) {
@@ -230,10 +233,18 @@ export default function App() {
                     return;
                 }
 
+                let attributes;
+                if (canvas.colorByEvent.action === "provided" || canvas.colorByEvent.action === "provided-normalized") {
+                    attributes = await trackManager.fetchAttributessAtTime(
+                        time,
+                        canvas.colorByEvent.label - numberOfDefaultColorByOptions,
+                    );
+                }
+
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data });
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes: attributes });
             };
             getPoints(canvas.curTime);
         } else {
@@ -251,7 +262,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [canvas.curTime, dispatchCanvas, trackManager]);
+    }, [canvas.curTime, canvas.colorByEvent, dispatchCanvas, trackManager]);
 
     // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
@@ -460,6 +471,13 @@ export default function App() {
                                 toggleAxesVisible={() => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_AXES });
                                 }}
+                                colorBy={canvas.colorBy}
+                                toggleColorBy={(colorBy: boolean) => {
+                                    dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy });
+                                }}
+                                changeColorBy={(event: string) => {
+                                    dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, event });
+                                }}
                             />
                         </Box>
                         <Divider />
@@ -502,7 +520,8 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
-                    <ColorMap />
+                    {numSelectedCells > 0 && <ColorMapTracks />}
+                    {canvas.colorByEvent.type !== "default" && <ColorMapCells colorByEvent={canvas.colorByEvent} />}
                 </Box>
 
                 {/* The playback controls */}

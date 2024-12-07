@@ -1,5 +1,6 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
+import { addDropDownOption, dropDownOptions, resetDropDownOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -106,6 +107,7 @@ export class TrackManager {
     pointsToTracks: SparseZarrArray;
     tracksToPoints: SparseZarrArray;
     tracksToTracks: SparseZarrArray;
+    attributes: ZarrArray;
     numTimes: number;
     maxPointsPerTimepoint: number;
     scaleSettings: ScaleSettings;
@@ -118,6 +120,7 @@ export class TrackManager {
         pointsToTracks: SparseZarrArray,
         tracksToPoints: SparseZarrArray,
         tracksToTracks: SparseZarrArray,
+        attributes: ZarrArray,
         scaleSettings: ScaleSettings,
     ) {
         this.store = store;
@@ -125,6 +128,7 @@ export class TrackManager {
         this.pointsToTracks = pointsToTracks;
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
+        this.attributes = attributes;
         this.numTimes = points.shape[0];
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
         this.scaleSettings = scaleSettings;
@@ -150,6 +154,28 @@ export class TrackManager {
 
         // scale the data to fit in the viewer
         const array = this.applyScale(points.subarray(0, endIndex), numberOfValuesPerPoint);
+        return array;
+    }
+
+    async fetchAttributessAtTime(timeIndex: number, attributeIndex: number): Promise<Float32Array> {
+        console.debug("fetchAttributessAtTime, time=%d, attribute=%d", timeIndex, attributeIndex);
+
+        const startColumn = attributeIndex * this.maxPointsPerTimepoint;
+        const endColumn = startColumn + this.maxPointsPerTimepoint;
+
+        const attributes: Float32Array = (await this.attributes.get([timeIndex, slice(startColumn, endColumn)])).data;
+
+        // assume points < -127 are invalid, and all are at the end of the array
+        // this is how the jagged array is stored in the zarr
+        // for Float32 it's actually -9999, but the int8 data is -127
+        let endIndex = attributes.findIndex((value) => value <= -127);
+        if (endIndex === -1) {
+            endIndex = attributes.length;
+        }
+
+        // scale the data to fit in the viewer
+        const array = attributes.subarray(0, endIndex);
+
         return array;
     }
 
@@ -227,6 +253,7 @@ export class TrackManager {
 export async function loadTrackManager(url: string) {
     let trackManager;
     try {
+        // console.log('url', url);
         const points = await openArray({
             store: url,
             path: "points",
@@ -258,8 +285,43 @@ export async function loadTrackManager(url: string) {
         const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
+        let attributes = null;
+        resetDropDownOptions();
+        try {
+            attributes = await openArray({
+                store: url,
+                path: "attributes",
+                mode: "r",
+            });
+            const zattrs = await attributes.attrs.asObject();
+            console.log("attribute names found: %s", zattrs["attribute_names"]);
+            // console.log("attribute types found: %s", zattrs["attribute_types"]);
+
+            for (let column = 0; column < zattrs["attribute_names"].length; column++) {
+                addDropDownOption({
+                    name: zattrs["attribute_names"][column],
+                    label: dropDownOptions.length,
+                    type: zattrs["attribute_types"][column] ? zattrs["attribute_types"][column] : "continuous",
+                    action: zattrs["pre_normalized"] ? "provided-normalized" : "provided",
+                    numCategorical: undefined,
+                });
+            }
+            console.debug("dropDownOptions:", dropDownOptions);
+        } catch (error) {
+            resetDropDownOptions(true);
+            console.debug("No attributes found in Zarr");
+        }
+
         // make trackManager, and reset "maxPointsPerTimepoint", because tm constructor does points/3
-        trackManager = new TrackManager(url, points, pointsToTracks, tracksToPoints, tracksToTracks, scaleSettings);
+        trackManager = new TrackManager(
+            url,
+            points,
+            pointsToTracks,
+            tracksToPoints,
+            tracksToTracks,
+            attributes,
+            scaleSettings,
+        );
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
         }
