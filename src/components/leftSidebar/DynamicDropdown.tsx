@@ -8,7 +8,7 @@ const showDefaultAttributes = config.settings.showDefaultAttributes;
 export type Option = {
     name: string;
     label: number;
-    type: "default" | "categorical" | "continuous";
+    type: "default" | "categorical" | "continuous" | "hex";
     action: "default" | "calculate" | "provided" | "provided-normalized";
     numCategorical: number | undefined;
 };
