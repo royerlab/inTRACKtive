@@ -15,7 +15,7 @@ interface PlaybackControlsProps {
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
     return (
-        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2em" }}>
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "1em" }}>
             <Button
                 icon="Play"
                 sdsSize="large"
