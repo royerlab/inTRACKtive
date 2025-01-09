@@ -32,6 +32,8 @@ def generate_viewer_state_hash(data_url: str) -> str:
         "showTrackHighlights": True,
         "cameraPosition": [-4, 0, 0],
         "cameraTarget": [0, 0, 0],
+        "pointSize": 0.1,
+        "trackWidthFactor": 1,
     }
 
     # Step 1: Serialize the viewer state to a JSON string

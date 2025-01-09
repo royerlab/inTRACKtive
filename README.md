@@ -132,13 +132,14 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
 
-To make the previous two proccesses (conversion + hosting data) easiest, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
+To make the previous two proccesses (conversion + hosting data) easier, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
 
 ```
 dataframe_to_browser(data, zarr_dir)
 ```
-
 where `data` is a `pandas.dataFrame` containing the tracking data, and `zarr_dir` to directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
+
+> ⚠️ Currently `dataframe_to_browser` only works for Chrome and Firefox
 
 ### iii) Open `inTRACKtive` using the napari widget
 
