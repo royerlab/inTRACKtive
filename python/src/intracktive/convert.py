@@ -333,6 +333,7 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
+    logging.info("Copy the following URL into the Google Chrome browser:")
     logging.info("full URL: %s", fullUrl)
     webbrowser.open(fullUrl)
 
