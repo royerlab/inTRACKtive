@@ -27,7 +27,7 @@ dependencies = [
   "scipy",
   "scikit-image",
   "pandas",
-  "zarr"
+  "zarr<3"
 ]
 
 [project.urls]
