@@ -132,7 +132,7 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
 
-To make the previous two proccesses (conversion + hosting data) easiest, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
+To make the previous two proccesses (conversion + hosting data) easier, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
 
 ```
 dataframe_to_browser(data, zarr_dir)
