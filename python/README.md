@@ -5,15 +5,10 @@
 
 -----
 
-## Table of Contents
-
-- [Installation](#installation)
-- [License](#license)
-
 ## Installation
 
 ```console
-pip install intracktive
+pip install git+https://github.com/royerlab/inTRACKtive.git@main#subdirectory=python
 ```
 
 ## License
