@@ -1,4 +1,4 @@
-name: Python linting & tests
+name: Python tests
 on:
   push:
     branches:
