@@ -8,7 +8,7 @@
 ## Installation
 
 ```console
-pip install git+https://github.com/royerlab/inTRACKtive.git@main#subdirectory=python
+pip install intracktive
 ```
 
 ## License
