@@ -94,7 +94,7 @@ The common first step for all three approaches is to start with a clean conda en
 ```
 conda create -n intracktive python
 conda activate intracktive
-pip install git+https://github.com/royerlab/inTRACKtive.git@main#subdirectory=python
+pip install intracktive
 ```
 
 ---
