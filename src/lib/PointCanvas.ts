@@ -25,8 +25,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
-import { numberOfValuesPerPoint } from "./TrackManager";
-import { Option, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown";
+import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 
 import { detectedDevice } from "@/components/App.tsx";
@@ -92,7 +91,7 @@ export class PointCanvas {
     maxPointsPerTimepoint = 0;
     private pointIndicesCache: Map<number, number[]> = new Map();
     colorBy: boolean = false;
-    colorByEvent: Option = dropDownOptions[0];
+    colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     currentAttributes: number[] | Float32Array = new Float32Array();
 
     constructor(width: number, height: number) {
@@ -246,10 +245,10 @@ export class PointCanvas {
 
         if (ndim == 2) {
             this.controls.enableRotate = false;
-            console.debug("Rotation locked because 2D datast detected");
+            console.debug("Rotation locked because 2D dataset detected");
         } else if (ndim == 3) {
             this.controls.enableRotate = true;
-            console.debug("Rotation enabled because 3D datast detected");
+            console.debug("Rotation enabled because 3D dataset detected");
         } else {
             console.error("Invalid ndim value: " + ndim);
         }
@@ -262,12 +261,12 @@ export class PointCanvas {
         this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
         this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
         this.curTime = 0;
-        console.debug("Camera resetted");
+        console.debug("Camera reset");
     }
 
     resetPointSize() {
         this.pointSize = initialPointSize;
-        console.debug("point size resetted to: ", this.pointSize);
+        console.debug("point size reset to: ", this.pointSize);
     }
 
     updateSelectedPointIndices() {
@@ -309,16 +308,6 @@ export class PointCanvas {
 
     clearPointIndicesCache() {
         this.pointIndicesCache.clear();
-    }
-
-    changeColorBy(eventName: string) {
-        const selectedOption = dropDownOptions.find((option) => option.name === eventName);
-        if (selectedOption) {
-            this.colorByEvent = selectedOption;
-            console.debug(`ColorBy attribute selected: ${selectedOption.name}`);
-        } else {
-            console.error(`No option found with name: ${eventName}`);
-        }
     }
 
     highlightPoints(points: number[]) {

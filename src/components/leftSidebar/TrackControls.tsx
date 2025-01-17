@@ -1,7 +1,7 @@
 import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
 import { InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
-import DynamicDropdown, { dropDownOptions } from "./DynamicDropdown";
+import DynamicDropdown from "./DynamicDropdown";
 import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
 
@@ -31,6 +31,7 @@ interface TrackControlsProps {
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
+    const dropDownOptions = props.trackManager?.attributeOptions ?? [];
 
     return (
         <Stack spacing={"1.1em"}>

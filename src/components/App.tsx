@@ -12,13 +12,17 @@ import WarningDialog from "@/components/WarningDialog";
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
-import { TrackManager, loadTrackManager } from "@/lib/TrackManager";
+import {
+    DEFAULT_DROPDOWN_OPTION,
+    TrackManager,
+    loadTrackManager,
+    numberOfDefaultColorByOptions,
+} from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
-import { numberOfDefaultColorByOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
@@ -235,7 +239,7 @@ export default function App() {
 
                 let attributes;
                 if (canvas.colorByEvent.action === "provided" || canvas.colorByEvent.action === "provided-normalized") {
-                    attributes = await trackManager.fetchAttributessAtTime(
+                    attributes = await trackManager.fetchAttributesAtTime(
                         time,
                         canvas.colorByEvent.label - numberOfDefaultColorByOptions,
                     );
@@ -244,7 +248,7 @@ export default function App() {
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes: attributes });
+                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes });
             };
             getPoints(canvas.curTime);
         } else {
@@ -476,7 +480,10 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy });
                                 }}
                                 changeColorBy={(event: string) => {
-                                    dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, event });
+                                    const option =
+                                        trackManager?.attributeOptions.find((option) => option.name === event) ??
+                                        DEFAULT_DROPDOWN_OPTION;
+                                    dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, option });
                                 }}
                             />
                         </Box>

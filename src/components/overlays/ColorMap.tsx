@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 // import variables from the sds-components library
 import "@czi-sds/components/dist/variables.css";
 import { highlightLUT } from "@/lib/three/TrackMaterial";
-import { Option } from "@/components/leftSidebar/DynamicDropdown";
+import { Option } from "@/lib/TrackManager";
 import config from "../../../CONFIG.ts";
 const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
 const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
