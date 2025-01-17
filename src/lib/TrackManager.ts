@@ -23,24 +23,24 @@ export const DEFAULT_DROPDOWN_OPTION: Option = {
     action: "default",
     numCategorical: undefined,
 };
-export const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
+const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
     DEFAULT_DROPDOWN_OPTION,
     { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
     { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
-    { name: "quadrants", label: 4, type: "categorical", action: "calculate", numCategorical: 8 },
+    { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
 ];
 
 export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
 
 // Function to reset the dropdown options based on an input flag
-export function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
+function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
     const options: Option[] = [];
     if (useFirstOptionOnly || showDefaultAttributes == false) {
         // Reset to only the first default option
         if (DEFAULT_DROPDOWN_OPTIONS.length > 0) {
-            options.push(DEFAULT_DROPDOWN_OPTIONS[0]);
+            options.push(DEFAULT_DROPDOWN_OPTION);
         }
         console.debug("DropDownOptions reset to only the first default option.");
     } else {
@@ -51,7 +51,7 @@ export function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
     return options;
 }
 
-export function addDropDownOption(options: Option[], option: Option) {
+function addDropDownOption(options: Option[], option: Option) {
     // Check if an option with the same name or label already exists
     const exists = options.some(
         (existingOption) => existingOption.name === option.name || existingOption.label === option.label,

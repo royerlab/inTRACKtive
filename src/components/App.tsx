@@ -12,12 +12,7 @@ import WarningDialog from "@/components/WarningDialog";
 import { usePointCanvas, ActionType } from "@/hooks/usePointCanvas";
 
 import { ViewerState, clearUrlHash } from "@/lib/ViewerState";
-import {
-    DEFAULT_DROPDOWN_OPTION,
-    TrackManager,
-    loadTrackManager,
-    numberOfDefaultColorByOptions,
-} from "@/lib/TrackManager";
+import { Option, TrackManager, loadTrackManager, numberOfDefaultColorByOptions } from "@/lib/TrackManager";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
@@ -479,10 +474,8 @@ export default function App() {
                                 toggleColorBy={(colorBy: boolean) => {
                                     dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy });
                                 }}
-                                changeColorBy={(event: string) => {
-                                    const option =
-                                        trackManager?.attributeOptions.find((option) => option.name === event) ??
-                                        DEFAULT_DROPDOWN_OPTION;
+                                colorByEvent={canvas.colorByEvent}
+                                changeColorBy={(option: Option) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, option });
                                 }}
                             />
