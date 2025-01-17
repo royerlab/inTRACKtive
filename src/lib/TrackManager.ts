@@ -5,6 +5,9 @@ export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,
 import config from "../../CONFIG.ts";
 const pointSizeDefault = config.settings.point_size;
 
+// TODO: all these attribute options might be better to put in a separate module.
+// Should also consider some related renaming (i.e. that these are attribute options
+// rather than dropdown options).
 const showDefaultAttributes = config.settings.showDefaultAttributes;
 
 export type Option = {

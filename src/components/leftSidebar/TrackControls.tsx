@@ -115,7 +115,7 @@ export default function TrackControls(props: TrackControlsProps) {
                         onChange={(event_, value) => {
                             console.debug("Dropdown::onChange", value);
                             // TODO: I don't know if these values are actually possible.
-                            // If they are, we can either error/warn and or use the default
+                            // If they are, we can either error/warn and/or use the default
                             // value instead.
                             if (value === null) return;
                             if (typeof value === "string") return;
