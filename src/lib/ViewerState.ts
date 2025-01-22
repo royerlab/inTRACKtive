@@ -1,5 +1,5 @@
 import config from "../../CONFIG.ts";
-import { Option, dropDownOptions } from "@/components/leftSidebar/DynamicDropdown";
+import { Option, DEFAULT_DROPDOWN_OPTION } from "@/lib/TrackManager";
 
 const DEFAULT_ZARR_URL = config.data.default_dataset;
 const initialPointSize = config.settings.point_size;
@@ -31,7 +31,7 @@ export class ViewerState {
     pointSize: number = initialPointSize;
     trackWidthFactor: number = 1;
     colorBy: boolean = false;
-    colorByEvent: Option = dropDownOptions[0];
+    colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.

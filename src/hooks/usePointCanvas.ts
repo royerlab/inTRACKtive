@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
+import { DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
@@ -162,7 +163,7 @@ interface ToggleColorBy {
 
 interface ChangeColorBy {
     type: ActionType.CHANGE_COLOR_BY;
-    event: string;
+    option: Option;
 }
 
 // setting up a tagged union for the actions
@@ -330,11 +331,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.TOGGLE_COLOR_BY:
             newCanvas.colorBy = action.colorBy;
-            newCanvas.changeColorBy("uniform");
+            newCanvas.colorByEvent = DEFAULT_DROPDOWN_OPTION;
             break;
         case ActionType.CHANGE_COLOR_BY:
-            newCanvas.changeColorBy(action.event);
-            // newCanvas.resetPointColors(); //happens now with useEffect in App.tsx
+            newCanvas.colorByEvent = action.option;
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);
