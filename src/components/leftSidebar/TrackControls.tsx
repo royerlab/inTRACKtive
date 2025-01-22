@@ -112,7 +112,7 @@ export default function TrackControls(props: TrackControlsProps) {
                         label={`Color: ${props.colorByEvent.name}`}
                         options={dropDownOptions}
                         value={props.colorByEvent}
-                        onChange={(event_, value) => {
+                        onChange={(_, value) => {
                             console.debug("Dropdown::onChange", value);
                             // TODO: I don't know if these values are actually possible.
                             // If they are, we can either error/warn and/or use the default
