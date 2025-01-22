@@ -225,7 +225,7 @@ export default function App() {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
                 console.debug("got %d points for time %d", data.length / 3, time);
-                
+
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", time);
                     return;
