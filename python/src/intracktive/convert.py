@@ -336,7 +336,10 @@ def convert_dataframe_to_zarr(
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 
-def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
+def dataframe_to_browser(df: pd.DataFrame, 
+                         zarr_dir: Path, 
+                         extra_cols: Iterable[str] = (),
+) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
     1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
@@ -348,6 +351,8 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
     zarr_dir : Path
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
+    extra_cols : Iterable[str], optional
+        List of extra columns to include in the Zarr store, by default empty list 
     """
 
     if str(zarr_dir) in (".", None):
