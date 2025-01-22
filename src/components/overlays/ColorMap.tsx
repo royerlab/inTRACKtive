@@ -51,7 +51,7 @@ export const ColorMapTracks = () => {
 };
 
 interface ColormapCellsProps {
-    colorByEvent: Option; // Currently timestamp is a frame number, but it could be the actual timestamp
+    colorByEvent: Option;
 }
 
 export const ColorMapCells = (props: ColormapCellsProps) => {
@@ -67,9 +67,6 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
     }
 
     highlightLUT.setColorMap(colormapString);
-
-    // const colors = Array.from({ length: 129 }, (_, i) => `#${highlightLUT.getColor(i / 128).getHexString()}`);
-    // const gradient = `linear-gradient(to top, ${colors.join(", ")})`;
 
     const colors = Array.from(
         { length: numSteps },

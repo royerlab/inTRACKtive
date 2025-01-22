@@ -319,7 +319,6 @@ export class TrackManager {
 export async function loadTrackManager(url: string) {
     let trackManager;
     try {
-        // console.log('url', url);
         const points = await openArray({
             store: url,
             path: "points",
@@ -360,8 +359,8 @@ export async function loadTrackManager(url: string) {
                 mode: "r",
             });
             const zattrs = await attributes.attrs.asObject();
-            console.log("attribute names found: %s", zattrs["attribute_names"]);
-            // console.log("attribute types found: %s", zattrs["attribute_types"]);
+            console.debug("attribute names found: %s", zattrs["attribute_names"]);
+            console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {

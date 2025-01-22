@@ -375,7 +375,7 @@ export class PointCanvas {
                 console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
             }
             if (attributes) {
-                if (this.colorByEvent.action != "provided-normalized") {
+                if (this.colorByEvent.action != "provided-normalized" && attributes.length > 0) {
                     attributes = this.normalizeAttributeVector(attributes);
                 }
             } else {
@@ -416,9 +416,6 @@ export class PointCanvas {
         numPoints: number,
     ): number[] {
         const attributeVector = [];
-        // const numPoints = positions.count / numberOfValuesPerPoint;
-        // console.log('numPoints in getAtt:',numPoints, positions.count, numberOfValuesPerPoint)
-        // console.log('positions:',positions)
 
         for (let i = 0; i < numPoints; i++) {
             if (colorByEvent.name === "uniform") {
@@ -440,6 +437,7 @@ export class PointCanvas {
                 attributeVector.push(quadrant); // color based on XY coordinates (4 groups)
             } else {
                 attributeVector.push(1); // default to constant color if event type not recognized
+                console.error("Invalid colorByEvent name to be calculated from data:", colorByEvent.name);
             }
         }
 
@@ -449,7 +447,6 @@ export class PointCanvas {
     normalizeAttributeVector(attributes: number[] | Float32Array): number[] | Float32Array {
         const min = Math.min(...attributes);
         const max = Math.max(...attributes);
-        // const max = 4000.0;
         const range = max - min;
 
         // Avoid division by zero in case all values are the same

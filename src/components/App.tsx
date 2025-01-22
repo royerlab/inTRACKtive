@@ -224,9 +224,8 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
-                // console.log('data shape:', data.length, 'attributes shape:', attributes.length);
                 console.debug("got %d points for time %d", data.length / 3, time);
-
+                
                 if (ignore) {
                     console.debug("IGNORE SET points at time %d", time);
                     return;
