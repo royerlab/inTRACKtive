@@ -19,6 +19,16 @@ def generate_viewer_state_hash(data_url: str) -> str:
         The inTRACKtive hash string (to be added to the URL).
     """
 
+
+    # Define the Python equivalent of DEFAULT_DROPDOWN_OPTION
+    default_dropdown_option = {
+        "name": "uniform",
+        "label": 0,
+        "type": "default",
+        "action": "default",
+        "numCategorical": None,  # Equivalent to undefined in TypeScript
+    }
+
     # Replicate the initial state based on your ViewerState defaults
     viewer_state = {
         "dataUrl": data_url,
@@ -35,7 +45,7 @@ def generate_viewer_state_hash(data_url: str) -> str:
         "pointSize": 0.1,
         "trackWidthFactor": 1,
         "colorBy": False,
-        # TODO: add colorByEvent
+        "colorByEvent": default_dropdown_option,
     }
 
     # Step 1: Serialize the viewer state to a JSON string
