@@ -35,7 +35,7 @@ def generate_viewer_state_hash(data_url: str) -> str:
         "pointSize": 0.1,
         "trackWidthFactor": 1,
         "colorBy": False,
-        #TODO: add colorByEvent
+        # TODO: add colorByEvent
     }
 
     # Step 1: Serialize the viewer state to a JSON string
