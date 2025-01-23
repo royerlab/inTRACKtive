@@ -358,11 +358,11 @@ def dataframe_to_browser(df: pd.DataFrame,
     if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
-            logging.info("Temporary directory used for localhost: %s", zarr_dir)
+            LOG.info("Temporary directory used for localhost: %s", zarr_dir)
     else:
-        logging.info("Provided directory used used for localhost: %s", zarr_dir)
+        LOG.info("Provided directory used used for localhost: %s", zarr_dir)
 
-    extra_cols = []
+    # extra_cols = []
     zarr_path = (
         zarr_dir / "zarr_bundle.zarr"
     )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
@@ -378,7 +378,7 @@ def dataframe_to_browser(df: pd.DataFrame,
         threaded=True,
     )
 
-    logging.info(
+    LOG.info(
         "localhost successfully launched, serving: %s", zarr_dir_with_storename
     )
 
@@ -387,8 +387,8 @@ def dataframe_to_browser(df: pd.DataFrame,
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
-    logging.info("Copy the following URL into the Google Chrome browser:")
-    logging.info("full URL: %s", fullUrl)
+    LOG.info("Copy the following URL into the Google Chrome browser:")
+    LOG.info("full URL: %s", fullUrl)
     webbrowser.open(fullUrl)
 
 
