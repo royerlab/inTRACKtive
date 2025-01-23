@@ -1,8 +1,10 @@
-import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
-import { InputSlider, InputToggle } from "@czi-sds/components";
+import { TrackManager, Option, numberOfValuesPerPoint } from "@/lib/TrackManager";
+import { Dropdown, InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
-
 import { ControlLabel, FontS } from "@/components/Styled";
+import config from "../../../CONFIG.ts";
+
+const allowColorByAttribute = config.permission.allowColorByAttribute;
 
 interface TrackControlsProps {
     trackManager: TrackManager | null;
@@ -21,10 +23,15 @@ interface TrackControlsProps {
     setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    colorBy: boolean;
+    toggleColorBy: (colorBy: boolean) => void;
+    colorByEvent: Option;
+    changeColorBy: (value: Option) => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
+    const dropDownOptions = props.trackManager?.attributeOptions ?? [];
 
     return (
         <Stack spacing={"1.1em"}>
@@ -80,6 +87,45 @@ export default function TrackControls(props: TrackControlsProps) {
                 </Box>
             </Box>
 
+            {/* ColorBy toggle */}
+            {dropDownOptions.length > 1 && allowColorByAttribute && (
+                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                    <label htmlFor="color-cells">
+                        <FontS>Color cells</FontS>
+                    </label>
+                    <Box>
+                        <InputToggle
+                            id="color-cells"
+                            checked={props.colorBy}
+                            onChange={(e) => {
+                                props.toggleColorBy((e.target as HTMLInputElement).checked);
+                            }}
+                        />
+                    </Box>
+                </Box>
+            )}
+
+            {/* Color cells by dropdown */}
+            {props.colorBy == true && (
+                <div>
+                    <Dropdown
+                        label={`Color: ${props.colorByEvent.name}`}
+                        options={dropDownOptions}
+                        value={props.colorByEvent}
+                        onChange={(_, value) => {
+                            console.debug("Dropdown::onChange", value);
+                            // TODO: I don't know if these values are actually possible.
+                            // If they are, we can either error/warn and/or use the default
+                            // value instead.
+                            if (value === null) return;
+                            if (typeof value === "string") return;
+                            if (value instanceof Array) return;
+                            props.changeColorBy(value);
+                        }}
+                    ></Dropdown>
+                </div>
+            )}
+
             {/* Cell size slider */}
             {numberOfValuesPerPoint !== 4 && (
                 <>
@@ -87,6 +133,7 @@ export default function TrackControls(props: TrackControlsProps) {
                         <FontS id="input-slider-points-sizes-slider">Cell Size</FontS>
                     </label>
                     <InputSlider
+                        style={{ marginTop: "-0.3em" }}
                         id="points-sizes-slider"
                         aria-labelledby="input-slider-points-sizes-slider"
                         disabled={numberOfValuesPerPoint === 4}
@@ -104,10 +151,11 @@ export default function TrackControls(props: TrackControlsProps) {
             )}
 
             {/* Cell brightness slider */}
-            <label htmlFor="points-brightness-slider">
+            <label htmlFor="points-brightness-slider" style={{ marginTop: "1.0em" }}>
                 <FontS id="input-slider-points-brightness-slider">Cell Brightness</FontS>
             </label>
             <InputSlider
+                style={{ marginTop: "1.5em" }}
                 id="points-brightness-slider"
                 aria-labelledby="input-slider-points-brightness-slider"
                 // disabled={!props.numSelectedCells}
@@ -146,12 +194,13 @@ export default function TrackControls(props: TrackControlsProps) {
 
             {/* Track highlight length slider */}
             {props.hasTracks && props.showTrackHighlights && (
-                <label htmlFor="track-highlight-length-slider">
+                <label htmlFor="track-highlight-length-slider" style={{ marginTop: "0.0em" }}>
                     <FontS>Track Highlight Length</FontS>
                 </label>
             )}
             {props.hasTracks && props.showTrackHighlights && (
                 <InputSlider
+                    style={{ marginTop: "1.5em" }}
                     id="track-highlight-length-slider"
                     aria-labelledby="input-slider-track-highlight-length"
                     disabled={!props.trackManager}

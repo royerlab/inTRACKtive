@@ -1,16 +1,9 @@
-import { TrackManager } from "@/lib/TrackManager";
+import { Option, TrackManager } from "@/lib/TrackManager";
 import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { PointCanvas } from "@/lib/PointCanvas";
 import { Divider } from "@mui/material";
-
-// interface Action {
-//     type: ActionType;
-//     brightness?: number;
-//     pointSize?: number;
-//     // Add more fields for other actions as needed
-// }
 
 interface LeftSidebarWrapperProps {
     hasTracks: boolean;
@@ -29,6 +22,10 @@ interface LeftSidebarWrapperProps {
     setTrackWidth: (ratio: number) => void;
     axesVisible: boolean;
     toggleAxesVisible: () => void;
+    colorBy: boolean;
+    colorByEvent: Option;
+    toggleColorBy: (colorBy: boolean) => void;
+    changeColorBy: (value: Option) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -48,6 +45,10 @@ export default function LeftSidebarWrapper({
     setTrackWidth,
     axesVisible,
     toggleAxesVisible,
+    colorBy,
+    toggleColorBy,
+    colorByEvent,
+    changeColorBy,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -68,6 +69,10 @@ export default function LeftSidebarWrapper({
                 setTrackWidth={setTrackWidth}
                 axesVisible={axesVisible}
                 toggleAxesVisible={toggleAxesVisible}
+                colorBy={colorBy}
+                toggleColorBy={toggleColorBy}
+                colorByEvent={colorByEvent}
+                changeColorBy={changeColorBy}
             />
             <Divider />
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}

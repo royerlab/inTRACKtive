@@ -119,6 +119,18 @@ intracktive convert --csv_file path/to/tracks.csv --add_radius
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
 
+Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
+```
+#add specific column as attribute
+intracktive convert --csv_file path/to/file.csv --add_attribute cell_size
+
+#add multiple columns as attributes
+intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,diameter,color
+
+#add all columns as attributes
+intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
+```
+When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. 
 
 In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
 

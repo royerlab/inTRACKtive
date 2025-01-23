@@ -9,6 +9,7 @@
  *  https://github.com/mrdoob/three.js/blob/5ed5417d63e4eeba5087437cc27ab1e3d0813aea/examples/jsm/lines/LineMaterial.js
  */
 
+import { colormaps } from "../Colormaps.ts";
 import config from "../../../CONFIG.ts";
 const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
 
@@ -24,132 +25,8 @@ import {
     UnsignedByteType,
     Vector2,
 } from "three";
-import { Lut } from "three/examples/jsm/Addons.js";
 
-export const highlightLUT = new Lut();
-// generated using https://waldyrious.net/viridis-palette-generator/
-// and: https://hauselin.github.io/colorpalettejs/
-highlightLUT.addColorMap("magma-inferno", [
-    // magma_inv + inferno
-    [0.0, 0x000004],
-    [0.05, 0x140e36],
-    [0.1, 0x3b0f70],
-    [0.15, 0x641a80],
-    [0.2, 0x8c2981],
-    [0.25, 0xb73779],
-    [0.3, 0xde4968],
-    [0.35, 0xf7705c],
-    [0.4, 0xfe9f6d],
-    [0.45, 0xfecf92],
-    [0.5, 0xfcffa4], // bright center
-    [0.55, 0xf6d746],
-    [0.6, 0xfca50a],
-    [0.65, 0xf37819],
-    [0.7, 0xdd513a],
-    [0.75, 0xbc3754],
-    [0.8, 0x932667],
-    [0.85, 0x6a176e],
-    [0.9, 0x420a68],
-    [0.95, 0x160b39],
-    [1.0, 0x000004],
-]);
-highlightLUT.addColorMap("viridis-inferno", [
-    // viridis_inv + inferno
-    [0.0, 0x440154],
-    [0.05, 0x482475],
-    [0.1, 0x414487],
-    [0.15, 0x355f8d],
-    [0.2, 0x2a788e],
-    [0.25, 0x21918c],
-    [0.3, 0x22a884],
-    [0.35, 0x44bf70],
-    [0.4, 0x7ad151],
-    [0.45, 0xbddf26],
-    [0.5, 0xfcffa4], // bright center
-    [0.55, 0xf6d746],
-    [0.6, 0xfca50a],
-    [0.65, 0xf37819],
-    [0.7, 0xdd513a],
-    [0.75, 0xbc3754],
-    [0.8, 0x932667],
-    [0.85, 0x6a176e],
-    [0.9, 0x420a68],
-    [0.95, 0x160b39],
-    [1.0, 0x000004],
-]);
-highlightLUT.addColorMap("inferno-inferno", [
-    // inferno_inv + inferno
-    [0.0, 0x000004],
-    [0.05, 0x160b39],
-    [0.1, 0x420a68],
-    [0.15, 0x6a176e],
-    [0.2, 0x932667],
-    [0.25, 0xbc3754],
-    [0.3, 0xdd513a],
-    [0.35, 0xf37819],
-    [0.4, 0xfca50a],
-    [0.45, 0xf6d746],
-    [0.5, 0xfcffa4], // bright center
-    [0.55, 0xf6d746],
-    [0.6, 0xfca50a],
-    [0.65, 0xf37819],
-    [0.7, 0xdd513a],
-    [0.75, 0xbc3754],
-    [0.8, 0x932667],
-    [0.85, 0x6a176e],
-    [0.9, 0x420a68],
-    [0.95, 0x160b39],
-    [1.0, 0x000004],
-]);
-highlightLUT.addColorMap("plasma-inferno", [
-    // plasma_inv + inferno
-    [0.0, 0x0d0887],
-    [0.05, 0x41049d],
-    [0.1, 0x6a00a8],
-    [0.15, 0x8f0da4],
-    [0.2, 0xb12a90],
-    [0.25, 0xcc4778],
-    [0.3, 0xe16462],
-    [0.35, 0xf2844b],
-    [0.4, 0xfca636],
-    [0.45, 0xfcce25],
-    [0.5, 0xfcffa4], // bright center
-    [0.55, 0xf6d746],
-    [0.6, 0xfca50a],
-    [0.65, 0xf37819],
-    [0.7, 0xdd513a],
-    [0.75, 0xbc3754],
-    [0.8, 0x932667],
-    [0.85, 0x6a176e],
-    [0.9, 0x420a68],
-    [0.95, 0x160b39],
-    [1.0, 0x000004],
-]);
-highlightLUT.addColorMap("cividis-inferno", [
-    // cividis_inv + inferno
-    [0.0, 0x002051],
-    [0.05, 0x0d346b],
-    [0.1, 0x33486e],
-    [0.15, 0x575c6e],
-    [0.2, 0x737172],
-    [0.25, 0x8b8677],
-    [0.3, 0xa49d78],
-    [0.35, 0xc3b56d],
-    [0.4, 0xe6cf59],
-    [0.45, 0xfdea45],
-    [0.5, 0xfcffa4], // bright center
-    [0.55, 0xf6d746],
-    [0.6, 0xfca50a],
-    [0.65, 0xf37819],
-    [0.7, 0xdd513a],
-    [0.75, 0xbc3754],
-    [0.8, 0x932667],
-    [0.85, 0x6a176e],
-    [0.9, 0x420a68],
-    [0.95, 0x160b39],
-    [1.0, 0x000004],
-]);
-
+export const highlightLUT = colormaps;
 highlightLUT.setColorMap(colormapTracks);
 const lutArray = new Uint8Array(128 * 4);
 for (let i = 0; i < 128; i++) {

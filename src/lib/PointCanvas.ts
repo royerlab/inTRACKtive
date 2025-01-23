@@ -1,9 +1,11 @@
 import {
     AxesHelper,
+    BufferAttribute,
     BufferGeometry,
     Color,
     Float32BufferAttribute,
     FogExp2,
+    InterleavedBufferAttribute,
     NormalBlending,
     PerspectiveCamera,
     Points,
@@ -23,7 +25,8 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { Track } from "@/lib/three/Track";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
-import { numberOfValuesPerPoint } from "./TrackManager";
+import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
+import { colormaps } from "@/lib/Colormaps";
 
 import { detectedDevice } from "@/components/App.tsx";
 import config from "../../CONFIG.ts";
@@ -31,6 +34,8 @@ const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
 const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
+const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
+const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
 
 const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
 const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
@@ -85,6 +90,9 @@ export class PointCanvas {
     // tracks but could be pulled from the points geometry when adding tracks
     maxPointsPerTimepoint = 0;
     private pointIndicesCache: Map<number, number[]> = new Map();
+    colorBy: boolean = false;
+    colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    currentAttributes: number[] | Float32Array = new Float32Array();
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -195,6 +203,8 @@ export class PointCanvas {
         state.cameraTarget = this.controls.target.toArray();
         state.pointSize = this.pointSize;
         state.trackWidthFactor = this.trackWidthFactor;
+        state.colorBy = this.colorBy;
+        state.colorByEvent = this.colorByEvent;
         return state;
     }
 
@@ -212,6 +222,8 @@ export class PointCanvas {
         this.controls.target.fromArray(state.cameraTarget);
         this.pointSize = state.pointSize;
         this.trackWidthFactor = state.trackWidthFactor;
+        this.colorBy = state.colorBy;
+        this.colorByEvent = state.colorByEvent;
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
@@ -233,10 +245,10 @@ export class PointCanvas {
 
         if (ndim == 2) {
             this.controls.enableRotate = false;
-            console.debug("Rotation locked because 2D datast detected");
+            console.debug("Rotation locked because 2D dataset detected");
         } else if (ndim == 3) {
             this.controls.enableRotate = true;
-            console.debug("Rotation enabled because 3D datast detected");
+            console.debug("Rotation enabled because 3D dataset detected");
         } else {
             console.error("Invalid ndim value: " + ndim);
         }
@@ -249,12 +261,12 @@ export class PointCanvas {
         this.camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
         this.controls.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
         this.curTime = 0;
-        console.debug("Camera resetted");
+        console.debug("Camera reset");
     }
 
     resetPointSize() {
         this.pointSize = initialPointSize;
-        console.debug("point size resetted to: ", this.pointSize);
+        console.debug("point size reset to: ", this.pointSize);
     }
 
     updateSelectedPointIndices() {
@@ -332,18 +344,117 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    resetPointColors() {
+    resetPointColors(attributesInput?: Float32Array) {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
-        const color = new Color();
-        color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
-        color.multiplyScalar(this.pointBrightness);
+
         const colorAttribute = this.points.geometry.getAttribute("color");
-        for (let i = 0; i < colorAttribute.count; i++) {
-            colorAttribute.setXYZ(i, color.r, color.g, color.b);
+        const geometry = this.points.geometry;
+        const numPoints = geometry.drawRange.count;
+        const positions = geometry.getAttribute("position");
+
+        let attributes;
+        if (this.colorByEvent.action === "default") {
+            attributes = new Float32Array(numPoints).fill(1); // all 1
+            console.debug("Default attributes (1)");
+        } else {
+            if (this.colorByEvent.action === "calculate") {
+                attributes = this.calculateAttributeVector(positions, this.colorByEvent, numPoints); // calculated attributes based on position
+                console.debug("Attributes calculated");
+            } else if (this.colorByEvent.action === "provided" || this.colorByEvent.action === "provided-normalized") {
+                if (attributesInput) {
+                    attributes = attributesInput; // take provided attributes fetched from Zarr
+                    this.currentAttributes = attributes;
+                    console.debug("Attributes provided, using attributesInput");
+                } else {
+                    attributes = this.currentAttributes;
+                    console.debug("No attributes provided, using currentAttributes");
+                }
+            } else {
+                console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
+            }
+            if (attributes) {
+                if (this.colorByEvent.action != "provided-normalized" && attributes.length > 0) {
+                    attributes = this.normalizeAttributeVector(attributes);
+                }
+            } else {
+                attributes = new Float32Array(numPoints).fill(1);
+                console.error("No attributes found for colorByEvent:", this.colorByEvent);
+            }
+        }
+
+        if (this.colorByEvent.type === "default") {
+            const color = new Color();
+            color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
+            color.multiplyScalar(this.pointBrightness);
+            for (let i = 0; i < numPoints; i++) {
+                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            }
+        } else {
+            const color = new Color();
+            if (this.colorByEvent.type === "categorical") {
+                colormaps.setColorMap(colormapColorbyCategorical, 50);
+            } else if (this.colorByEvent.type === "continuous") {
+                colormaps.setColorMap(colormapColorbyContinuous, 50);
+            }
+            for (let i = 0; i < numPoints; i++) {
+                const scalar = attributes[i]; // must be [0 1]
+                const colorOfScalar = colormaps.getColor(scalar); // remove the bright/dark edges of colormap
+                // const colorOfScalar = colormaps.getColor(scalar*0.8+0.1); //remove the bright/dark edges of colormap
+                color.setRGB(colorOfScalar.r, colorOfScalar.g, colorOfScalar.b, SRGBColorSpace);
+                color.multiplyScalar(this.pointBrightness);
+                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            }
         }
         colorAttribute.needsUpdate = true;
+    }
+
+    calculateAttributeVector(
+        positions: BufferAttribute | InterleavedBufferAttribute,
+        colorByEvent: Option,
+        numPoints: number,
+    ): number[] {
+        const attributeVector = [];
+
+        for (let i = 0; i < numPoints; i++) {
+            if (colorByEvent.name === "uniform") {
+                attributeVector.push(1); // constant color
+            } else if (colorByEvent.name === "x-position") {
+                attributeVector.push(positions.getX(i) + 1000); // color based on X coordinate
+            } else if (colorByEvent.name === "y-position") {
+                attributeVector.push(positions.getY(i)); // color based on Y coordinate
+            } else if (colorByEvent.name === "z-position") {
+                attributeVector.push(positions.getZ(i)); // color based on Z coordinate
+            } else if (colorByEvent.name === "sign(x-pos)") {
+                const bool = positions.getX(i) < 0;
+                attributeVector.push(bool ? 0 : 1); // color based on X coordinate (2 groups)
+            } else if (colorByEvent.name === "quadrants") {
+                const x = positions.getX(i) > 0 ? 1 : 0;
+                const y = positions.getY(i) > 0 ? 1 : 0;
+                const z = positions.getZ(i) > 0 ? 1 : 0;
+                const quadrant = x + y * 2 + z * 4; //
+                attributeVector.push(quadrant); // color based on XY coordinates (4 groups)
+            } else {
+                attributeVector.push(1); // default to constant color if event type not recognized
+                console.error("Invalid colorByEvent name to be calculated from data:", colorByEvent.name);
+            }
+        }
+
+        return attributeVector;
+    }
+
+    normalizeAttributeVector(attributes: number[] | Float32Array): number[] | Float32Array {
+        const min = Math.min(...attributes);
+        const max = Math.max(...attributes);
+        const range = max - min;
+
+        // Avoid division by zero in case all values are the same
+        if (range === 0) {
+            return attributes.map(() => 1); // Arbitrary choice: map all to the midpoint (0.5)
+        }
+
+        return attributes.map((value) => (value - min) / range);
     }
 
     removeLastSelection() {
@@ -379,7 +490,7 @@ export class PointCanvas {
         this.resetPointColors();
     }
 
-    setPointsSizes() {
+    updatePointsSizes() {
         const geometry = this.points.geometry;
         const sizes = geometry.getAttribute("size");
 
@@ -409,6 +520,7 @@ export class PointCanvas {
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
         const sizes = geometry.getAttribute("size");
+
         const num = numberOfValuesPerPoint;
 
         // if the point size is the initial point size and radius is provided, then we need to calculate the mean cell size once

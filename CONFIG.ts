@@ -19,8 +19,17 @@ const config = {
         // Maximum number of cells a user can select without getting a warning
         max_num_selected_cells: 100,
         
-        // Choose colormap for the tracks, options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
+        // Choose colormap for the tracks
+        // options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
         colormap_tracks: "cividis-inferno",
+
+        // Choose colormap for coloring the cells, when the attribute is continuous or categorical
+        // options: HSL, viridis, plasma, inferno, magma, cividis
+        colormap_colorby_categorical: "HSL",
+        colormap_colorby_continuous: "plasma",
+
+        // Show default attributes in the left dropdown menu for coloring the cells
+        showDefaultAttributes: true,
         
         // Point size (arbitrary units), if cell sizes not provided in zarr attributes
         point_size: 0.1,
@@ -33,7 +42,11 @@ const config = {
 
         // Point color (when selector hovers over)
         preview_hightlight_point_color: [0.8, 0.8, 0], //yellow
+    },
 
+    permission:{
+        // Allow users to color cells by attributes
+        allowColorByAttribute: true
     }
 }
 

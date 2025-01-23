@@ -85,7 +85,9 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
     zarr_path: Path,
+    add_radius: bool = False,
     extra_cols: Iterable[str] = (),
+    pre_normalized: bool = False,
 ) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
@@ -113,11 +115,18 @@ def convert_dataframe_to_zarr(
         flag_2D = True
         df["z"] = 0.0
 
+    points_cols = (
+        ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"]
+    )  # columns to store in the points array
     extra_cols = list(extra_cols)
-    columns = REQUIRED_COLUMNS + extra_cols
-    points_cols = ["z", "y", "x"] + extra_cols  # columns to store in the points array
+    columns_to_check = (
+        REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS
+    )  # columns to check for in the DataFrame
+    columns_to_check = columns_to_check + extra_cols
+    print("point_cols:", points_cols)
+    print("columns_to_check:", columns_to_check)
 
-    for col in columns:
+    for col in columns_to_check:
         if col not in df.columns:
             raise ValueError(f"Column '{col}' not found in the DataFrame")
 
@@ -144,7 +153,7 @@ def convert_dataframe_to_zarr(
 
     n_tracklets = df["track_id"].nunique()
     # (z, y, x) + extra_cols
-    num_values_per_point = 3 + len(extra_cols)
+    num_values_per_point = 4 if add_radius else 3
 
     # store the points in an array
     points_array = (
@@ -154,6 +163,15 @@ def convert_dataframe_to_zarr(
         )
         * INF_SPACE
     )
+    attribute_array_empty = (
+        np.ones(
+            (n_time_points, max_values_per_time_point),
+            dtype=np.float32,
+        )
+        * INF_SPACE
+    )
+    attribute_arrays = {}
+    attribute_types = [None] * len(extra_cols)
 
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
@@ -165,9 +183,24 @@ def convert_dataframe_to_zarr(
         points_array[t, : group_size * num_values_per_point] = (
             group[points_cols].to_numpy().ravel()
         )
+
         points_ids = t * max_values_per_time_point + np.arange(group_size)
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
+
+    for index, col in enumerate(extra_cols):
+        attribute_array = attribute_array_empty.copy()
+        for t, group in df.groupby("t"):
+            group_size = len(group)
+            attribute_array[t, :group_size] = group[col].to_numpy().ravel()
+        # check if attribute is categorical or continuous
+        if (
+            len(np.unique(attribute_array[attribute_array != INF_SPACE])) <= 10
+        ):  # get number of unique values, excluding INF_SPACE
+            attribute_types[index] = "categorical"
+        else:
+            attribute_types[index] = "continuous"
+        attribute_arrays[col] = attribute_array
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
 
@@ -233,7 +266,22 @@ def convert_dataframe_to_zarr(
         chunks=(1, points_array.shape[1]),
         dtype=np.float32,
     )
+    print("points shape:", points.shape)
     points.attrs["values_per_point"] = num_values_per_point
+
+    if len(extra_cols) > 0:
+        attributes_matrix = np.hstack(
+            [attribute_arrays[attr] for attr in attribute_arrays]
+        )
+        attributes = top_level_group.create_dataset(
+            "attributes",
+            data=attributes_matrix,
+            chunks=(1, attribute_array.shape[1]),
+            dtype=np.float32,
+        )
+        attributes.attrs["attribute_names"] = extra_cols
+        attributes.attrs["attribute_types"] = attribute_types
+        attributes.attrs["pre_normalized"] = pre_normalized
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
@@ -241,8 +289,9 @@ def convert_dataframe_to_zarr(
 
     for col in ("z", "y", "x"):
         points.attrs[f"mean_{col}"] = mean[col]
+
     points.attrs["extent_xyz"] = extent_xyz
-    points.attrs["fields"] = ["z", "y", "x"] + extra_cols
+    points.attrs["fields"] = points_cols
     points.attrs["ndim"] = 2 if flag_2D else 3
 
     top_level_group.create_groups(
@@ -287,7 +336,11 @@ def convert_dataframe_to_zarr(
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 
-def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
+def dataframe_to_browser(
+    df: pd.DataFrame,
+    zarr_dir: Path,
+    extra_cols: Iterable[str] = (),
+) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
     1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
@@ -299,16 +352,18 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
     zarr_dir : Path
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
+    extra_cols : Iterable[str], optional
+        List of extra columns to include in the Zarr store, by default empty list
     """
 
     if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
-            logging.info("Temporary directory used for localhost: %s", zarr_dir)
+            LOG.info("Temporary directory used for localhost: %s", zarr_dir)
     else:
-        logging.info("Provided directory used used for localhost: %s", zarr_dir)
+        LOG.info("Provided directory used used for localhost: %s", zarr_dir)
 
-    extra_cols = []
+    # extra_cols = []
     zarr_path = (
         zarr_dir / "zarr_bundle.zarr"
     )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
@@ -324,17 +379,15 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         threaded=True,
     )
 
-    logging.info(
-        "localhost successfully launched, serving: %s", zarr_dir_with_storename
-    )
+    LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
 
     baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
     dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
-    logging.info("Copy the following URL into the Google Chrome browser:")
-    logging.info("full URL: %s", fullUrl)
+    LOG.info("Copy the following URL into the Google Chrome browser:")
+    LOG.info("full URL: %s", fullUrl)
     webbrowser.open(fullUrl)
 
 
@@ -358,10 +411,33 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
     default=False,
     type=bool,
 )
+@click.option(
+    "--add_all_attributes",
+    is_flag=True,
+    help="Boolean indicating whether to include extra columns of the CSV as attributes for colors the cells in the viewer",
+    default=False,
+    type=bool,
+)
+@click.option(
+    "--add_attribute",
+    type=str,
+    default=None,
+    help="Comma-separated list of column names to include as attributes (e.g., 'cell_size,diameter,type,label')",
+)
+@click.option(
+    "--pre_normalized",
+    is_flag=True,
+    help="Boolean indicating whether the extra column/columns with attributes are prenormalized to [0,1]",
+    default=False,
+    type=bool,
+)
 def convert_cli(
     csv_file: Path,
     out_dir: Path | None,
     add_radius: bool,
+    add_all_attributes: bool,
+    add_attribute: str | None,
+    pre_normalized: bool,
 ) -> None:
     """
     Convert a CSV of tracks to a sparse Zarr store
@@ -375,16 +451,33 @@ def convert_cli(
 
     zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
 
-    extra_cols = ["radius"] if add_radius else []
-
     tracks_df = pd.read_csv(csv_file)
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
+    extra_cols = []
+    if add_all_attributes:
+        columns_standard = REQUIRED_COLUMNS
+        extra_cols = tracks_df.columns.difference(columns_standard).to_list()
+        print("extra columns included as attributes:", extra_cols)
+    elif add_attribute:
+        selected_columns = [col.strip() for col in add_attribute.split(",")]
+        missing_columns = [
+            col for col in selected_columns if col not in tracks_df.columns
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"Columns not found in the CSV file: {', '.join(missing_columns)}"
+            )
+        extra_cols = selected_columns
+        print(f"Selected columns included as attributes: {', '.join(extra_cols)}")
+
     convert_dataframe_to_zarr(
         tracks_df,
         zarr_path,
+        add_radius,
         extra_cols=extra_cols,
+        pre_normalized=pre_normalized,
     )
 
     LOG.info(f"Full conversion took {time.monotonic() - start} seconds")

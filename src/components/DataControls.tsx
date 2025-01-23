@@ -149,8 +149,8 @@ export default function DataControls(props: DataControlsProps) {
                 <Button
                     icon="GlobeBasic"
                     sdsSize="large"
-                    sdsType="secondary"
                     sdsStyle="icon"
+                    sdsType="secondary"
                     onClick={showUrlPopover}
                 />
             </Tooltip>
