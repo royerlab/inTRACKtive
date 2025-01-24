@@ -19,7 +19,6 @@ def generate_viewer_state_hash(data_url: str) -> str:
         The inTRACKtive hash string (to be added to the URL).
     """
 
-
     # Define the Python equivalent of DEFAULT_DROPDOWN_OPTION
     default_dropdown_option = {
         "name": "uniform",
