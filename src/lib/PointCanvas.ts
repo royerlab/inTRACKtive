@@ -310,16 +310,6 @@ export class PointCanvas {
         this.pointIndicesCache.clear();
     }
 
-    changeColorBy(eventName: string) {
-        const selectedOption = dropDownOptions.find((option) => option.name === eventName);
-        if (selectedOption) {
-            this.colorByEvent = selectedOption;
-            console.debug(`ColorBy attribute selected: ${selectedOption.name}`);
-        } else {
-            console.error(`No option found with name: ${eventName}`);
-        }
-    }
-
     highlightPoints(points: number[]) {
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();

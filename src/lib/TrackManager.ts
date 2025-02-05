@@ -1,6 +1,5 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
 import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
-import { addDropDownOption, resetDropDownOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -14,7 +13,7 @@ const showDefaultAttributes = config.settings.showDefaultAttributes;
 export type Option = {
     name: string;
     label: number;
-    type: "default" | "categorical" | "continuous";
+    type: "default" | "categorical" | "continuous" | "hex";
     action: "default" | "calculate" | "provided" | "provided-normalized";
     numCategorical: number | undefined;
 };

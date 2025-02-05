@@ -18,7 +18,6 @@ import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
-import { numberOfDefaultColorByOptions } from "@/components/leftSidebar/DynamicDropdown.tsx";
 
 import config from "../../CONFIG.ts";
 const brandingName = config.branding.name || undefined;
@@ -81,7 +80,6 @@ if (detectedDevice.isPhone) {
 // );
 
 const drawerWidth = 256;
-// const playbackFPS = 16;
 const playbackFPS = 16;
 const playbackIntervalMs = 1000 / playbackFPS;
 
@@ -226,7 +224,6 @@ export default function App() {
             const getPoints = async (time: number) => {
                 console.debug("fetch points at time %d", time);
                 const data = await trackManager.fetchPointsAtTime(time);
-                // console.log('data shape:', data.length, 'attributes shape:', attributes.length);
                 console.debug("got %d points for time %d", data.length / 3, time);
 
                 if (ignore) {
