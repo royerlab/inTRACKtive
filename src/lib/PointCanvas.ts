@@ -398,6 +398,10 @@ export class PointCanvas {
         } else if (this.colorByEvent.type === "hex") {
             for (let i = 0; i < numPoints; i++) {
                 const hexInt = attributes[i]; // must be [0 1]
+                if (hexInt === undefined) {
+                    console.warn("Invalid hexInt value:", hexInt);
+                    continue; // skip this iteration
+                }
                 const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
                 const color = new Color(hexStr);
                 color.multiplyScalar(this.pointBrightness);
