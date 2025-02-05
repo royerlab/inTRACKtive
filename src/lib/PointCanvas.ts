@@ -428,6 +428,7 @@ export class PointCanvas {
         numPoints: number,
     ): number[] {
         const attributeVector = [];
+        
         for (let i = 0; i < numPoints; i++) {
             if (colorByEvent.name === "uniform") {
                 attributeVector.push(1); // constant color

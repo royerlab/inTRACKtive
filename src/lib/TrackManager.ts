@@ -319,7 +319,6 @@ export class TrackManager {
 export async function loadTrackManager(url: string) {
     let trackManager;
     try {
-        // console.log('url', url);
         const points = await openArray({
             store: url,
             path: "points",
@@ -360,7 +359,6 @@ export async function loadTrackManager(url: string) {
                 mode: "r",
             });
             const zattrs = await attributes.attrs.asObject();
-
             console.debug("attribute names found: %s", zattrs["attribute_names"]);
             console.debug("attribute types found: %s", zattrs["attribute_types"]);
 

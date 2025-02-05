@@ -317,8 +317,7 @@ export default function App() {
             const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
             const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
 
-            console.log("changed for ChromaTrace to only export the first/last timepoint per tracklet");
-            for (let i = 0; i < 1; i++) {
+            for (let i = 0; i < startTimes.count; i++) {
                 timepointsInTrack.add(startTimes.getX(i));
                 trackData.push([
                     // trackID is 1-indexed in input and output CSVs
