@@ -375,7 +375,11 @@ export class PointCanvas {
                 console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
             }
             if (attributes) {
-                if (this.colorByEvent.action != "provided-normalized" && attributes.length > 0) {
+                if (
+                    this.colorByEvent.action != "provided-normalized" &&
+                    attributes.length > 0 &&
+                    this.colorByEvent.type != "hex"
+                ) {
                     attributes = this.normalizeAttributeVector(attributes);
                 }
             } else {
@@ -389,6 +393,18 @@ export class PointCanvas {
             color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
             color.multiplyScalar(this.pointBrightness);
             for (let i = 0; i < numPoints; i++) {
+                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            }
+        } else if (this.colorByEvent.type === "hex") {
+            for (let i = 0; i < numPoints; i++) {
+                const hexInt = attributes[i]; // must be [0 1]
+                if (hexInt === undefined) {
+                    console.warn("Invalid hexInt value:", hexInt);
+                    continue; // skip this iteration
+                }
+                const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
+                const color = new Color(hexStr);
+                color.multiplyScalar(this.pointBrightness);
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
         } else {
