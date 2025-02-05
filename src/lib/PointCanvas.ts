@@ -385,7 +385,11 @@ export class PointCanvas {
                 console.error("Invalid action type for colorByEvent:", this.colorByEvent.action);
             }
             if (attributes) {
-                if (this.colorByEvent.action != "provided-normalized" && attributes.length > 0 && this.colorByEvent.type != "hex") {
+                if (
+                    this.colorByEvent.action != "provided-normalized" &&
+                    attributes.length > 0 &&
+                    this.colorByEvent.type != "hex"
+                ) {
                     attributes = this.normalizeAttributeVector(attributes);
                 }
             } else {
