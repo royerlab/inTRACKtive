@@ -130,7 +130,7 @@ intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,d
 #add all columns as attributes
 intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
 ```
-When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. 
+When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. The conversion script will detect whether each provided column represents a categorical or continuous attribute. This information is saved in the Zarr attributes information and loaded by inTRACKtive to use the appropriate colormap. 
 
 In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
 
