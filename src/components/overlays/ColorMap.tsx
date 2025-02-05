@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 // import variables from the sds-components library
 import "@czi-sds/components/dist/variables.css";
 import { highlightLUT } from "@/lib/three/TrackMaterial";
-import { Option } from "@/components/leftSidebar/DynamicDropdown";
+import { Option } from "@/lib/TrackManager";
 import config from "../../../CONFIG.ts";
 const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
 const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
@@ -51,7 +51,7 @@ export const ColorMapTracks = () => {
 };
 
 interface ColormapCellsProps {
-    colorByEvent: Option; // Currently timestamp is a frame number, but it could be the actual timestamp
+    colorByEvent: Option;
 }
 
 export const ColorMapCells = (props: ColormapCellsProps) => {
@@ -67,9 +67,6 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
     }
 
     highlightLUT.setColorMap(colormapString);
-
-    // const colors = Array.from({ length: 129 }, (_, i) => `#${highlightLUT.getColor(i / 128).getHexString()}`);
-    // const gradient = `linear-gradient(to top, ${colors.join(", ")})`;
 
     const colors = Array.from(
         { length: numSteps },

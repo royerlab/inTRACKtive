@@ -1,3 +1,5 @@
+![Tests](https://github.com/royerlab/inTRACKtive/actions/workflows/python-lint-and-test.yml/badge.svg)
+[![PyPI version](https://badge.fury.io/py/intracktive.svg?cache_bust=1)](https://badge.fury.io/py/intracktive)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributors](https://img.shields.io/github/contributors-anon/royerlab/inTRACKtive)](https://github.com/royerlab/inTRACKtive/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/royerlab/inTRACKtive?style=social)](https://github.com/royerlab/inTRACKtive/)
@@ -92,7 +94,7 @@ The common first step for all three approaches is to start with a clean conda en
 ```
 conda create -n intracktive python
 conda activate intracktive
-pip install git+https://github.com/royerlab/inTRACKtive.git@main#subdirectory=python
+pip install intracktive
 ```
 
 ---
@@ -117,13 +119,18 @@ intracktive convert --csv_file path/to/tracks.csv --add_radius
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
 
-**ToDo: explain how to add attributes**
+Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
 ```
-intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
+#add specific column as attribute
 intracktive convert --csv_file path/to/file.csv --add_attribute cell_size
-intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,diameter,color
-```
 
+#add multiple columns as attributes
+intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,diameter,color
+
+#add all columns as attributes
+intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
+```
+When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. 
 
 In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
 
@@ -139,13 +146,14 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
 
-To make the previous two proccesses (conversion + hosting data) easiest, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
+To make the previous two proccesses (conversion + hosting data) easier, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
 
 ```
 dataframe_to_browser(data, zarr_dir)
 ```
-
 where `data` is a `pandas.dataFrame` containing the tracking data, and `zarr_dir` to directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
+
+> ⚠️ Currently `dataframe_to_browser` only works for Chrome and Firefox
 
 ### iii) Open `inTRACKtive` using the napari widget
 

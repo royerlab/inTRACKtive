@@ -1,4 +1,4 @@
-import { TrackManager } from "@/lib/TrackManager";
+import { Option, TrackManager } from "@/lib/TrackManager";
 import TrackControls from "./TrackControls";
 import ControlInstructions from "./ControlInstructions";
 import { PointSelectionMode } from "@/lib/PointSelector";
@@ -23,8 +23,9 @@ interface LeftSidebarWrapperProps {
     axesVisible: boolean;
     toggleAxesVisible: () => void;
     colorBy: boolean;
+    colorByEvent: Option;
     toggleColorBy: (colorBy: boolean) => void;
-    changeColorBy: (value: string) => void;
+    changeColorBy: (value: Option) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -46,6 +47,7 @@ export default function LeftSidebarWrapper({
     toggleAxesVisible,
     colorBy,
     toggleColorBy,
+    colorByEvent,
     changeColorBy,
 }: LeftSidebarWrapperProps) {
     return (
@@ -69,6 +71,7 @@ export default function LeftSidebarWrapper({
                 toggleAxesVisible={toggleAxesVisible}
                 colorBy={colorBy}
                 toggleColorBy={toggleColorBy}
+                colorByEvent={colorByEvent}
                 changeColorBy={changeColorBy}
             />
             <Divider />

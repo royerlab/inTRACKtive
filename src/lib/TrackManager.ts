@@ -6,6 +6,70 @@ export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,
 import config from "../../CONFIG.ts";
 const pointSizeDefault = config.settings.point_size;
 
+// TODO: all these attribute options might be better to put in a separate module.
+// Should also consider some related renaming (i.e. that these are attribute options
+// rather than dropdown options).
+const showDefaultAttributes = config.settings.showDefaultAttributes;
+
+export type Option = {
+    name: string;
+    label: number;
+    type: "default" | "categorical" | "continuous";
+    action: "default" | "calculate" | "provided" | "provided-normalized";
+    numCategorical: number | undefined;
+};
+
+// Define a constant for the default list of options
+export const DEFAULT_DROPDOWN_OPTION: Option = {
+    name: "uniform",
+    label: 0,
+    type: "default",
+    action: "default",
+    numCategorical: undefined,
+};
+const DEFAULT_DROPDOWN_OPTIONS: Option[] = [
+    DEFAULT_DROPDOWN_OPTION,
+    { name: "x-position", label: 1, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "y-position", label: 2, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "z-position", label: 3, type: "continuous", action: "calculate", numCategorical: undefined },
+    { name: "sign(x-pos)", label: 4, type: "categorical", action: "calculate", numCategorical: 2 },
+    { name: "quadrants", label: 5, type: "categorical", action: "calculate", numCategorical: 8 },
+];
+
+export const numberOfDefaultColorByOptions = DEFAULT_DROPDOWN_OPTIONS.length;
+
+// Function to reset the dropdown options based on an input flag
+function resetDropDownOptions(useFirstOptionOnly: boolean = false) {
+    const options: Option[] = [];
+    if (useFirstOptionOnly || showDefaultAttributes == false) {
+        // Reset to only the first default option
+        if (DEFAULT_DROPDOWN_OPTIONS.length > 0) {
+            options.push(DEFAULT_DROPDOWN_OPTION);
+        }
+        console.debug("DropDownOptions reset to only the first default option.");
+    } else {
+        // Reset to the full default options
+        options.push(...DEFAULT_DROPDOWN_OPTIONS);
+        console.debug("DropDownOptions reset to default.");
+    }
+    return options;
+}
+
+function addDropDownOption(options: Option[], option: Option) {
+    // Check if an option with the same name or label already exists
+    const exists = options.some(
+        (existingOption) => existingOption.name === option.name || existingOption.label === option.label,
+    );
+
+    // Add the option only if it does not exist
+    if (!exists) {
+        options.push(option);
+        console.debug(`DropDownOption '${option.name}' added.`);
+    } else {
+        console.warn(`Option '${option.name}' already exists in dropDownOptions.`);
+    }
+}
+
 class SparseZarrArray {
     store: string;
     groupPath: string;
@@ -108,6 +172,7 @@ export class TrackManager {
     tracksToPoints: SparseZarrArray;
     tracksToTracks: SparseZarrArray;
     attributes: ZarrArray;
+    attributeOptions: Option[];
     numTimes: number;
     maxPointsPerTimepoint: number;
     scaleSettings: ScaleSettings;
@@ -121,6 +186,7 @@ export class TrackManager {
         tracksToPoints: SparseZarrArray,
         tracksToTracks: SparseZarrArray,
         attributes: ZarrArray,
+        attributeOptions: Option[],
         scaleSettings: ScaleSettings,
     ) {
         this.store = store;
@@ -129,6 +195,7 @@ export class TrackManager {
         this.tracksToPoints = tracksToPoints;
         this.tracksToTracks = tracksToTracks;
         this.attributes = attributes;
+        this.attributeOptions = attributeOptions;
         this.numTimes = points.shape[0];
         this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
         this.scaleSettings = scaleSettings;
@@ -157,8 +224,8 @@ export class TrackManager {
         return array;
     }
 
-    async fetchAttributessAtTime(timeIndex: number, attributeIndex: number): Promise<Float32Array> {
-        console.debug("fetchAttributessAtTime, time=%d, attribute=%d", timeIndex, attributeIndex);
+    async fetchAttributesAtTime(timeIndex: number, attributeIndex: number): Promise<Float32Array> {
+        console.debug("fetchAttributesAtTime, time=%d, attribute=%d", timeIndex, attributeIndex);
 
         const startColumn = attributeIndex * this.maxPointsPerTimepoint;
         const endColumn = startColumn + this.maxPointsPerTimepoint;
@@ -286,7 +353,7 @@ export async function loadTrackManager(url: string) {
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
         let attributes = null;
-        resetDropDownOptions();
+        let attributeOptions: Option[] = resetDropDownOptions();
         try {
             attributes = await openArray({
                 store: url,
@@ -294,21 +361,22 @@ export async function loadTrackManager(url: string) {
                 mode: "r",
             });
             const zattrs = await attributes.attrs.asObject();
-            console.log("attribute names found: %s", zattrs["attribute_names"]);
-            // console.log("attribute types found: %s", zattrs["attribute_types"]);
+          
+            console.debug("attribute names found: %s", zattrs["attribute_names"]);
+            console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
-                addDropDownOption({
+                addDropDownOption(attributeOptions, {
                     name: zattrs["attribute_names"][column],
-                    label: dropDownOptions.length,
+                    label: attributeOptions.length,
                     type: zattrs["attribute_types"][column] ? zattrs["attribute_types"][column] : "continuous",
                     action: zattrs["pre_normalized"] ? "provided-normalized" : "provided",
                     numCategorical: undefined,
                 });
             }
-            console.debug("dropDownOptions:", dropDownOptions);
+            console.debug("attributeOptions:", attributeOptions);
         } catch (error) {
-            resetDropDownOptions(true);
+            attributeOptions = resetDropDownOptions(true);
             console.debug("No attributes found in Zarr");
         }
 
@@ -320,6 +388,7 @@ export async function loadTrackManager(url: string) {
             tracksToPoints,
             tracksToTracks,
             attributes,
+            attributeOptions,
             scaleSettings,
         );
         if (numberOfValuesPerPoint == 4) {
@@ -327,7 +396,7 @@ export async function loadTrackManager(url: string) {
         }
         if (datasetNdim == 2) {
             trackManager.ndim = 2;
-            console.debug("2D datast detected in loadTrackManager");
+            console.debug("2D dataset detected in loadTrackManager");
         }
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);

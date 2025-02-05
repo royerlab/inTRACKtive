@@ -336,7 +336,11 @@ def convert_dataframe_to_zarr(
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
 
-def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
+def dataframe_to_browser(
+    df: pd.DataFrame,
+    zarr_dir: Path,
+    extra_cols: Iterable[str] = (),
+) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
     1) converts the DataFrame to Zarr, 2) saves the zarr in speficied path (if provided, otherwise temporary path),
@@ -348,16 +352,18 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         The DataFrame containing the tracks data. The required columns in the dataFrame are: ['track_id', 't', 'z', 'y', 'x', 'parent_track_id']
     zarr_dir : Path
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
+    extra_cols : Iterable[str], optional
+        List of extra columns to include in the Zarr store, by default empty list
     """
 
     if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
-            logging.info("Temporary directory used for localhost:", zarr_dir)
+            LOG.info("Temporary directory used for localhost: %s", zarr_dir)
     else:
-        logging.info("Provided directory used used for localhost:", zarr_dir)
+        LOG.info("Provided directory used used for localhost: %s", zarr_dir)
 
-    extra_cols = []
+    # extra_cols = []
     zarr_path = (
         zarr_dir / "zarr_bundle.zarr"
     )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
@@ -373,14 +379,15 @@ def dataframe_to_browser(df: pd.DataFrame, zarr_dir: Path) -> None:
         threaded=True,
     )
 
-    logging.info("localhost successfully launched, serving:", zarr_dir_with_storename)
+    LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
 
     baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
     dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
-    logging.info("full URL", fullUrl)
+    LOG.info("Copy the following URL into the Google Chrome browser:")
+    LOG.info("full URL: %s", fullUrl)
     webbrowser.open(fullUrl)
 
 

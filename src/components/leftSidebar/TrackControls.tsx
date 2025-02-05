@@ -1,7 +1,6 @@
-import { TrackManager, numberOfValuesPerPoint } from "@/lib/TrackManager";
-import { InputSlider, InputToggle } from "@czi-sds/components";
+import { TrackManager, Option, numberOfValuesPerPoint } from "@/lib/TrackManager";
+import { Dropdown, InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, Stack } from "@mui/material";
-import DynamicDropdown, { dropDownOptions } from "./DynamicDropdown";
 import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
 
@@ -26,11 +25,13 @@ interface TrackControlsProps {
     toggleAxesVisible: () => void;
     colorBy: boolean;
     toggleColorBy: (colorBy: boolean) => void;
-    changeColorBy: (value: string) => void;
+    colorByEvent: Option;
+    changeColorBy: (value: Option) => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
+    const dropDownOptions = props.trackManager?.attributeOptions ?? [];
 
     return (
         <Stack spacing={"1.1em"}>
@@ -107,7 +108,21 @@ export default function TrackControls(props: TrackControlsProps) {
             {/* Color cells by dropdown */}
             {props.colorBy == true && (
                 <div>
-                    <DynamicDropdown options={dropDownOptions} onClick={props.changeColorBy} />
+                    <Dropdown
+                        label={`Color: ${props.colorByEvent.name}`}
+                        options={dropDownOptions}
+                        value={props.colorByEvent}
+                        onChange={(_, value) => {
+                            console.debug("Dropdown::onChange", value);
+                            // TODO: I don't know if these values are actually possible.
+                            // If they are, we can either error/warn and/or use the default
+                            // value instead.
+                            if (value === null) return;
+                            if (typeof value === "string") return;
+                            if (value instanceof Array) return;
+                            props.changeColorBy(value);
+                        }}
+                    ></Dropdown>
                 </div>
             )}
 
