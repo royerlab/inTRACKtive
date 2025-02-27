@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from intracktive.main import main
 import pytest
+from intracktive.main import main
 
 
 def _run_command(command_and_args: List[str]) -> None:
