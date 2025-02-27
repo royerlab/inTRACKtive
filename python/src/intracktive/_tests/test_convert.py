@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import zarr
 from intracktive.convert import convert_dataframe_to_zarr
-import pytest
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
@@ -31,13 +30,13 @@ def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
             )
 
 
-def test_actual_zarr_content(
-    tmp_path: Path,
-    make_sample_data: pd.DataFrame,
-) -> None:
+def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> None:
     df = make_sample_data
     df["radius"] = np.linspace(10, 18, 5)
 
+    print("df", df)
+
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
     new_path = tmp_path / "sample_data_bundle.zarr"
     gt_path = Path(__file__).parent / "data" / "gt_data_bundle.zarr"
 
