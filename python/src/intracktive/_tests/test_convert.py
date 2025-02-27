@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from intracktive.convert import convert_dataframe_to_zarr
+import pytest
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
@@ -30,13 +31,23 @@ def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
             )
 
 
-def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> None:
+@pytest.mark.parametrize(
+    "file_format,save_func",
+    [
+        ("csv", lambda df, path: df.to_csv(path, index=False)),
+        ("parquet", lambda df, path: df.to_parquet(path, index=False)),
+    ],
+)
+def test_actual_zarr_content(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+    file_format: str,
+    save_func: callable,
+) -> None:
     df = make_sample_data
     df["radius"] = np.linspace(10, 18, 5)
 
-    print("df", df)
-
-    df.to_csv(tmp_path / "sample_data.csv", index=False)
+    save_func(df, tmp_path / f"sample_data.{file_format}")
     new_path = tmp_path / "sample_data_bundle.zarr"
     gt_path = Path(__file__).parent / "data" / "gt_data_bundle.zarr"
 

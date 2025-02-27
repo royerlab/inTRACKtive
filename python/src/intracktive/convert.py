@@ -393,16 +393,16 @@ def dataframe_to_browser(
 
 @click.command(name="convert")
 @click.option(
-    "--csv_file",
+    "--input_file",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Path to the CSV file",
+    help="Path to the input file (CSV or Parquet)",
     required=True,
 )
 @click.option(
     "--out_dir",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
     default=None,
-    help="Path to the output directory (optional, defaults to the parent dir of the CSV file)",
+    help="Path to the output directory (optional, defaults to the parent dir of the input file)",
 )
 @click.option(
     "--add_radius",
@@ -414,7 +414,7 @@ def dataframe_to_browser(
 @click.option(
     "--add_all_attributes",
     is_flag=True,
-    help="Boolean indicating whether to include extra columns of the CSV as attributes for colors the cells in the viewer",
+    help="Boolean indicating whether to include extra columns as attributes for colors the cells in the viewer",
     default=False,
     type=bool,
 )
@@ -432,7 +432,7 @@ def dataframe_to_browser(
     type=bool,
 )
 def convert_cli(
-    csv_file: Path,
+    input_file: Path,
     out_dir: Path | None,
     add_radius: bool,
     add_all_attributes: bool,
@@ -440,18 +440,25 @@ def convert_cli(
     pre_normalized: bool,
 ) -> None:
     """
-    Convert a CSV of tracks to a sparse Zarr store
+    Convert a CSV or Parquet file of tracks to a sparse Zarr store
     """
     start = time.monotonic()
 
     if out_dir is None:
-        out_dir = csv_file.parent
+        out_dir = input_file.parent
     else:
         out_dir = Path(out_dir)
 
-    zarr_path = out_dir / f"{csv_file.stem}_bundle.zarr"
+    zarr_path = out_dir / f"{input_file.stem}_bundle.zarr"
 
-    tracks_df = pd.read_csv(csv_file)
+    # Read input file based on extension
+    file_extension = input_file.suffix.lower()
+    if file_extension == '.csv':
+        tracks_df = pd.read_csv(input_file)
+    elif file_extension == '.parquet':
+        tracks_df = pd.read_parquet(input_file)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}. Only .csv and .parquet files are supported.")
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
@@ -467,7 +474,7 @@ def convert_cli(
         ]
         if missing_columns:
             raise ValueError(
-                f"Columns not found in the CSV file: {', '.join(missing_columns)}"
+                f"Columns not found in the input file: {', '.join(missing_columns)}"
             )
         extra_cols = selected_columns
         print(f"Selected columns included as attributes: {', '.join(extra_cols)}")

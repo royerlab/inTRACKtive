@@ -106,7 +106,7 @@ This approach consists of two steps: converting the tracking data into our speci
 For the first step, we assume your cell tracking data is saved as `tracks.csv` in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, parent_track_id]`), where `z` is optional. This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
 
 ```
-intracktive convert --csv_file /path/to/tracks.csv
+intracktive convert --input_file /path/to/tracks.csv
 ```
 
 This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
@@ -114,7 +114,7 @@ This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see 
 By default, all the cells are represented by equally-sized dots in `inTRACKtive`. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
 
 ```
-intracktive convert --csv_file path/to/tracks.csv --add_radius
+intracktive convert --input_file path/to/tracks.csv --add_radius
 ```
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
@@ -122,13 +122,13 @@ Or use `intracktive convert --help` for the documentation on the inputs and outp
 Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
 ```
 #add specific column as attribute
-intracktive convert --csv_file path/to/file.csv --add_attribute cell_size
+intracktive convert --input_file path/to/file.csv --add_attribute cell_size
 
 #add multiple columns as attributes
-intracktive convert --csv_file path/to/file.csv --add_attribute cell_size,time,diameter,color
+intracktive convert --input_file path/to/file.csv --add_attribute cell_size,time,diameter,color
 
 #add all columns as attributes
-intracktive convert --csv_file path/to/tracks.csv --add_all_attributes
+intracktive convert --input_file path/to/tracks.csv --add_all_attributes
 ```
 When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. The conversion script will detect whether each provided column represents a categorical or continuous attribute. This information is saved in the Zarr attributes information and loaded by inTRACKtive to use the appropriate colormap. 
 
