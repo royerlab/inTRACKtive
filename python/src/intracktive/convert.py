@@ -453,12 +453,14 @@ def convert_cli(
 
     # Read input file based on extension
     file_extension = input_file.suffix.lower()
-    if file_extension == '.csv':
+    if file_extension == ".csv":
         tracks_df = pd.read_csv(input_file)
-    elif file_extension == '.parquet':
+    elif file_extension == ".parquet":
         tracks_df = pd.read_parquet(input_file)
     else:
-        raise ValueError(f"Unsupported file format: {file_extension}. Only .csv and .parquet files are supported.")
+        raise ValueError(
+            f"Unsupported file format: {file_extension}. Only .csv and .parquet files are supported."
+        )
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
