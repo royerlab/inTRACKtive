@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
+import pytest
 from intracktive.main import main
 
 
@@ -22,7 +23,7 @@ def test_convert_cli_simple(
     _run_command(
         [
             "convert",
-            "--csv_file",
+            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -40,7 +41,7 @@ def test_convert_cli_single_attribute(
     _run_command(
         [
             "convert",
-            "--csv_file",
+            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -60,7 +61,7 @@ def test_convert_cli_multiple_attributes(
     _run_command(
         [
             "convert",
-            "--csv_file",
+            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -80,7 +81,7 @@ def test_convert_cli_all_attributes(
     _run_command(
         [
             "convert",
-            "--csv_file",
+            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -99,11 +100,59 @@ def test_convert_cli_all_attributes_prenormalized(
     _run_command(
         [
             "convert",
-            "--csv_file",
+            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
             "--add_all_attributes",
             "--pre_normalized",
+        ]
+    )
+
+
+def test_convert_cli_invalid_format(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    invalid_file = tmp_path / "sample_data.txt"
+    df.to_csv(invalid_file, index=False)
+
+    with pytest.raises(ValueError):
+        _run_command(
+            [
+                "convert",
+                "--input_file",
+                str(invalid_file),
+                "--out_dir",
+                str(tmp_path),
+            ]
+        )
+
+
+@pytest.mark.parametrize(
+    "file_format,save_method",
+    [
+        ("csv", "to_csv"),
+        ("parquet", "to_parquet"),
+    ],
+)
+def test_convert_cli_simple_file_formats(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+    file_format: str,
+    save_method: str,
+) -> None:
+    df = make_sample_data
+    input_file = tmp_path / f"sample_data.{file_format}"
+    getattr(df, save_method)(input_file, index=False)
+
+    _run_command(
+        [
+            "convert",
+            "--input_file",
+            str(input_file),
+            "--out_dir",
+            str(tmp_path),
         ]
     )
