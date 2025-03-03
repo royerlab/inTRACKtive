@@ -85,7 +85,7 @@ In order to view your own cell tracking data with `inTRACKtive`, make sure your 
 |          3 |   4 | 419 | 398 | 302 |                 1 |
 ```
 
-where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. The can be in a `csv` format, or `pandas.dataFrame`, or anything equivalent. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
+where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division. In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. This can be in a `csv` format, or `pandas.dataFrame`, or anything equivalent. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
 
 For `inTRACKtive`, the data described above needs to be converted into our specialized Zarr format. We have python and command-line functions (see below at point _i_), while the napari and Jupyter Notebook solutions do this under the hood. 
 
@@ -103,7 +103,7 @@ pip install intracktive
 
 This approach consists of two steps: converting the tracking data into our specialized Zarr format, and hosting the data to make it accessible for the browser. 
 
-For the first step, we assume your cell tracking data is saved as `tracks.csv` in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, parent_track_id]`), where `z` is optional. This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
+For the first step, we assume your cell tracking data is saved as `tracks.csv` (or `tracks.parquet`) in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, parent_track_id]`), where `z` is optional. This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
 
 ```
 intracktive convert --input_file /path/to/tracks.csv
