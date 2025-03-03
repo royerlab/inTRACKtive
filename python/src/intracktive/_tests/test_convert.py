@@ -34,9 +34,6 @@ def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> 
     df = make_sample_data
     df["radius"] = np.linspace(10, 18, 5)
 
-    print("df", df)
-
-    df.to_csv(tmp_path / "sample_data.csv", index=False)
     new_path = tmp_path / "sample_data_bundle.zarr"
     gt_path = Path(__file__).parent / "data" / "gt_data_bundle.zarr"
 
