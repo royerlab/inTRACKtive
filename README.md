@@ -85,7 +85,7 @@ In order to view your own cell tracking data with `inTRACKtive`, make sure your 
 |          3 |   4 | 419 | 398 | 302 |                 1 |
 ```
 
-where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division (a `parent_track_id` of `-1` indicates that the cell has no parent. The absence of this column in the tracking data assumes that there are no cell divisions). In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. This can be in a `csv` format, or `pandas.dataFrame`, or anything equivalent. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
+where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division (a `parent_track_id` of `-1` indicates that the cell has no parent. The absence of this column in the tracking data assumes that there are no cell divisions). In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. This can be in a `csv` format, or `pandas.DataFrame`, or anything equivalent. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
 
 For `inTRACKtive`, the data described above needs to be converted into our specialized Zarr format. We have python and command-line functions (see below at point _i_), while the napari and Jupyter Notebook solutions do this under the hood. 
 
@@ -109,7 +109,7 @@ For the first step, we assume your cell tracking data is saved as `tracks.csv` (
 intracktive convert --input_file /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to you `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to your `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
 
 By default, all the cells are represented by equally-sized dots in `inTRACKtive`. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
 
@@ -146,18 +146,18 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
 
-To make the previous two proccesses (conversion + hosting data) easier, we compiled them into a single python function, which is demonstration in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
+To make the previous two processes (conversion + hosting data) easier, we compiled them into a single python function, which is demonstrated in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb). 
 
 ```
 dataframe_to_browser(data, zarr_dir)
 ```
-where `data` is a `pandas.dataFrame` containing the tracking data, and `zarr_dir` to directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
+where `data` is a `pandas.DataFrame` containing the tracking data, and `zarr_dir` is a directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
 
 > ⚠️ Currently `dataframe_to_browser` only works for Chrome and Firefox
 
 ### iii) Open `inTRACKtive` using the napari widget
 
-Using the same capabilities of the `dataframe_to_browser`, we made a [napari](https://napari.org/stable/) widget. The widget (`intracktiveWidget`) is part of the python package after `pip install`, and automatically shows up in the napari widget list (`plugins>inTRACKtive`). To keep the `inTRACKtive` python package light-weight, napari is not listed as one of it's dependecies. To make use of the napari widget, please `pip install napari[all]` in the same conda environment as `inTRACKtive`. The widget takes the tracking data from a [`tracks`](https://napari.org/dev/howtos/layers/tracks.html) layer in napari and opens an `inTRACKtive` browser window with the data. We provide an example of how to use the widget in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook2_inTRACKtive_from_napari.ipynb). 
+Using the same capabilities of the `dataframe_to_browser`, we made a [napari](https://napari.org/stable/) widget. The widget (`intracktiveWidget`) is part of the Python package after `pip install`, and automatically shows up in the napari widget list (`plugins>inTRACKtive`). To keep the `inTRACKtive` python package light-weight, napari is not listed as one of its dependencies. To make use of the napari widget, please `pip install napari[all]` in the same conda environment as `inTRACKtive`. The widget takes the tracking data from a [`tracks`](https://napari.org/dev/howtos/layers/tracks.html) layer in napari and opens an `inTRACKtive` browser window with the data. We provide an example of how to use the widget in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook2_inTRACKtive_from_napari.ipynb). 
 
 <p align="center">
   <img src="/public/docs/images/napari_widget.png" width="75%">
@@ -168,9 +168,9 @@ Using the same capabilities of the `dataframe_to_browser`, we made a [napari](ht
 
 Some notes: 
 - The user can select a tracks layer to open in `inTRACKtive`
-- The user can choose the directory of where to save the Zarr (either provide a directory, or leave black, and the widget will save in a temporary location)
+- The user can choose the directory where to save the Zarr (either provide a directory, or leave blank, and the widget will save in a temporary location)
 
-> ⚠️ Note that when one opens a dataset in inTRACKtive that is locally hosted, sharing the dataset with someone else via the "Shareable URL" option does not work, since the dataset only exists locally. Either share the dataset, or deposit the data on a public repository (examples: lab/university website, a public partition on a local cluster (HPC), AWS S3 bucket, Github Pages, Google Cloud Storage, etc)  
+> ⚠️ Note that when viewing a dataset that is hosted locally, sharing the dataset with someone else via the "shareable URL" option does not work, since the dataset only exists locally. Either share the dataset, or deposit the data on a public repository (examples: lab/university website, a public partition on a local cluster (HPC), AWS S3 bucket, Github Pages, Google Cloud Storage, etc)  
 
 ([↑Back to table of contents↑](#table-of-contents))
 
@@ -246,7 +246,7 @@ Team:
 
 
 # Contact us
-If you have any questions, requests or awesome ideas, please contact us:
+If you have any questions, requests, or awesome ideas, please contact us:
 
 Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben))
 
