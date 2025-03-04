@@ -170,6 +170,8 @@ Some notes:
 - The user can select a tracks layer to open in `inTRACKtive`
 - The user can choose the directory of where to save the Zarr (either provide a directory, or leave black, and the widget will save in a temporary location)
 
+> ⚠️ Note that when one opens a dataset in inTRACKtive that is locally hosted, sharing the dataset with someone else via the "Shareable URL" option does not work, since the dataset only exists locally. Either share the dataset, or deposit the data on a public repository (examples: lab/university website, a public partition on a local cluster (HPC), AWS S3 bucket, Github Pages, Google Cloud Storage, etc)  
+
 ([↑Back to table of contents↑](#table-of-contents))
 
 
