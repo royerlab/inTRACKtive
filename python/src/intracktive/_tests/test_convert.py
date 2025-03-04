@@ -66,6 +66,7 @@ def test_convert_with_missing_column(
             extra_cols=(),
         )
 
+
 def test_convert_with_non_existing_attribute(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,
@@ -81,6 +82,7 @@ def test_convert_with_non_existing_attribute(
             zarr_path=new_path,
             extra_cols=["non_existing_attribute"],
         )
+
 
 def test_convert_without_parents(
     tmp_path: Path,
