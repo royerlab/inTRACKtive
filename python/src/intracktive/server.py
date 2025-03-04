@@ -112,9 +112,14 @@ def serve_directory(
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
-    "--host", type=str, default=DEFAULT_HOST, help="The host name or IP address."
+    "--host",
+    type=str,
+    default=DEFAULT_HOST,
+    help="The host name or IP address (default: 127.0.0.1)",
 )
-@click.option("--port", type=int, default=8000, help="The port number to serve on.")
+@click.option(
+    "--port", type=int, default=8000, help="The port number to serve on (default: 8000)"
+)
 def server_cli(
     path: Path,
     host: str,

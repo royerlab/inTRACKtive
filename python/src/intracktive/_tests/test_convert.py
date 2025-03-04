@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 import zarr
 from intracktive.convert import convert_dataframe_to_zarr
 
@@ -48,3 +49,52 @@ def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> 
     gt_data = zarr.open(gt_path)
 
     _evaluate(new_data, gt_data)
+
+
+def test_convert_with_missing_column(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df = df.drop(columns=["x"])
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    with pytest.raises(ValueError):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            extra_cols=(),
+        )
+
+
+def test_convert_with_non_existing_attribute(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.attrs["non_existing_attribute"] = "test"
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    with pytest.raises(ValueError):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            extra_cols=["non_existing_attribute"],
+        )
+
+
+def test_convert_without_parents(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df = df.drop(columns=["parent_track_id"])
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+    )

@@ -115,6 +115,10 @@ def convert_dataframe_to_zarr(
         flag_2D = True
         df["z"] = 0.0
 
+    if "parent_track_id" not in df.columns:
+        LOG.info("No parent_track_id column found, setting to -1 (no divisions)")
+        df["parent_track_id"] = -1
+
     points_cols = (
         ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"]
     )  # columns to store in the points array
