@@ -48,6 +48,15 @@ const deviceState = {
             );
         }
 
+        // Ensure document has focus for Safari on iPad
+        window.addEventListener(
+            "touchstart",
+            () => {
+                document.body.focus();
+            },
+            { once: false },
+        );
+
         const onKeyboardDetected = () => {
             if (this.current.isTablet) {
                 // Only switch if it's a tablet
@@ -65,7 +74,10 @@ const deviceState = {
             const ignoredKeys = ["VolumeUp", "VolumeDown", "Power"];
             if (!keyboardDetected && !ignoredKeys.includes(event.key)) {
                 keyboardDetected = true;
-                console.log("Keyboard detected! Switching to laptop mode...");
+                if (this.current.isTablet) {
+                    // Only log if it's a tablet
+                    console.log("Keyboard detected! Switching to laptop mode...");
+                }
                 onKeyboardDetected();
             }
         });

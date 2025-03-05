@@ -20,7 +20,7 @@ import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
 
 import config from "../../CONFIG.ts";
-import deviceState from "@/lib/deviceState";
+import deviceState from "@/lib/DeviceState.ts";
 const brandingName = config.branding.name || undefined;
 const brandingLogoPath = config.branding.logo_path || undefined;
 const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
