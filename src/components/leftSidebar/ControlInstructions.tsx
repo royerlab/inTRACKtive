@@ -39,8 +39,9 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
                 <>
                     {props.isTablet && (
                         <p>
-                            If using a tablet without keyboard, use the UI controls above to select cells and scale the
-                            selector (use keyboard for full functionality)
+                            If using a tablet <strong>without keyboard</strong>, use the UI controls above to select
+                            cells and scale the selector. If using a tablet <strong>with keyboard</strong>, click any
+                            key to switch to desktop mode.
                         </p>
                     )}
                     <p>
