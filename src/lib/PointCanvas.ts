@@ -28,7 +28,7 @@ import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 
-import deviceState from './deviceState';
+import deviceState from "./deviceState";
 import config from "../../CONFIG.ts";
 const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;

@@ -24,7 +24,7 @@ function detectDeviceType(): DeviceState {
     const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
     const isTablet = isiPad || isAndroidTablet || hasTouch;
     const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
-    
+
     // Currently using manual overrides for debugging
     // const isPhone = false;
     // const isTablet = true;
@@ -43,26 +43,29 @@ const deviceState = {
 
     init() {
         if (this.current.isPhone) {
-            window.confirm("Note: for full functionality, please use a tablet or desktop device. Press 'OK' to continue ");
+            window.confirm(
+                "Note: for full functionality, please use a tablet or desktop device. Press 'OK' to continue ",
+            );
         }
 
         const onKeyboardDetected = () => {
-            if (this.current.isTablet) {  // Only switch if it's a tablet
+            if (this.current.isTablet) {
+                // Only switch if it's a tablet
                 this.update({
                     isTablet: false,
                     isPhone: false,
-                    isMobile: false
+                    isMobile: false,
                 });
-                console.log('Tablet with keyboard detected! Switching to laptop mode...');
+                console.log("Tablet with keyboard detected! Switching to laptop mode...");
             }
         };
 
         let keyboardDetected = false;
-        document.addEventListener('keydown', (event) => {
-            const ignoredKeys = ['VolumeUp', 'VolumeDown', 'Power'];
+        document.addEventListener("keydown", (event) => {
+            const ignoredKeys = ["VolumeUp", "VolumeDown", "Power"];
             if (!keyboardDetected && !ignoredKeys.includes(event.key)) {
                 keyboardDetected = true;
-                console.log('Keyboard detected! Switching to laptop mode...');
+                console.log("Keyboard detected! Switching to laptop mode...");
                 onKeyboardDetected();
             }
         });
@@ -70,14 +73,14 @@ const deviceState = {
 
     update(newState: DeviceState) {
         this.current = newState;
-        this.listeners.forEach(listener => listener(this.current));
+        this.listeners.forEach((listener) => listener(this.current));
     },
 
     subscribe(listener: (device: DeviceState) => void) {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
-    }
+    },
 };
 
 deviceState.init();
-export default deviceState; 
+export default deviceState;
