@@ -47,11 +47,14 @@ const deviceState = {
         }
 
         const onKeyboardDetected = () => {
-            this.update({
-                isTablet: false,
-                isPhone: false,
-                isMobile: false
-            });
+            if (this.current.isTablet) {  // Only switch if it's a tablet
+                this.update({
+                    isTablet: false,
+                    isPhone: false,
+                    isMobile: false
+                });
+                console.log('Tablet with keyboard detected! Switching to laptop mode...');
+            }
         };
 
         let keyboardDetected = false;
