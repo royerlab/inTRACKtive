@@ -17,7 +17,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
             instructionText = (
                 <>
                     <p>
-                        Hold <strong>Shift</strong> and the selector will follow your cursor.
+                        Hold <strong>Space</strong> and the selector will follow your cursor.
                     </p>
                     <p>
                         <strong>Shift-Click</strong> to select cells within the sphere.
