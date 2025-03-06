@@ -98,7 +98,8 @@ export class SpherePointSelector {
             case "Control":
                 this.controls.enabled = false;
                 break;
-            case "Shift":
+            case " ": // Space key
+                event.preventDefault(); // Prevent page scrolling
                 if (this.cursor.visible && !this.cursorControl.object) {
                     this.cursorLock = false;
                 }
@@ -112,7 +113,7 @@ export class SpherePointSelector {
             case "Control":
                 this.controls.enabled = true;
                 break;
-            case "Shift":
+            case " ": // Space key
                 this.cursorLock = true;
                 break;
             case "s":

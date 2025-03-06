@@ -17,7 +17,7 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
             instructionText = (
                 <>
                     <p>
-                        Hold <strong>Shift</strong> and the selector will follow your cursor.
+                        Hold <strong>Space</strong> and the selector will follow your cursor.
                     </p>
                     <p>
                         <strong>Shift-Click</strong> to select cells within the sphere.
@@ -39,8 +39,9 @@ export default function ControlInstructions(props: ControlInstructionsProps) {
                 <>
                     {props.isTablet && (
                         <p>
-                            If using a tablet without keyboard, use the UI controls above to select cells and scale the
-                            selector (use keyboard for full functionality)
+                            If using a tablet <strong>without keyboard</strong>, use the UI controls above to select
+                            cells and scale the selector. If using a tablet <strong>with keyboard</strong>, first click
+                            on this message, then click any key to switch to desktop mode.
                         </p>
                     )}
                     <p>

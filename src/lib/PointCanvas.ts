@@ -28,7 +28,7 @@ import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 
-import { detectedDevice } from "@/components/App.tsx";
+import deviceState from "./DeviceState.ts";
 import config from "../../CONFIG.ts";
 const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
@@ -147,7 +147,7 @@ export class PointCanvas {
 
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
-        if (detectedDevice.isPhone) {
+        if (deviceState.current.isPhone) {
             this.toggleAxesHelper();
         }
 
@@ -171,12 +171,19 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
+        this.controls.listenToKeyEvents(window); // Enable keyboard controls
+        this.controls.keys = {
+            LEFT: "ArrowLeft",
+            UP: "ArrowUp",
+            RIGHT: "ArrowRight",
+            BOTTOM: "ArrowDown",
+        };
 
         // Set up selection
         this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
-        if (detectedDevice.isTablet) {
+        if (deviceState.current.isTablet) {
             this.setSelectionMode(PointSelectionMode.SPHERE);
-        } else if (detectedDevice.isPhone) {
+        } else if (deviceState.current.isPhone) {
             this.setSelectionMode(null); // no selection functionality on phone
         } else {
             this.setSelectionMode(PointSelectionMode.BOX);
