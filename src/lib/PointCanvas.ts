@@ -212,6 +212,7 @@ export class PointCanvas {
         state.trackWidthFactor = this.trackWidthFactor;
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
+        state.selectionMode = this.selector.selectionMode;
         return state;
     }
 
@@ -233,6 +234,7 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
+        this.selector.setSelectionMode(state.selectionMode ?? defaultState.selectionMode);
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
