@@ -216,21 +216,23 @@ export class PointCanvas {
     }
 
     updateWithState(state: ViewerState) {
-        this.curTime = state.curTime;
-        this.minTime = state.minTime;
-        this.maxTime = state.maxTime;
-        this.maxPointsPerTimepoint = state.maxPointsPerTimepoint;
-        this.pointBrightness = state.pointBrightness;
-        this.showTracks = state.showTracks;
-        this.showTrackHighlights = state.showTrackHighlights;
-        this.removeAllTracks(); // to make sure all tracks are removed, when the tracks are loaded from a certain state
-        this.selectedPointIds = new Set(state.selectedPointIds);
-        this.camera.position.fromArray(state.cameraPosition);
-        this.controls.target.fromArray(state.cameraTarget);
-        this.pointSize = state.pointSize;
-        this.trackWidthFactor = state.trackWidthFactor;
-        this.colorBy = state.colorBy;
-        this.colorByEvent = state.colorByEvent;
+        const defaultState = new ViewerState();
+
+        this.curTime = state.curTime ?? defaultState.curTime;
+        this.minTime = state.minTime ?? defaultState.minTime;
+        this.maxTime = state.maxTime ?? defaultState.maxTime;
+        this.maxPointsPerTimepoint = state.maxPointsPerTimepoint ?? defaultState.maxPointsPerTimepoint;
+        this.pointBrightness = state.pointBrightness ?? defaultState.pointBrightness;
+        this.showTracks = state.showTracks ?? defaultState.showTracks;
+        this.showTrackHighlights = state.showTrackHighlights ?? defaultState.showTrackHighlights;
+        this.removeAllTracks();
+        this.selectedPointIds = new Set(state.selectedPointIds ?? []);
+        this.camera.position.fromArray(state.cameraPosition ?? defaultState.cameraPosition);
+        this.controls.target.fromArray(state.cameraTarget ?? defaultState.cameraTarget);
+        this.pointSize = state.pointSize ?? defaultState.pointSize;
+        this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
+        this.colorBy = state.colorBy ?? defaultState.colorBy;
+        this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
