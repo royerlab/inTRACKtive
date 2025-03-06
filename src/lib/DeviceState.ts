@@ -50,15 +50,6 @@ const deviceState = {
             );
         }
 
-        // // Ensure document has focus for Safari on iPad
-        // window.addEventListener(
-        //     "touchstart",
-        //     () => {
-        //         document.body.focus();
-        //     },
-        //     { once: false },
-        // );
-
         const onKeyboardDetected = () => {
             if (this.current.isTablet) {
                 // Only switch if it's a tablet
