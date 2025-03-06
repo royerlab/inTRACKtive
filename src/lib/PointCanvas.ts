@@ -267,6 +267,9 @@ export class PointCanvas {
             );
             this.selector.sphereSelector.cursor.visible =
                 state.sphereSelector.visible ?? defaultState.sphereSelector.visible;
+            if (deviceState.current.isTablet) {
+                this.selector.sphereSelector.cursor.visible = true;
+            }
         }
     }
 
