@@ -272,9 +272,9 @@ export class PointCanvas {
                 if (
                     (state.selectionMode === PointSelectionMode.SPHERE ||
                         state.selectionMode === PointSelectionMode.SPHERICAL_CURSOR) &&
-                    state.sphereSelector.visible
+                    !state.sphereSelector.visible
                 ) {
-                    this.selector.sphereSelector.cursor.visible = true;
+                    this.selector.sphereSelector.cursor.visible = false;
                 }
             }
         }
