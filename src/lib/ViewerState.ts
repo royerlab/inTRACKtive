@@ -1,5 +1,6 @@
 import config from "../../CONFIG.ts";
 import { Option, DEFAULT_DROPDOWN_OPTION } from "@/lib/TrackManager";
+import { PointSelectionMode } from "./PointSelector.ts";
 
 const DEFAULT_ZARR_URL = config.data.default_dataset;
 const initialPointSize = config.settings.point_size;
@@ -32,6 +33,18 @@ export class ViewerState {
     trackWidthFactor: number = 1;
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    selectionMode: PointSelectionMode | null = PointSelectionMode.BOX;
+    sphereSelector: {
+        position: [number, number, number];
+        scale: [number, number, number];
+        rotation: [number, number, number];
+        visible: boolean;
+    } = {
+        position: [0, 0, 0],
+        scale: [1, 1, 1],
+        rotation: [0, 0, 0],
+        visible: false,
+    };
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.

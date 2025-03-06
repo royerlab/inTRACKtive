@@ -212,6 +212,17 @@ export class PointCanvas {
         state.trackWidthFactor = this.trackWidthFactor;
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
+        state.selectionMode = this.selector.selectionMode;
+
+        // Add sphere selector state
+        if (this.selector.sphereSelector) {
+            state.sphereSelector = {
+                position: this.selector.sphereSelector.cursor.position.toArray() as [number, number, number],
+                scale: this.selector.sphereSelector.cursor.scale.toArray() as [number, number, number],
+                rotation: this.selector.sphereSelector.cursor.rotation.toArray() as [number, number, number],
+                visible: this.selector.sphereSelector.cursor.visible,
+            };
+        }
         return state;
     }
 
@@ -233,6 +244,40 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
+
+        // Respect device constraints when setting selection mode
+        let newSelectionMode = state.selectionMode ?? defaultState.selectionMode;
+        if (deviceState.current.isPhone) {
+            newSelectionMode = null; // no selection on phone
+        } else if (deviceState.current.isTablet) {
+            newSelectionMode = PointSelectionMode.SPHERE; // force sphere on tablet
+        }
+        this.selector.selectionMode = newSelectionMode;
+
+        // Update sphere selector
+        if (this.selector.sphereSelector && state.sphereSelector) {
+            this.selector.sphereSelector.cursor.position.fromArray(
+                state.sphereSelector.position ?? defaultState.sphereSelector.position,
+            );
+            this.selector.sphereSelector.cursor.scale.fromArray(
+                state.sphereSelector.scale ?? defaultState.sphereSelector.scale,
+            );
+            this.selector.sphereSelector.cursor.rotation.fromArray(
+                state.sphereSelector.rotation ?? defaultState.sphereSelector.rotation,
+            );
+            this.selector.sphereSelector.cursor.visible =
+                state.sphereSelector.visible ?? defaultState.sphereSelector.visible;
+            if (deviceState.current.isTablet) {
+                this.selector.sphereSelector.cursor.visible = true;
+                if (
+                    (state.selectionMode === PointSelectionMode.SPHERE ||
+                        state.selectionMode === PointSelectionMode.SPHERICAL_CURSOR) &&
+                    !state.sphereSelector.visible
+                ) {
+                    this.selector.sphereSelector.cursor.visible = false;
+                }
+            }
+        }
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {
