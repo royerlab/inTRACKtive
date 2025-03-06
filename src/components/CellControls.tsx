@@ -4,6 +4,7 @@ import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
+import deviceState from "@/lib/DeviceState";
 
 interface CellControlsProps {
     clearTracks: () => void;
@@ -13,7 +14,7 @@ interface CellControlsProps {
     trackManager: TrackManager | null;
     selectionMode: PointSelectionMode | null;
     setSelectionMode: (value: PointSelectionMode) => void;
-    isTablet: boolean;
+    detectedDevice: typeof deviceState;
     MobileSelectCells: () => void;
     setSelectorScale: (value: number) => void;
     selectorScale: number;
@@ -21,12 +22,17 @@ interface CellControlsProps {
 
 export default function CellControls(props: CellControlsProps) {
     const buttonDefinition: SingleButtonDefinition[] = [
-        { icon: "Cube", tooltipText: "Box", value: PointSelectionMode.BOX, disabled: props.isTablet },
+        {
+            icon: "Cube",
+            tooltipText: "Box",
+            value: PointSelectionMode.BOX,
+            disabled: props.detectedDevice.current.isTablet,
+        },
         {
             icon: "Starburst",
             tooltipText: "Sphere",
             value: PointSelectionMode.SPHERICAL_CURSOR,
-            disabled: props.isTablet,
+            disabled: props.detectedDevice.current.isTablet,
         },
         { icon: "Globe", tooltipText: "Adjustable sphere", value: PointSelectionMode.SPHERE },
     ];
@@ -62,16 +68,18 @@ export default function CellControls(props: CellControlsProps) {
             </Box>
             {/* Select cells button */}
             <Box display="flex" justifyContent="center" alignItems="center">
-                {props.isTablet && props.selectionMode === PointSelectionMode.SPHERE && (
-                    <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
-                        Select cells
-                    </Button>
-                )}
+                {(deviceState.current.isTablet || deviceState.current.isTabletWithKeyboard) &&
+                    (props.selectionMode === PointSelectionMode.SPHERE ||
+                        props.selectionMode === PointSelectionMode.SPHERICAL_CURSOR) && (
+                        <Button sdsStyle="square" sdsType="primary" onClick={props.MobileSelectCells}>
+                            Select cells
+                        </Button>
+                    )}
             </Box>
             {/* Selector radius slider */}
             {(props.selectionMode === PointSelectionMode.SPHERICAL_CURSOR ||
                 props.selectionMode === PointSelectionMode.SPHERE) &&
-                props.isTablet && (
+                (deviceState.current.isTablet || deviceState.current.isTabletWithKeyboard) && (
                     <>
                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                             <label htmlFor="selector-radius-slider">

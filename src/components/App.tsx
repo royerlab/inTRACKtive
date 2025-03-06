@@ -385,7 +385,7 @@ export default function App() {
                                 setSelectionMode={(value: PointSelectionMode) => {
                                     dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                                 }}
-                                isTablet={detectedDevice.isTablet}
+                                detectedDevice={deviceState}
                                 MobileSelectCells={() => {
                                     dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
                                 }}

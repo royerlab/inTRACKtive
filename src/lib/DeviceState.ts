@@ -1,5 +1,6 @@
 interface DeviceState {
     isTablet: boolean;
+    isTabletWithKeyboard: boolean;
     isPhone: boolean;
     isMobile: boolean;
 }
@@ -33,6 +34,7 @@ function detectDeviceType(): DeviceState {
     return {
         isPhone,
         isTablet: isTablet && !isPhone,
+        isTabletWithKeyboard: false,
         isMobile: !isDesktop,
     };
 }
@@ -62,6 +64,7 @@ const deviceState = {
                 // Only switch if it's a tablet
                 this.update({
                     isTablet: false,
+                    isTabletWithKeyboard: true,
                     isPhone: false,
                     isMobile: false,
                 });
