@@ -20,6 +20,7 @@ import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
 import { TrackDownloadData } from "./DownloadButton";
 
 import config from "../../CONFIG.ts";
+import deviceState from "@/lib/DeviceState.ts";
 const brandingName = config.branding.name || undefined;
 const brandingLogoPath = config.branding.logo_path || undefined;
 const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
@@ -29,61 +30,27 @@ const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
-function detectDeviceType(): { isPhone: boolean; isTablet: boolean; isMobile: boolean } {
-    const ua = navigator.userAgent || navigator.vendor;
-
-    // Detect iPads, iPhones, and iPods based on the user agent string
-    const isiPad =
-        /iPad/.test(ua) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
-    const isiPhoneOrIPod = /iPhone|iPod/.test(ua);
-
-    // Detect Android phones and tablets
-    const isAndroidPhone = /Android/.test(ua) && /Mobile/.test(ua);
-    const isAndroidTablet = /Android/.test(ua) && !/Mobile/.test(ua);
-
-    // Screen size check (tablets typically have a wider screen)
-    const isSmallScreen = window.screen.width <= 768;
-    const hasTouch = navigator.maxTouchPoints > 1;
-
-    // Determine if it's a phone, tablet, or desktop
-    const isPhone = isiPhoneOrIPod || isAndroidPhone || isSmallScreen;
-    const isTablet = isiPad || isAndroidTablet || hasTouch;
-    const isDesktop = !isPhone && !isTablet; // It's a desktop if it's neither a phone nor a tablet
-
-    // manually asign labels for debugging
-    // const isPhone = false;
-    // const isTablet = true;
-    // const isDesktop = false;
-
-    return {
-        isPhone: isPhone,
-        isTablet: isTablet && !isPhone, // To avoid small phones being miscategorized as tablets
-        isMobile: !isDesktop,
-    };
-}
-
-export const detectedDevice = detectDeviceType();
-console.debug("detectDeviceType: ", detectedDevice);
-if (detectedDevice.isPhone) {
-    window.confirm("Note: for full functionality, please use a tablet or desktop device. Press 'OK' to continue ");
-}
-
-// for debugging: show the detected device type in an alert
-// window.confirm(
-//     "detected device type (desktop | tablet | phone) = (" +
-//         !detectDeviceType().isMobile +
-//         " | " +
-//         detectDeviceType().isTablet +
-//         " | " +
-//         detectDeviceType().isPhone +
-//         ")",
-// );
-
 const drawerWidth = 256;
 const playbackFPS = 16;
 const playbackIntervalMs = 1000 / playbackFPS;
 
+// Define the hook for changes of deviceState
+const useDetectedDevice = () => {
+    const [detectedDevice, setDetectedDevice] = useState(deviceState.current);
+
+    useEffect(() => {
+        const unsubscribe = deviceState.subscribe(setDetectedDevice);
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
+    return detectedDevice;
+};
+
 export default function App() {
+    const detectedDevice = useDetectedDevice();
+
     // TrackManager handles data fetching
     const [trackManager, setTrackManager] = useState<TrackManager | null>(null);
     const numTimes = trackManager?.numTimes ?? 0;
@@ -418,7 +385,7 @@ export default function App() {
                                 setSelectionMode={(value: PointSelectionMode) => {
                                     dispatchCanvas({ type: ActionType.SELECTION_MODE, selectionMode: value });
                                 }}
-                                isTablet={detectedDevice.isTablet}
+                                detectedDevice={deviceState}
                                 MobileSelectCells={() => {
                                     dispatchCanvas({ type: ActionType.MOBILE_SELECT_CELLS });
                                 }}
