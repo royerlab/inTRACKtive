@@ -213,6 +213,16 @@ export class PointCanvas {
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
         state.selectionMode = this.selector.selectionMode;
+
+        // Add sphere selector state
+        if (this.selector.sphereSelector) {
+            state.sphereSelector = {
+                position: this.selector.sphereSelector.cursor.position.toArray() as [number, number, number],
+                scale: this.selector.sphereSelector.cursor.scale.toArray() as [number, number, number],
+                rotation: this.selector.sphereSelector.cursor.rotation.toArray() as [number, number, number],
+                visible: this.selector.sphereSelector.cursor.visible,
+            };
+        }
         return state;
     }
 
@@ -235,6 +245,21 @@ export class PointCanvas {
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
         this.selector.setSelectionMode(state.selectionMode ?? defaultState.selectionMode);
+
+        // Update sphere selector
+        if (this.selector.sphereSelector && state.sphereSelector) {
+            this.selector.sphereSelector.cursor.position.fromArray(
+                state.sphereSelector.position ?? defaultState.sphereSelector.position,
+            );
+            this.selector.sphereSelector.cursor.scale.fromArray(
+                state.sphereSelector.scale ?? defaultState.sphereSelector.scale,
+            );
+            this.selector.sphereSelector.cursor.rotation.fromArray(
+                state.sphereSelector.rotation ?? defaultState.sphereSelector.rotation,
+            );
+            this.selector.sphereSelector.cursor.visible =
+                state.sphereSelector.visible ?? defaultState.sphereSelector.visible;
+        }
     }
 
     setSelectionMode(mode: PointSelectionMode | null) {

@@ -34,6 +34,17 @@ export class ViewerState {
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     selectionMode: PointSelectionMode | null = PointSelectionMode.BOX;
+    sphereSelector: {
+        position: [number, number, number];
+        scale: [number, number, number];
+        rotation: [number, number, number];
+        visible: boolean;
+    } = {
+        position: [0, 0, 0],
+        scale: [1, 1, 1],
+        rotation: [0, 0, 0],
+        visible: false,
+    };
 
     toUrlHash(): string {
         // Use URLSearchParams to sanitize serialized string values for URL.
