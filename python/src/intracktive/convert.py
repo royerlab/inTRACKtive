@@ -82,12 +82,96 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
     return unique_path
 
 
+def smooth_column(df, column, window_size):
+    """
+    Smooth the displacement column using a mean filter within each track_id.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with a 'displacement' column and 'track_id'.
+    column : str
+        The column to smooth.
+    window_size : int
+        The size of the rolling window for the mean filter.
+
+    Returns:
+    -------
+    pd.DataFrame
+        DataFrame with an additional 'smoothed_displacement' column.
+    """
+    # Ensure the DataFrame is sorted by track_id and t
+    df = df.sort_values(by=["track_id", "t"]).reset_index(drop=True)
+    column_name = str(column) + "_smooth"
+
+    # Apply rolling mean filter to the displacement column within each track_id
+    df[column_name] = (
+        df.groupby("track_id")[column]
+        .rolling(window=window_size, min_periods=1, center=True)
+        .mean()
+        .reset_index(level=0, drop=True)  # Align back to original DataFrame
+    )
+
+    # df[column_name] = df[column_name].round(1)
+
+    return df
+
+
+def calculate_displacement(
+    df: pd.DataFrame, velocity_smoothing_windowsize: int
+) -> pd.DataFrame:
+    """
+    Calculate the displacement of the cells in the DataFrame
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with a 'displacement' column and 'track_id'.
+    velocity_smoothing_windowsize : int
+        The size of the rolling window for the mean filter. If 1, no smoothing is applied.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with an additional 'displacement' column.
+        Displacement is calculated as the Euclidean distance between the current and previous position of the cell.
+        Smoothing is applied to the displacement column using a rolling mean filter. If the windowsize is 1, no smoothing is applied.
+    """
+    LOG.info("calculating velocity")
+    # Sort the DataFrame by track_id and time
+    df = df.sort_values(by=["track_id", "t"]).reset_index(drop=True)
+
+    # Calculate displacement
+    df["displacement"] = np.sqrt(
+        (df.groupby("track_id")["x"].shift(-1) - df["x"]) ** 2
+        + (df.groupby("track_id")["y"].shift(-1) - df["y"]) ** 2
+        + (df.groupby("track_id")["z"].shift(-1) - df["z"]) ** 2
+    )
+
+    # Set displacement to 0 for the last time point in each track
+    last_timepoints = df.groupby("track_id")["t"].transform("max") == df["t"]
+    df.loc[last_timepoints, "displacement"] = 0
+
+    if velocity_smoothing_windowsize > 1:
+        LOG.info("smoothing velocities")
+        df = smooth_column(df, "displacement", velocity_smoothing_windowsize)
+        # remove displacement column after smoothing
+        df = df.drop("displacement", axis=1)
+        df = df.rename(columns={"displacement_smooth": "displacement"})
+    else:
+        LOG.info("no smoothing applied")
+
+    return df
+
+
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
     zarr_path: Path,
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
     pre_normalized: bool = False,
+    calc_velocity: bool = False,
+    velocity_smoothing_windowsize: int = 1,
 ) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
@@ -119,6 +203,9 @@ def convert_dataframe_to_zarr(
         LOG.info("No parent_track_id column found, setting to -1 (no divisions)")
         df["parent_track_id"] = -1
 
+    if calc_velocity and velocity_smoothing_windowsize < 1:
+        raise ValueError("velocity_smoothing_windowsize must be >= 1")
+
     points_cols = (
         ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"]
     )  # columns to store in the points array
@@ -136,6 +223,11 @@ def convert_dataframe_to_zarr(
 
     for col in ("t", "track_id", "parent_track_id"):
         df[col] = df[col].astype(int)
+
+    # calculate velocity
+    if calc_velocity:
+        df = calculate_displacement(df, velocity_smoothing_windowsize)
+        extra_cols = extra_cols + ["displacement"] if calc_velocity else extra_cols
 
     start = time.monotonic()
 
@@ -435,6 +527,19 @@ def dataframe_to_browser(
     default=False,
     type=bool,
 )
+@click.option(
+    "--calc_velocity",
+    is_flag=True,
+    help="Boolean indicating whether to calculate velocity of the cells",
+    default=False,
+    type=bool,
+)
+@click.option(
+    "--velocity_smoothing_windowsize",
+    type=int,
+    default=1,
+    help="Smoothing factor for velocity calculation, using a moving average over n frames around each frame",
+)
 def convert_cli(
     input_file: Path,
     out_dir: Path | None,
@@ -442,6 +547,8 @@ def convert_cli(
     add_all_attributes: bool,
     add_attribute: str | None,
     pre_normalized: bool,
+    calc_velocity: bool,
+    velocity_smoothing_windowsize: int,
 ) -> None:
     """
     Convert a CSV or Parquet file of tracks to a sparse Zarr store
@@ -491,6 +598,8 @@ def convert_cli(
         add_radius,
         extra_cols=extra_cols,
         pre_normalized=pre_normalized,
+        calc_velocity=calc_velocity,
+        velocity_smoothing_windowsize=velocity_smoothing_windowsize,
     )
 
     LOG.info(f"Full conversion took {time.monotonic() - start} seconds")

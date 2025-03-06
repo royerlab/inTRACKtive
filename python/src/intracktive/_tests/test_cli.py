@@ -156,3 +156,24 @@ def test_convert_cli_simple_file_formats(
             str(tmp_path),
         ]
     )
+
+
+def test_convert_cli_velocity_smoothing(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
+
+    _run_command(
+        [
+            "convert",
+            "--input_file",
+            str(tmp_path / "sample_data.csv"),
+            "--out_dir",
+            str(tmp_path),
+            "--calc_velocity",
+            "--velocity_smoothing_windowsize",
+            "3",
+        ]
+    )
