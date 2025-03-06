@@ -85,6 +85,7 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
 def smooth_column(df, column, window_size):
     """
     Smooth the displacement column using a mean filter within each track_id.
+    Smoothing includes normalization of the displacements over time, to ensure that the displacements are not flickering too much between frames.
 
     Parameters:
     ----------
@@ -114,6 +115,22 @@ def smooth_column(df, column, window_size):
 
     # df[column_name] = df[column_name].round(1)
 
+    return df
+
+
+def normalize_column(df, col, percentile=0.95) -> pd.DataFrame:
+    """
+    Normalize a column by:
+    1) calculating the 1-percentile and 99-percentile for each time point,
+    2) get the min/max of the 1-percentile and 99-percentile for each time point,
+    3) normalize the column to the range [0, 1] for each time point
+    """
+    percentile_min_df = df.groupby("t")[col].quantile(1 - percentile).reset_index()
+    percentile_max_df = df.groupby("t")[col].quantile(percentile).reset_index()
+    min_percentile = percentile_min_df[col].min()
+    max_percentile = percentile_max_df[col].max()
+    df[col] = (df[col] - min_percentile) / (max_percentile - min_percentile)
+    df[col] = df[col].clip(lower=0, upper=1.0)
     return df
 
 
@@ -158,6 +175,7 @@ def calculate_displacement(
         # remove displacement column after smoothing
         df = df.drop("displacement", axis=1)
         df = df.rename(columns={"displacement_smooth": "displacement"})
+        df = normalize_column(df, "displacement")
     else:
         LOG.info("no smoothing applied")
 
