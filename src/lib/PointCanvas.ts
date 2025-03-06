@@ -269,6 +269,13 @@ export class PointCanvas {
                 state.sphereSelector.visible ?? defaultState.sphereSelector.visible;
             if (deviceState.current.isTablet) {
                 this.selector.sphereSelector.cursor.visible = true;
+                if (
+                    (state.selectionMode === PointSelectionMode.SPHERE ||
+                        state.selectionMode === PointSelectionMode.SPHERICAL_CURSOR) &&
+                    state.sphereSelector.visible
+                ) {
+                    this.selector.sphereSelector.cursor.visible = true;
+                }
             }
         }
     }
