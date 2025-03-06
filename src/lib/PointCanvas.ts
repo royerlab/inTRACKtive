@@ -244,7 +244,15 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
-        this.selector.setSelectionMode(state.selectionMode ?? defaultState.selectionMode);
+
+        // Respect device constraints when setting selection mode
+        let newSelectionMode = state.selectionMode ?? defaultState.selectionMode;
+        if (deviceState.current.isPhone) {
+            newSelectionMode = null; // no selection on phone
+        } else if (deviceState.current.isTablet) {
+            newSelectionMode = PointSelectionMode.SPHERE; // force sphere on tablet
+        }
+        this.selector.selectionMode = newSelectionMode;
 
         // Update sphere selector
         if (this.selector.sphereSelector && state.sphereSelector) {
