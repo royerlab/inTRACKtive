@@ -7,10 +7,11 @@ interface SceneProps {
     isLoading: boolean;
 }
 
-const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<HTMLCanvasElement>) {
+const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<HTMLDivElement>) {
     const isLoading = props.isLoading ? "visible" : "hidden";
     return (
         <Box
+            ref={ref}
             sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -22,17 +23,6 @@ const Scene = forwardRef(function SceneRender(props: SceneProps, ref: React.Ref<
             <Box sx={{ margin: "-3rem auto", visibility: isLoading, zIndex: 1000, opacity: "70%" }}>
                 <LoadingIndicator sdsStyle="tag" />
             </Box>
-            <canvas
-                ref={ref}
-                tabIndex={0}
-                style={{
-                    outline: "none",
-                    touchAction: "none",
-                }}
-                onTouchStart={(e) => {
-                    e.currentTarget.focus();
-                }}
-            />
         </Box>
     );
 });
