@@ -163,7 +163,6 @@ def calculate_displacement(
     x_precision = df["x"].astype(str).str.extract(r"\.(\d+)")[0].str.len().max()
     if pd.isna(x_precision):  # If x values are integers
         x_precision = 0
-    print("x_precision:", x_precision)
 
     # Calculate displacement
     df["displacement"] = np.sqrt(
@@ -175,8 +174,6 @@ def calculate_displacement(
     # Set displacement to 0 for the last time point in each track
     last_timepoints = df.groupby("track_id")["t"].transform("max") == df["t"]
     df.loc[last_timepoints, "displacement"] = 0
-
-    print("before calculate_displacement: df", df)
 
     if velocity_smoothing_windowsize > 1:
         LOG.info("smoothing velocities")
@@ -193,7 +190,6 @@ def calculate_displacement(
         if x_precision == 0:
             df["displacement"] = df["displacement"].astype(int)
 
-    print("after calculate_displacement: df", df)
     return df
 
 
@@ -395,7 +391,6 @@ def convert_dataframe_to_zarr(
         chunks=(1, points_array.shape[1]),
         dtype=np.float32,
     )
-    print("points shape:", points.shape)
     points.attrs["values_per_point"] = num_values_per_point
 
     if len(extra_cols) > 0:
