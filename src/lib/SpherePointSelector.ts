@@ -213,10 +213,21 @@ export class SpherePointSelector {
         normalMatrix.invert();
         const center = this.cursor.position;
         const geometry = this.points.geometry;
+
+        // Check if geometry has a valid 'position' attribute
+        if (!geometry || !geometry.getAttribute("position") || geometry.getAttribute("position").count === 0) {
+            return;
+        }
+
         const positions = geometry.getAttribute("position");
-        const numPoints = positions.count;
+        // Get the draw range which indicates which points are actually active
+        const drawRange = geometry.drawRange;
+        const startPoint = drawRange.start;
+        const endPoint = Math.min(drawRange.start + drawRange.count, positions.count);
+
         const selected = [];
-        for (let i = 0; i < numPoints; i++) {
+        // Only check points within the draw range
+        for (let i = startPoint; i < endPoint; i++) {
             const x = positions.getX(i);
             const y = positions.getY(i);
             const z = positions.getZ(i);
