@@ -82,12 +82,125 @@ def get_unique_zarr_path(zarr_path: Path) -> Path:
     return unique_path
 
 
+def smooth_column(df, column, window_size):
+    """
+    Smooth the displacement column using a mean filter within each track_id.
+    Smoothing includes normalization of the displacements over time, to ensure that the displacements are not flickering too much between frames.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with a 'displacement' column and 'track_id'.
+    column : str
+        The column to smooth.
+    window_size : int
+        The size of the rolling window for the mean filter.
+
+    Returns:
+    -------
+    pd.DataFrame
+        DataFrame with an additional 'smoothed_displacement' column.
+    """
+    # Ensure the DataFrame is sorted by track_id and t
+    df = df.sort_values(by=["track_id", "t"]).reset_index(drop=True)
+    column_name = str(column) + "_smooth"
+
+    # Apply rolling mean filter to the displacement column within each track_id
+    df[column_name] = (
+        df.groupby("track_id")[column]
+        .rolling(window=window_size, min_periods=1, center=True)
+        .mean()
+        .reset_index(level=0, drop=True)  # Align back to original DataFrame
+    )
+
+    # df[column_name] = df[column_name].round(1)
+
+    return df
+
+
+def normalize_column(df, col, percentile=0.95) -> pd.DataFrame:
+    """
+    Normalize a column by:
+    1) calculating the 1-percentile and 99-percentile for each time point,
+    2) get the min/max of the 1-percentile and 99-percentile for each time point,
+    3) normalize the column to the range [0, 1] for each time point
+    """
+    percentile_min_df = df.groupby("t")[col].quantile(1 - percentile).reset_index()
+    percentile_max_df = df.groupby("t")[col].quantile(percentile).reset_index()
+    min_percentile = percentile_min_df[col].min()
+    max_percentile = percentile_max_df[col].max()
+    df[col] = (df[col] - min_percentile) / (max_percentile - min_percentile)
+    df[col] = df[col].clip(lower=0, upper=1.0)
+    return df
+
+
+def calculate_displacement(
+    df: pd.DataFrame, velocity_smoothing_windowsize: int
+) -> pd.DataFrame:
+    """
+    Calculate the displacement of the cells in the DataFrame
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with a 'displacement' column and 'track_id'.
+    velocity_smoothing_windowsize : int
+        The size of the rolling window for the mean filter. If 1, no smoothing is applied.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with an additional 'displacement' column.
+        Displacement is calculated as the Euclidean distance between the current and previous position of the cell.
+        Smoothing is applied to the displacement column using a rolling mean filter. If the windowsize is 1, no smoothing is applied.
+        When smoothing is applied, values are normalized to [0,1]. Otherwise, values maintain the same precision as x coordinates.
+    """
+    LOG.info("calculating velocity")
+    # Sort the DataFrame by track_id and time
+    df = df.sort_values(by=["track_id", "t"]).reset_index(drop=True)
+
+    # Get precision from x column (number of decimal places)
+    x_precision = df["x"].astype(str).str.extract(r"\.(\d+)")[0].str.len().max()
+    if pd.isna(x_precision):  # If x values are integers
+        x_precision = 0
+
+    # Calculate displacement
+    df["displacement"] = np.sqrt(
+        (df.groupby("track_id")["x"].shift(-1) - df["x"]) ** 2
+        + (df.groupby("track_id")["y"].shift(-1) - df["y"]) ** 2
+        + (df.groupby("track_id")["z"].shift(-1) - df["z"]) ** 2
+    )
+
+    # Set displacement to 0 for the last time point in each track
+    last_timepoints = df.groupby("track_id")["t"].transform("max") == df["t"]
+    df.loc[last_timepoints, "displacement"] = 0
+
+    if velocity_smoothing_windowsize > 1:
+        LOG.info("smoothing velocities")
+        df = smooth_column(df, "displacement", velocity_smoothing_windowsize)
+        # remove displacement column after smoothing
+        df = df.drop("displacement", axis=1)
+        df = df.rename(columns={"displacement_smooth": "displacement"})
+        df = normalize_column(df, "displacement")
+        LOG.info("smoothing applied")
+    else:
+        LOG.info("no smoothing applied")
+        # Only apply precision rounding when no smoothing/normalization is done
+        df["displacement"] = df["displacement"].round(x_precision)
+        if x_precision == 0:
+            df["displacement"] = df["displacement"].astype(int)
+
+    return df
+
+
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
     zarr_path: Path,
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
     pre_normalized: bool = False,
+    calc_velocity: bool = False,
+    velocity_smoothing_windowsize: int = 1,
 ) -> Path:
     """
     Convert a DataFrame of tracks to a sparse Zarr store
@@ -119,6 +232,9 @@ def convert_dataframe_to_zarr(
         LOG.info("No parent_track_id column found, setting to -1 (no divisions)")
         df["parent_track_id"] = -1
 
+    if calc_velocity and velocity_smoothing_windowsize < 1:
+        raise ValueError("velocity_smoothing_windowsize must be >= 1")
+
     points_cols = (
         ["z", "y", "x", "radius"] if add_radius else ["z", "y", "x"]
     )  # columns to store in the points array
@@ -136,6 +252,11 @@ def convert_dataframe_to_zarr(
 
     for col in ("t", "track_id", "parent_track_id"):
         df[col] = df[col].astype(int)
+
+    # calculate velocity
+    if calc_velocity:
+        df = calculate_displacement(df, velocity_smoothing_windowsize)
+        extra_cols = extra_cols + ["displacement"] if calc_velocity else extra_cols
 
     start = time.monotonic()
 
@@ -270,7 +391,6 @@ def convert_dataframe_to_zarr(
         chunks=(1, points_array.shape[1]),
         dtype=np.float32,
     )
-    print("points shape:", points.shape)
     points.attrs["values_per_point"] = num_values_per_point
 
     if len(extra_cols) > 0:
@@ -435,6 +555,19 @@ def dataframe_to_browser(
     default=False,
     type=bool,
 )
+@click.option(
+    "--calc_velocity",
+    is_flag=True,
+    help="Boolean indicating whether to calculate velocity of the cells (smoothing is recommended, please provide a --velocity_smoothing_windowsize)",
+    default=False,
+    type=bool,
+)
+@click.option(
+    "--velocity_smoothing_windowsize",
+    type=int,
+    default=1,
+    help="Smoothing factor for velocity calculation, using a moving average over n frames around each frame",
+)
 def convert_cli(
     input_file: Path,
     out_dir: Path | None,
@@ -442,6 +575,8 @@ def convert_cli(
     add_all_attributes: bool,
     add_attribute: str | None,
     pre_normalized: bool,
+    calc_velocity: bool,
+    velocity_smoothing_windowsize: int,
 ) -> None:
     """
     Convert a CSV or Parquet file of tracks to a sparse Zarr store
@@ -491,6 +626,8 @@ def convert_cli(
         add_radius,
         extra_cols=extra_cols,
         pre_normalized=pre_normalized,
+        calc_velocity=calc_velocity,
+        velocity_smoothing_windowsize=velocity_smoothing_windowsize,
     )
 
     LOG.info(f"Full conversion took {time.monotonic() - start} seconds")
@@ -506,8 +643,8 @@ if __name__ == "__main__":
 # # tracks_bundle.zarr
 # # ├── points (198M)
 # # ├── points_to_tracks (62M)
-# # │   ├── indices (61M)
-# # │   └── indptr (1M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
 # # ├── tracks_to_points (259M)
 # # │   ├── data (207M)
 # # │   ├── indices (50M)

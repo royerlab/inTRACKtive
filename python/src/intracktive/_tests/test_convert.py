@@ -98,3 +98,103 @@ def test_convert_without_parents(
         zarr_path=new_path,
         extra_cols=(),
     )
+
+
+def test_convert_with_velocity_without_smoothing(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        calc_velocity=True,
+    )
+
+
+def test_convert_with_velocity_without_smoothing_with_extra_cols(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df["radius"] = 10
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        calc_velocity=True,
+        extra_cols=["radius"],
+    )
+
+
+def test_convert_with_velocity_with_smoothing(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        calc_velocity=True,
+        velocity_smoothing_windowsize=3,
+    )
+
+
+def test_convert_with_velocity_with_smoothing_with_extra_cols(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df["radius"] = 10
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        calc_velocity=True,
+        velocity_smoothing_windowsize=3,
+        extra_cols=["radius"],
+    )
+
+
+def test_convert_with_invalid_velocity_window(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that convert_dataframe_to_zarr raises ValueError for invalid velocity window sizes"""
+    df = make_sample_data
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    # Test with invalid window sizes
+    with pytest.raises(ValueError, match="velocity_smoothing_windowsize must be >= 1"):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            calc_velocity=True,
+            velocity_smoothing_windowsize=0,
+        )
+
+    with pytest.raises(ValueError, match="velocity_smoothing_windowsize must be >= 1"):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            calc_velocity=True,
+            velocity_smoothing_windowsize=-1,
+        )
+
+    # Verify that no error is raised when calc_velocity is False
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        calc_velocity=False,
+        velocity_smoothing_windowsize=0,  # Should not raise error when calc_velocity is False
+    )
