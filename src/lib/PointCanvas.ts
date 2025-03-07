@@ -713,6 +713,7 @@ export class PointCanvas {
         }
     }
 
+    // Clear the points geometry when the timepoint changes
     clearPointsGeometry() {
         const geometry = this.points.geometry;
         // Set draw range to 0 to effectively hide all points
@@ -724,8 +725,10 @@ export class PointCanvas {
             positions.needsUpdate = true;
         }
         // Force a refresh of the sphere selector if it's active
-        if (this.selector.selectionMode === PointSelectionMode.SPHERE || 
-            this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR) {
+        if (
+            this.selector.selectionMode === PointSelectionMode.SPHERE ||
+            this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR
+        ) {
             this.selector.sphereSelector.findPointsWithinSelector();
         }
     }
