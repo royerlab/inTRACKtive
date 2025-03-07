@@ -153,10 +153,17 @@ def calculate_displacement(
         DataFrame with an additional 'displacement' column.
         Displacement is calculated as the Euclidean distance between the current and previous position of the cell.
         Smoothing is applied to the displacement column using a rolling mean filter. If the windowsize is 1, no smoothing is applied.
+        When smoothing is applied, values are normalized to [0,1]. Otherwise, values maintain the same precision as x coordinates.
     """
     LOG.info("calculating velocity")
     # Sort the DataFrame by track_id and time
     df = df.sort_values(by=["track_id", "t"]).reset_index(drop=True)
+
+    # Get precision from x column (number of decimal places)
+    x_precision = df["x"].astype(str).str.extract(r"\.(\d+)")[0].str.len().max()
+    if pd.isna(x_precision):  # If x values are integers
+        x_precision = 0
+    print("x_precision:", x_precision)
 
     # Calculate displacement
     df["displacement"] = np.sqrt(
@@ -169,6 +176,8 @@ def calculate_displacement(
     last_timepoints = df.groupby("track_id")["t"].transform("max") == df["t"]
     df.loc[last_timepoints, "displacement"] = 0
 
+    print("before calculate_displacement: df", df)
+
     if velocity_smoothing_windowsize > 1:
         LOG.info("smoothing velocities")
         df = smooth_column(df, "displacement", velocity_smoothing_windowsize)
@@ -176,9 +185,15 @@ def calculate_displacement(
         df = df.drop("displacement", axis=1)
         df = df.rename(columns={"displacement_smooth": "displacement"})
         df = normalize_column(df, "displacement")
+        LOG.info("smoothing applied")
     else:
         LOG.info("no smoothing applied")
+        # Only apply precision rounding when no smoothing/normalization is done
+        df["displacement"] = df["displacement"].round(x_precision)
+        if x_precision == 0:
+            df["displacement"] = df["displacement"].astype(int)
 
+    print("after calculate_displacement: df", df)
     return df
 
 
@@ -633,8 +648,8 @@ if __name__ == "__main__":
 # # tracks_bundle.zarr
 # # ├── points (198M)
 # # ├── points_to_tracks (62M)
-# # │   ├── indices (61M)
-# # │   └── indptr (1M)
+# # │   ├── indices (61M)
+# # │   └── indptr (1M)
 # # ├── tracks_to_points (259M)
 # # │   ├── data (207M)
 # # │   ├── indices (50M)
