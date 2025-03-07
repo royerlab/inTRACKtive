@@ -548,7 +548,7 @@ def dataframe_to_browser(
 @click.option(
     "--calc_velocity",
     is_flag=True,
-    help="Boolean indicating whether to calculate velocity of the cells",
+    help="Boolean indicating whether to calculate velocity of the cells (smoothing is recommended, please provide a --velocity_smoothing_windowsize)",
     default=False,
     type=bool,
 )
