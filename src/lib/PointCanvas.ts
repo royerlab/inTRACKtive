@@ -171,13 +171,6 @@ export class PointCanvas {
         // Set up controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.autoRotateSpeed = 1;
-        this.controls.listenToKeyEvents(window); // Enable keyboard controls
-        this.controls.keys = {
-            LEFT: "ArrowLeft",
-            UP: "ArrowUp",
-            RIGHT: "ArrowRight",
-            BOTTOM: "ArrowDown",
-        };
 
         // Set up selection
         this.selector = new PointSelector(this.scene, this.renderer, this.camera, this.controls, this.points);
