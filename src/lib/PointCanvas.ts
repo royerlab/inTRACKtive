@@ -579,9 +579,6 @@ export class PointCanvas {
     }
 
     setPointsPositions(data: Float32Array) {
-        // Clear existing geometry first
-        this.clearPointsGeometry();
-
         const numPoints = data.length / numberOfValuesPerPoint;
         const geometry = this.points.geometry;
         const positions = geometry.getAttribute("position");
@@ -703,26 +700,6 @@ export class PointCanvas {
             } else {
                 this.scene.remove(this.axesHelper); // Remove from the scene if not visiblev
             }
-        }
-    }
-
-    // Clear the points geometry when the timepoint changes
-    clearPointsGeometry() {
-        const geometry = this.points.geometry;
-        // Set draw range to 0 to effectively hide all points
-        geometry.setDrawRange(0, 0);
-        // Clear the position attribute
-        const positions = geometry.getAttribute("position");
-        if (positions) {
-            positions.array.fill(0);
-            positions.needsUpdate = true;
-        }
-        // Force a refresh of the sphere selector if it's active
-        if (
-            this.selector.selectionMode === PointSelectionMode.SPHERE ||
-            this.selector.selectionMode === PointSelectionMode.SPHERICAL_CURSOR
-        ) {
-            this.selector.sphereSelector.findPointsWithinSelector();
         }
     }
 }

@@ -216,8 +216,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             if (typeof action.curTime === "function") {
                 action.curTime = action.curTime(canvas.curTime);
             }
-            // Clear points before time change
-            newCanvas.clearPointsGeometry();
             newCanvas.curTime = action.curTime;
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
