@@ -97,7 +97,11 @@ export default function DataControls(props: DataControlsProps) {
                     sdsType="secondary"
                     sdsStyle="icon"
                     onClick={() => {
-                        if (window.confirm("For documentation and the Paper, go to Github (click OK to open Github in a new browser tab)")) {
+                        if (
+                            window.confirm(
+                                "For documentation and the Paper, go to Github (click OK to open Github in a new browser tab)",
+                            )
+                        ) {
                             window.open("https://github.com/royerlab/inTRACKtive", "_blank");
                         }
                     }}
