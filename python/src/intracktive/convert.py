@@ -198,6 +198,7 @@ def convert_dataframe_to_zarr(
     zarr_path: Path,
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
+    attribute_types: Iterable[str] = (),
     pre_normalized: bool = False,
     calc_velocity: bool = False,
     velocity_smoothing_windowsize: int = 1,
@@ -296,7 +297,6 @@ def convert_dataframe_to_zarr(
         * INF_SPACE
     )
     attribute_arrays = {}
-    attribute_types = [None] * len(extra_cols)
 
     points_to_tracks = lil_matrix(
         (n_time_points * max_values_per_time_point, n_tracklets), dtype=np.int32
@@ -313,18 +313,11 @@ def convert_dataframe_to_zarr(
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
-    for index, col in enumerate(extra_cols):
+    for col in extra_cols:
         attribute_array = attribute_array_empty.copy()
         for t, group in df.groupby("t"):
             group_size = len(group)
             attribute_array[t, :group_size] = group[col].to_numpy().ravel()
-        # check if attribute is categorical or continuous
-        if (
-            len(np.unique(attribute_array[attribute_array != INF_SPACE])) <= 10
-        ):  # get number of unique values, excluding INF_SPACE
-            attribute_types[index] = "categorical"
-        else:
-            attribute_types[index] = "continuous"
         attribute_arrays[col] = attribute_array
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
@@ -378,6 +371,8 @@ def convert_dataframe_to_zarr(
 
     # Ensure the Zarr path is unique
     zarr_path = get_unique_zarr_path(zarr_path)
+
+    LOG.info(f"Saving to Zarr at {zarr_path}")
 
     # save the points array
     top_level_group: zarr.Group = zarr.hierarchy.group(
@@ -459,11 +454,14 @@ def convert_dataframe_to_zarr(
 
     LOG.info(f"Saved to Zarr in {time.monotonic() - start} seconds")
 
+    return zarr_path
+
 
 def dataframe_to_browser(
     df: pd.DataFrame,
     zarr_dir: Path,
     extra_cols: Iterable[str] = (),
+    attribute_types: Iterable[str] = (),
 ) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
@@ -487,15 +485,21 @@ def dataframe_to_browser(
     else:
         LOG.info("Provided directory used used for localhost: %s", zarr_dir)
 
-    # extra_cols = []
-    zarr_path = (
-        zarr_dir / "zarr_bundle.zarr"
-    )  # zarr_dir is the folder, zarr_path is the folder+zarr_name
+    # check if extra_cols are in df
+    for col in extra_cols:
+        if col not in df.columns:
+            raise ValueError(f"Column '{col}' not found in the DataFrame")
 
+    # if attribute_types is not provided, get it from the extra_cols
+    if not attribute_types:
+        attribute_types = [get_col_type(df[col]) for col in extra_cols]
+
+    zarr_path = get_unique_zarr_path(zarr_dir / "zarr_bundle.zarr")
     zarr_dir_with_storename = convert_dataframe_to_zarr(
         df=df,
         zarr_path=zarr_path,
         extra_cols=extra_cols,
+        attribute_types=attribute_types,
     )
 
     hostURL = serve_directory(
@@ -506,13 +510,63 @@ def dataframe_to_browser(
     LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
 
     baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
-    dataUrl = hostURL + "/zarr_bundle.zarr/"  # exact path of the data (on localhost)
+    dataUrl = (
+        hostURL + "/" + zarr_path.name + "/"
+    )  # exact path of the data (on localhost)
     fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
     LOG.info("Copy the following URL into the Google Chrome browser:")
     LOG.info("full URL: %s", fullUrl)
     webbrowser.open(fullUrl)
+
+
+def check_if_columns_exist(
+    selected_columns: list[str], available_columns: pd.Index
+) -> None:
+    """
+    Check if all selected columns exist in the available columns.
+
+    Parameters
+    ----------
+    selected_columns : list[str]
+        List of column names to check for
+    available_columns : pd.Index
+        Index of available column names in the DataFrame
+
+    Raises
+    ------
+    ValueError
+        If any selected column is not found in available columns
+    """
+    missing_columns = [col for col in selected_columns if col not in available_columns]
+    if missing_columns:
+        raise ValueError(
+            f"Columns not found in the input file: {', '.join(missing_columns)}"
+        )
+
+
+def get_col_type(column: pd.Series) -> str:
+    """
+    Determine if a column is categorical or continuous based on number of unique values.
+
+    Parameters
+    ----------
+    column : pd.Series
+        The column to analyze
+
+    Returns
+    -------
+    str
+        'categorical' if column has 10 or fewer unique values, 'continuous' otherwise
+    """
+    # Get number of unique values, excluding INF_SPACE
+    n_unique = len(np.unique(column[column != INF_SPACE]))
+
+    if n_unique <= 10:
+        return "categorical"
+    else:
+        return "continuous"
 
 
 @click.command(name="convert")
@@ -549,6 +603,12 @@ def dataframe_to_browser(
     help="Comma-separated list of column names to include as attributes (e.g., 'cell_size,diameter,type,label')",
 )
 @click.option(
+    "--add_hex_attribute",
+    type=str,
+    default=None,
+    help="Comma-separated list of column names to include as HEX attributes (e.i., columns with hexInt values, only internal use')",
+)
+@click.option(
     "--pre_normalized",
     is_flag=True,
     help="Boolean indicating whether the extra column/columns with attributes are prenormalized to [0,1]",
@@ -574,6 +634,7 @@ def convert_cli(
     add_radius: bool,
     add_all_attributes: bool,
     add_attribute: str | None,
+    add_hex_attribute: str | None,
     pre_normalized: bool,
     calc_velocity: bool,
     velocity_smoothing_windowsize: int,
@@ -604,27 +665,33 @@ def convert_cli(
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
 
     extra_cols = []
+    col_types = []
     if add_all_attributes:
         columns_standard = REQUIRED_COLUMNS
         extra_cols = tracks_df.columns.difference(columns_standard).to_list()
-        print("extra columns included as attributes:", extra_cols)
-    elif add_attribute:
-        selected_columns = [col.strip() for col in add_attribute.split(",")]
-        missing_columns = [
-            col for col in selected_columns if col not in tracks_df.columns
-        ]
-        if missing_columns:
-            raise ValueError(
-                f"Columns not found in the input file: {', '.join(missing_columns)}"
-            )
-        extra_cols = selected_columns
-        print(f"Selected columns included as attributes: {', '.join(extra_cols)}")
+    else:
+        if add_attribute:
+            selected_columns = [col.strip() for col in add_attribute.split(",")]
+            check_if_columns_exist(selected_columns, tracks_df.columns)
+            extra_cols = selected_columns
+            for c in selected_columns:
+                col_types.append(get_col_type(tracks_df[c]))
+
+        if add_hex_attribute:
+            selected_columns = [col.strip() for col in add_hex_attribute.split(",")]
+            check_if_columns_exist(selected_columns, tracks_df.columns)
+            extra_cols = extra_cols + selected_columns
+            for c in selected_columns:
+                col_types.append("hex")
+    print(f"Columns included as attributes: {', '.join(selected_columns)}")
+    print(f"Column types: {col_types}")
 
     convert_dataframe_to_zarr(
         tracks_df,
         zarr_path,
         add_radius,
         extra_cols=extra_cols,
+        attribute_types=col_types,
         pre_normalized=pre_normalized,
         calc_velocity=calc_velocity,
         velocity_smoothing_windowsize=velocity_smoothing_windowsize,
