@@ -462,6 +462,7 @@ def dataframe_to_browser(
     zarr_dir: Path,
     extra_cols: Iterable[str] = (),
     attribute_types: Iterable[str] = (),
+    add_radius: bool = False,
 ) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
@@ -476,6 +477,8 @@ def dataframe_to_browser(
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
     extra_cols : Iterable[str], optional
         List of extra columns to include in the Zarr store, by default empty list
+    add_radius: bool, optional
+            Boolean indicating whether to include the column radius as cell size, by default False
     """
 
     if str(zarr_dir) in (".", None):
@@ -499,6 +502,7 @@ def dataframe_to_browser(
         df=df,
         zarr_path=zarr_path,
         extra_cols=extra_cols,
+        add_radius=add_radius,
         attribute_types=attribute_types,
     )
 
@@ -676,14 +680,14 @@ def convert_cli(
             extra_cols = selected_columns
             for c in selected_columns:
                 col_types.append(get_col_type(tracks_df[c]))
-
+            print(f"Columns included as attributes: {', '.join(selected_columns)}")
         if add_hex_attribute:
             selected_columns = [col.strip() for col in add_hex_attribute.split(",")]
             check_if_columns_exist(selected_columns, tracks_df.columns)
             extra_cols = extra_cols + selected_columns
             for c in selected_columns:
                 col_types.append("hex")
-    print(f"Columns included as attributes: {', '.join(selected_columns)}")
+            print(f"Columns included as attributes: {', '.join(selected_columns)}")
     print(f"Column types: {col_types}")
 
     convert_dataframe_to_zarr(
