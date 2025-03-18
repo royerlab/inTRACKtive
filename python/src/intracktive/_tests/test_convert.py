@@ -51,6 +51,48 @@ def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> 
     _evaluate(new_data, gt_data)
 
 
+def test_convert_with_attributes_without_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=['x','y'],
+    )
+
+def test_convert_with_attributes_with_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=['x','y'],
+        attribute_types=['continuous','continuous'],
+    )
+
+def test_convert_with_attributes_with_wrong_number_of_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=['x','y'],
+        attribute_types=['hex','continuous','categorical'],
+    )
+
+
 def test_convert_with_missing_column(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,

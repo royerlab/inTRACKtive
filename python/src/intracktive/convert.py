@@ -244,8 +244,8 @@ def convert_dataframe_to_zarr(
         REQUIRED_COLUMNS + ["radius"] if add_radius else REQUIRED_COLUMNS
     )  # columns to check for in the DataFrame
     columns_to_check = columns_to_check + extra_cols
-    print("point_cols:", points_cols)
-    print("columns_to_check:", columns_to_check)
+    LOG.info("point_cols: %s", points_cols)
+    LOG.info("columns_to_check: %s", columns_to_check)
 
     for col in columns_to_check:
         if col not in df.columns:
@@ -253,6 +253,12 @@ def convert_dataframe_to_zarr(
 
     for col in ("t", "track_id", "parent_track_id"):
         df[col] = df[col].astype(int)
+
+    # Check if attribute_types is empty or has wrong length
+    if not attribute_types or len(attribute_types) != len(extra_cols):
+        LOG.info("attributes types are not provided or have wrong length")
+        attribute_types = [get_col_type(df[c]) for c in extra_cols]
+    LOG.info("column types: %s", attribute_types)
 
     # calculate velocity
     if calc_velocity:
@@ -517,7 +523,7 @@ def dataframe_to_browser(
     dataUrl = (
         hostURL + "/" + zarr_path.name + "/"
     )  # exact path of the data (on localhost)
-    fullUrl = baseUrl + generate_viewer_state_hash(
+    fullUrl = generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
     LOG.info("Copy the following URL into the Google Chrome browser:")
@@ -680,15 +686,15 @@ def convert_cli(
             extra_cols = selected_columns
             for c in selected_columns:
                 col_types.append(get_col_type(tracks_df[c]))
-            print(f"Columns included as attributes: {', '.join(selected_columns)}")
+            LOG.info(f"Columns included as attributes: {', '.join(selected_columns)}")
         if add_hex_attribute:
             selected_columns = [col.strip() for col in add_hex_attribute.split(",")]
             check_if_columns_exist(selected_columns, tracks_df.columns)
             extra_cols = extra_cols + selected_columns
             for c in selected_columns:
                 col_types.append("hex")
-            print(f"Columns included as hex attributes: {', '.join(selected_columns)}")
-    print(f"Column types: {col_types}")
+            LOG.info(f"Columns included as hex attributes: {', '.join(selected_columns)}")
+    LOG.info(f"Column types: {col_types}")
 
     convert_dataframe_to_zarr(
         tracks_df,
