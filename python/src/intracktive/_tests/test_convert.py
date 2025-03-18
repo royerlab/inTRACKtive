@@ -6,10 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import zarr
-from intracktive.convert import (
-    convert_dataframe_to_zarr,
-    dataframe_to_browser,
-)
+from intracktive.convert import convert_dataframe_to_zarr, dataframe_to_browser
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:

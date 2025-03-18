@@ -44,6 +44,11 @@ jobs:
         env:
           PLATFORM: ubuntu-latest
           BACKEND: pyqt5
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
   
   deploy:
     # this will run when you have tagged a commit, starting with "v*"
