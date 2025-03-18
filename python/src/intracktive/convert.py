@@ -46,6 +46,8 @@ def _transitive_closure(
     start = time.monotonic()
 
     iter = 0
+    print("graph.nnz", graph.nnz)
+    print("graph**2.nnz", (graph**2).nnz)
     while graph.nnz != (nxt := graph**2).nnz:
         graph = nxt
         iter += 1
@@ -492,7 +494,7 @@ def dataframe_to_browser(
             zarr_dir = Path(temp_dir)
             LOG.info("Temporary directory used for localhost: %s", zarr_dir)
     else:
-        LOG.info("Provided directory used used for localhost: %s", zarr_dir)
+        LOG.info("Provided directory used for localhost: %s", zarr_dir)
 
     # check if extra_cols are in df
     for col in extra_cols:
@@ -519,7 +521,6 @@ def dataframe_to_browser(
 
     LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
 
-    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
     dataUrl = (
         hostURL + "/" + zarr_path.name + "/"
     )  # exact path of the data (on localhost)
@@ -693,7 +694,9 @@ def convert_cli(
             extra_cols = extra_cols + selected_columns
             for c in selected_columns:
                 col_types.append("hex")
-            LOG.info(f"Columns included as hex attributes: {', '.join(selected_columns)}")
+            LOG.info(
+                f"Columns included as hex attributes: {', '.join(selected_columns)}"
+            )
     LOG.info(f"Column types: {col_types}")
 
     convert_dataframe_to_zarr(

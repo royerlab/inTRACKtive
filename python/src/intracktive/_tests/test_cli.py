@@ -31,6 +31,22 @@ def test_convert_cli_simple(
     )
 
 
+def test_convert_cli_without_output_path(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
+
+    _run_command(
+        [
+            "convert",
+            "--input_file",
+            str(tmp_path / "sample_data.csv"),
+        ]
+    )
+
+
 def test_convert_cli_single_attribute(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,
@@ -50,6 +66,7 @@ def test_convert_cli_single_attribute(
         ]
     )
 
+
 def test_convert_cli_single_hex_attribute(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,
@@ -68,6 +85,7 @@ def test_convert_cli_single_hex_attribute(
             "z",
         ]
     )
+
 
 def test_convert_cli_two_types_of_attributes(
     tmp_path: Path,
@@ -128,6 +146,27 @@ def test_convert_cli_all_attributes(
             "--add_all_attributes",
         ]
     )
+
+
+def test_convert_cli_missing_attributes(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
+
+    with pytest.raises(ValueError):
+        _run_command(
+            [
+                "convert",
+                "--input_file",
+                str(tmp_path / "sample_data.csv"),
+                "--out_dir",
+                str(tmp_path),
+                "--add_attribute",
+                "nonexisting_column_name",
+            ]
+        )
 
 
 def test_convert_cli_all_attributes_prenormalized(

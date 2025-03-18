@@ -1,4 +1,5 @@
 import webbrowser
+from pathlib import Path
 from typing import Callable
 from unittest.mock import patch
 
@@ -31,6 +32,40 @@ def test_intracktive_widget_2D(
     # Attempt to simulate the "run" button click and catch errors
     with patch.object(webbrowser, "open", return_value=True) as mock_browser:
         try:
+            widget._run_btn_click()
+            mock_browser.assert_called_once()
+        except Exception as e:
+            pytest.fail(f"Button click failed with error: {e}")
+
+    if request.config.getoption("--show-napari-viewer"):
+        napari.run()
+
+
+def test_intracktive_widget_2D_with_provided_zarr_path(
+    make_napari_viewer: Callable[[], napari.Viewer],
+    request,
+    make_sample_data: pd.DataFrame,
+    tmp_path: Path,
+):
+    df = make_sample_data
+    filtered_df = df[df["parent_track_id"] != -1]
+    graph = dict(zip(filtered_df["track_id"], filtered_df["parent_track_id"]))
+    print(graph)
+
+    viewer = make_napari_viewer()
+    widget = IntracktiveWidget()
+    viewer.window.add_dock_widget(widget)
+    viewer.add_tracks(df[["track_id", "t", "y", "x"]], graph=graph, name="Tracks")
+
+    assert "Tracks" in viewer.layers
+
+    assert widget._tracks_layer_w.value is not None
+    assert str(widget._file_dialog.value) == "."
+
+    # Attempt to simulate the "run" button click and catch errors
+    with patch.object(webbrowser, "open", return_value=True) as mock_browser:
+        try:
+            widget._file_dialog.value = tmp_path
             widget._run_btn_click()
             mock_browser.assert_called_once()
         except Exception as e:
