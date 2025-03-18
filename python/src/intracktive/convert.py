@@ -687,7 +687,7 @@ def convert_cli(
             extra_cols = extra_cols + selected_columns
             for c in selected_columns:
                 col_types.append("hex")
-            print(f"Columns included as attributes: {', '.join(selected_columns)}")
+            print(f"Columns included as hex attributes: {', '.join(selected_columns)}")
     print(f"Column types: {col_types}")
 
     convert_dataframe_to_zarr(

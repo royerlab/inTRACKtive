@@ -50,6 +50,46 @@ def test_convert_cli_single_attribute(
         ]
     )
 
+def test_convert_cli_single_hex_attribute(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
+
+    _run_command(
+        [
+            "convert",
+            "--input_file",
+            str(tmp_path / "sample_data.csv"),
+            "--out_dir",
+            str(tmp_path),
+            "--add_hex_attribute",
+            "z",
+        ]
+    )
+
+def test_convert_cli_two_types_of_attributes(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df.to_csv(tmp_path / "sample_data.csv", index=False)
+
+    _run_command(
+        [
+            "convert",
+            "--input_file",
+            str(tmp_path / "sample_data.csv"),
+            "--out_dir",
+            str(tmp_path),
+            "--add_hex_attribute",
+            "z,y",
+            "--add_attribute",
+            "x",
+        ]
+    )
+
 
 def test_convert_cli_multiple_attributes(
     tmp_path: Path,
