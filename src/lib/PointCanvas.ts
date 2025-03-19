@@ -586,9 +586,14 @@ export class PointCanvas {
 
         const num = numberOfValuesPerPoint;
 
-        // if the point size is the initial point size and radius is provided, then we need to calculate the mean cell size once
-        // ToDo: this goes wrong when a dataset without pointsize is loaded after a dataset with pointsize (because we go from num=4 to num3, but this function runs before trackManager is loaded)
-        if (num == 4 && this.pointSize == initialPointSize) {
+        // Reset pointSize to initial value when switching from num=4 to num=3
+        if (num === 3 && this.pointSize !== initialPointSize) {
+            this.pointSize = initialPointSize;
+            console.debug("Reset to initial point size");
+        }
+
+        // Only calculate mean cell size when num=4 and using initial point size
+        if (num === 4 && this.pointSize === initialPointSize) {
             this.pointSize = this.calculateMeanCellSize(data, numPoints, num);
             console.debug("mean cell size calculated: ", this.pointSize);
         }
