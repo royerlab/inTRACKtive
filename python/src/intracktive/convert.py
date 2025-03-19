@@ -46,8 +46,6 @@ def _transitive_closure(
     start = time.monotonic()
 
     iter = 0
-    print("graph.nnz", graph.nnz)
-    print("graph**2.nnz", (graph**2).nnz)
     while graph.nnz != (nxt := graph**2).nnz:
         graph = nxt
         iter += 1
@@ -520,11 +518,11 @@ def dataframe_to_browser(
     )
 
     LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
-
+    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
     dataUrl = (
         hostURL + "/" + zarr_path.name + "/"
     )  # exact path of the data (on localhost)
-    fullUrl = generate_viewer_state_hash(
+    fullUrl = baseUrl + generate_viewer_state_hash(
         data_url=str(dataUrl)
     )  # full hash that encodes viewerState
     LOG.info("Copy the following URL into the Google Chrome browser:")
