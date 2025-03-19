@@ -268,7 +268,7 @@ export class TrackManager {
         }
 
         // scale the data to fit in the viewer
-        flatPoints = this.applyScale(flatPoints, 3);
+        flatPoints = this.applyScale(flatPoints, 3) as Float32Array<ArrayBuffer>;
         return [flatPoints, pointIDs];
     }
 
