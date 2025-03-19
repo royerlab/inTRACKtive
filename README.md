@@ -1,4 +1,5 @@
 ![Tests](https://github.com/royerlab/inTRACKtive/actions/workflows/python-lint-and-test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/royerlab/inTRACKtive/branch/main/graph/badge.svg)](https://codecov.io/gh/royerlab/inTRACKtive)
 [![PyPI version](https://badge.fury.io/py/intracktive.svg?cache_bust=1)](https://badge.fury.io/py/intracktive)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributors](https://img.shields.io/github/contributors-anon/royerlab/inTRACKtive)](https://github.com/royerlab/inTRACKtive/graphs/contributors)

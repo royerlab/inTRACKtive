@@ -1,10 +1,12 @@
+import webbrowser
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 import zarr
-from intracktive.convert import convert_dataframe_to_zarr
+from intracktive.convert import convert_dataframe_to_zarr, dataframe_to_browser
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
@@ -49,6 +51,98 @@ def test_actual_zarr_content(tmp_path: Path, make_sample_data: pd.DataFrame) -> 
     gt_data = zarr.open(gt_path)
 
     _evaluate(new_data, gt_data)
+
+
+def test_convert_if_zarr_file_exists(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+    )
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+    )
+
+
+def test_dataframe_to_browser_with_attributes(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    with patch.object(webbrowser, "open", return_value=True) as mock_browser:
+        try:
+            dataframe_to_browser(
+                df,
+                tmp_path,
+                extra_cols=["x", "y"],
+                attribute_types=["hex", "continuous"],
+            )
+            mock_browser.assert_called_once()
+        except Exception as e:
+            pytest.fail(f"Button click failed with error: {e}")
+
+
+def test_dataframe_to_browser_with_missing_attributes(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df = df.drop(columns=["x", "y"])
+
+    with pytest.raises(ValueError):
+        dataframe_to_browser(df, tmp_path, extra_cols=["random_column"])
+
+
+def test_convert_with_attributes_without_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=["x", "y"],
+    )
+
+
+def test_convert_with_attributes_with_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=["x", "y"],
+        attribute_types=["continuous", "continuous"],
+    )
+
+
+def test_convert_with_attributes_with_wrong_number_of_types(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=["x", "y"],
+        attribute_types=["hex", "continuous", "categorical"],
+    )
 
 
 def test_convert_with_missing_column(
@@ -197,4 +291,53 @@ def test_convert_with_invalid_velocity_window(
         zarr_path=new_path,
         calc_velocity=False,
         velocity_smoothing_windowsize=0,  # Should not raise error when calc_velocity is False
+    )
+
+
+def test_convert_with_continuous_attribute(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df1 = make_sample_data
+    df2 = make_sample_data.copy()
+    df3 = make_sample_data.copy()
+
+    # Modify x values to ensure uniqueness
+    df2["x"] = df2["x"] + 5
+    df3["x"] = df3["x"] + 10
+
+    # Concatenate the dataframes to get 15 unique values in x (to be detected as continuous attribute)
+    df = pd.concat([df1, df2, df3], ignore_index=True)
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=["x"],
+    )
+
+
+def test_convert_with_parents_and_children(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_rows = pd.DataFrame(
+        [
+            [5, 2, 50, 50, 50, 4],  # track 5 is child of 4
+            [6, 2, 60, 60, 60, 5],  # track 6 is child of 5
+            [7, 3, 70, 70, 70, 6],  # track 7 is child of 6
+            [8, 3, 80, 80, 80, 7],  # track 8 is child of 7
+        ],
+        columns=["track_id", "t", "z", "y", "x", "parent_track_id"],
+    )
+
+    df = pd.concat([df, new_rows], ignore_index=True)
+
+    # Create a new column with parent-child relationships
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
     )
