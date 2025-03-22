@@ -93,6 +93,7 @@ export class PointCanvas {
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     currentAttributes: number[] | Float32Array = new Float32Array();
+    previousNumValues = 4;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -586,11 +587,12 @@ export class PointCanvas {
 
         const num = numberOfValuesPerPoint;
 
-        // Reset pointSize to initial value when switching from num=4 to num=3
-        if (num === 3 && this.pointSize !== initialPointSize) {
+        // Only reset pointSize when switching from num=4 to num=3
+        if (num === 3 && this.previousNumValues === 4) {
             this.pointSize = initialPointSize;
             console.debug("Reset to initial point size");
         }
+        this.previousNumValues = num;
 
         // Only calculate mean cell size when num=4 and using initial point size
         if (num === 4 && this.pointSize === initialPointSize) {
