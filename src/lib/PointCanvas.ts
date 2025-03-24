@@ -38,7 +38,8 @@ const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
 const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
 
 const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
-const factorPointSizeVsCellSize = 0.011; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+const factorPointSizeVsCellSize = 0.008; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+// was 0.011 in branch
 const factorTrackWidthVsHighlight = 3; // choice to make the tracks 7x thinner than the track highlights
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
@@ -111,6 +112,7 @@ export class PointCanvas {
             attribute vec3 color;
             varying vec3 vColor;
             uniform float viewportHeight;
+            uniform float pixelRatio;
 
             void main() {
                 vColor = color;
@@ -119,7 +121,8 @@ export class PointCanvas {
                 // Convert size from world space to screen space while preserving world-space relationships
                 vec4 clipPos = projectionMatrix * mvPosition;
                 vec4 clipSize = projectionMatrix * vec4(size, 0.0, mvPosition.z, 1.0);
-                gl_PointSize = abs(clipSize.x / clipPos.w) * viewportHeight;
+                
+                gl_PointSize = abs(clipSize.x / clipPos.w) * viewportHeight / pixelRatio;
                 
                 gl_Position = clipPos;
             }
@@ -140,15 +143,15 @@ export class PointCanvas {
                 color: { value: new Color(0xffffff) },
                 pointTexture: { value: new TextureLoader().load("/spark1.png") },
                 viewportHeight: { value: height },
+                pixelRatio: { value: window.devicePixelRatio },
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
-
             blending: NormalBlending,
-            depthTest: true, // true
-            // alphaTest: 0.1, //no effect
-            depthWrite: true, // true
-            transparent: false, // false
+            depthTest: true,
+            depthWrite: true,
+            transparent: false,
+            defines: { USE_SIZEATTENUATION: "" }, // Enable size attenuation
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
