@@ -144,7 +144,7 @@ export class PointCanvas {
                 color: { value: new Color(0xffffff) },
                 pointTexture: { value: new TextureLoader().load("/spark1.png") },
                 viewportHeight: { value: height },
-                pixelRatio: { value: Math.max(1, window.devicePixelRatio) }  // Ensure minimum of 1
+                pixelRatio: { value: Math.max(1, window.devicePixelRatio) }, // Ensure minimum of 1
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
