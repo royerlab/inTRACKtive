@@ -542,9 +542,13 @@ export class PointCanvas {
         this.renderer.setSize(width, height);
         this.composer.setSize(width, height);
 
-        // Update the viewport height uniform
+        // Get actual device pixel ratio and viewport height
+        const pixelRatio = window.devicePixelRatio || 1;
+        const actualHeight = height * pixelRatio;
+
+        // Update the viewport height uniform with the actual pixel height
         if (this.points.material instanceof ShaderMaterial) {
-            this.points.material.uniforms.viewportHeight.value = height;
+            this.points.material.uniforms.viewportHeight.value = actualHeight;
         }
     }
 
