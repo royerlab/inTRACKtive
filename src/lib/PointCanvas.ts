@@ -93,7 +93,7 @@ export class PointCanvas {
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     currentAttributes: number[] | Float32Array = new Float32Array();
-    previousNumValues = 4;
+    private previousNumValues: number | undefined = undefined;
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
@@ -587,17 +587,24 @@ export class PointCanvas {
 
         const num = numberOfValuesPerPoint;
 
-        // Only reset pointSize when switching from num=4 to num=3
-        if (num === 3 && this.previousNumValues === 4) {
-            this.pointSize = initialPointSize;
-            console.debug("Reset to initial point size");
+        // Track if this is the first data load
+        if (this.previousNumValues === undefined) {
+            this.previousNumValues = num;
+            console.debug("first data load - num = ", num, this.pointSize);
+            // Don't modify pointSize - keep what was loaded from URL
         }
-        this.previousNumValues = num;
+        // Reset to initialPointSize only when switching from num=4 to num=3
+        else if (num === 3 && this.previousNumValues === 4) {
+            this.pointSize = initialPointSize;
+            console.debug("Reset to initial point size - switched from num=4 to num=3");
+            this.previousNumValues = num;
+        }
 
-        // Only calculate mean cell size when num=4 and using initial point size
-        if (num === 4 && this.pointSize === initialPointSize) {
+        // Calculate mean cell size for num=4, to get the track widths right
+        if (num === 4) {
             this.pointSize = this.calculateMeanCellSize(data, numPoints, num);
             console.debug("mean cell size calculated: ", this.pointSize);
+            this.previousNumValues = num;
         }
 
         for (let i = 0; i < numPoints; i++) {
