@@ -95,6 +95,12 @@ export class BoxPointSelector {
             return;
         }
         if (event.key === "Shift") {
+            this.helper.enabled = false; // Ensure helper starts disabled
+            this.helper.element.style.display = "none"; // Hide any visible rectangle
+            this.helper.startPoint.set(0, 0); // Reset the start point
+            this.helper.pointTopLeft.set(0, 0); // Reset the top-left point
+            this.helper.pointBottomRight.set(0, 0); // Reset the bottom-right point
+            this.helper.isDown = false; // Explicitly tell helper no drag is in progress (this was key to solving the shift issue)
             this.setSelecting(true);
         }
     }
@@ -102,7 +108,20 @@ export class BoxPointSelector {
     keyUp(event: KeyboardEvent) {
         console.debug("BoxPointSelector.keyUp: %s", event.key);
         if (event.key === "Shift") {
+            // ignore if helper is already disabled
+            if (!this.helper.enabled) {
+                return;
+            }
+
             this.setSelecting(false);
+            this.helper.enabled = false;
+            this.helper.element.style.display = "none";
+            this.controls.enabled = true;
+
+            // If mouse is still down, block future selections
+            if (this.selecting()) {
+                this.blocked = true;
+            }
         }
     }
 
