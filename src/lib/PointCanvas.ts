@@ -122,7 +122,8 @@ export class PointCanvas {
                 vec4 clipPos = projectionMatrix * mvPosition;
                 vec4 clipSize = projectionMatrix * vec4(size, 0.0, mvPosition.z, 1.0);
                 
-                gl_PointSize = abs(clipSize.x / clipPos.w) * viewportHeight / pixelRatio;
+                // Scale point size to maintain world-space relationships
+                gl_PointSize = abs(clipSize.x / clipPos.w) * viewportHeight;
                 
                 gl_Position = clipPos;
             }
