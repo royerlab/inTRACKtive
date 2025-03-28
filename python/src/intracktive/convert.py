@@ -193,6 +193,19 @@ def calculate_displacement(
     return df
 
 
+def validate_coordinates(df, threshold=-9000):
+    """Check if any coordinates are too close to INF_SPACE."""
+    for col in ["x", "y", "z"]:
+        if (df[col] <= threshold).any():
+            problematic = df[df[col] <= threshold]
+            print(
+                f"WARNING: Found {len(problematic)} points with {col} coordinates below {threshold}"
+            )
+            print(f"This might conflict with the fill value {INF_SPACE}")
+            return True
+    return False
+
+
 def convert_dataframe_to_zarr(
     df: pd.DataFrame,
     zarr_path: Path,
@@ -259,6 +272,13 @@ def convert_dataframe_to_zarr(
         LOG.info("attributes types are not provided or have wrong length")
         attribute_types = [get_col_type(df[c]) for c in extra_cols]
     LOG.info("column types: %s", attribute_types)
+
+    # Check for problematic coordinates before conversion
+    has_very_negative_coords = validate_coordinates(df)
+    if has_very_negative_coords:
+        raise ValueError(
+            "Coordinates too negative (below -9000), please preprocess data to prevent this"
+        )
 
     # calculate velocity
     if calc_velocity:
