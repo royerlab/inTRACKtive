@@ -210,7 +210,8 @@ export class TrackManager {
         // assume points < -127 are invalid, and all are at the end of the array
         // this is how the jagged array is stored in the zarr
         // for Float32 it's actually -9999, but the int8 data is -127
-        let endIndex = points.findIndex((value) => value <= -127);
+        // use -9000 here, as INF_SPACE is -9999.9 in python conversion code
+        let endIndex = points.findIndex((value) => value <= -9000);
         if (endIndex === -1) {
             endIndex = points.length;
         } else if (endIndex % numberOfValuesPerPoint !== 0) {
@@ -234,7 +235,8 @@ export class TrackManager {
         // assume points < -127 are invalid, and all are at the end of the array
         // this is how the jagged array is stored in the zarr
         // for Float32 it's actually -9999, but the int8 data is -127
-        let endIndex = attributes.findIndex((value) => value <= -127);
+        // use -9000 here, as INF_SPACE is -9999.9 in python conversion code
+        let endIndex = attributes.findIndex((value) => value <= -9000);
         if (endIndex === -1) {
             endIndex = attributes.length;
         }
