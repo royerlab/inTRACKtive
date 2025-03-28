@@ -26,7 +26,7 @@ jobs:
         run: |
           cd python # NOTE: move to python directory
           python -m pip install --upgrade pip
-          pip install pre-commit pytest pytest-qt napari[all]
+          pip install pre-commit pytest pytest-qt pytest-cov napari[all]
           pip install .
 
       # Update output format to enable automatic inline annotations.
@@ -40,7 +40,7 @@ jobs:
         with:
           run: |
             cd python
-            pytest -vv .
+            pytest --cov --cov-branch --cov-report=xml
         env:
           PLATFORM: ubuntu-latest
           BACKEND: pyqt5
