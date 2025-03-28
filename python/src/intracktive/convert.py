@@ -489,6 +489,7 @@ def dataframe_to_browser(
     extra_cols: Iterable[str] = (),
     attribute_types: Iterable[str] = (),
     add_radius: bool = False,
+    pre_normalized: bool = False,
 ) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
@@ -530,6 +531,7 @@ def dataframe_to_browser(
         extra_cols=extra_cols,
         add_radius=add_radius,
         attribute_types=attribute_types,
+        pre_normalized=pre_normalized,
     )
 
     hostURL = serve_directory(
