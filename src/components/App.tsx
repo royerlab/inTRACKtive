@@ -393,6 +393,15 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
                                 }}
                                 selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
+                                colorBy={canvas.colorBy}
+                                colorByEvent={canvas.colorByEvent}
+                                onSelectBinaryValue={(indices: number[], pointIds: Set<number>) => {
+                                    dispatchCanvas({
+                                        type: ActionType.ADD_SELECTED_POINT_IDS,
+                                        selectedPointIndices: indices,
+                                        selectedPointIds: pointIds,
+                                    });
+                                }}
                             />
                             <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper

@@ -2,7 +2,7 @@ import { Box, Stack } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition, Button } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 import { PointSelectionMode } from "@/lib/PointSelector";
-import { TrackManager } from "@/lib/TrackManager";
+import { TrackManager, Option, numberOfDefaultColorByOptions } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 import deviceState from "@/lib/DeviceState";
 
@@ -18,6 +18,9 @@ interface CellControlsProps {
     MobileSelectCells: () => void;
     setSelectorScale: (value: number) => void;
     selectorScale: number;
+    colorBy: boolean;
+    colorByEvent: Option;
+    onSelectBinaryValue: (indices: number[], ids: Set<number>) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -36,6 +39,36 @@ export default function CellControls(props: CellControlsProps) {
         },
         { icon: "Globe", tooltipText: "Adjustable sphere", value: PointSelectionMode.SPHERE },
     ];
+
+    const handleBinarySelection = async () => {
+        if (!props.trackManager) return;
+
+        try {
+            const points = await props.trackManager.fetchPointsAtTime(props.trackManager.annotTime);
+            const attributeIndex = props.colorByEvent.label - numberOfDefaultColorByOptions;
+            const attributes = await props.trackManager.fetchAttributesAtTime(
+                props.trackManager.annotTime,
+                attributeIndex,
+            );
+
+            const numPoints = points.length / 3;
+
+            // Process selection if under limit
+            const selectedIndices: number[] = [];
+            const selectedIds = new Set<number>();
+            for (let i = 0; i < numPoints && i < attributes.length; i++) {
+                if (attributes[i] === 16711680) {
+                    selectedIndices.push(i);
+                    const pointId = props.trackManager.annotTime * props.trackManager.maxPointsPerTimepoint + i;
+                    selectedIds.add(pointId);
+                }
+            }
+
+            props.onSelectBinaryValue(selectedIndices, selectedIds);
+        } catch (error) {
+            console.error("Error during binary selection:", error);
+        }
+    };
 
     return (
         <Stack spacing="1em">
