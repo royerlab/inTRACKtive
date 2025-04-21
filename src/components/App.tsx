@@ -387,7 +387,6 @@ export default function App() {
                                         selectedPointIds: pointIds,
                                     });
                                 }}
-                                dispatchCanvas={dispatchCanvas}
                             />
                             <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper

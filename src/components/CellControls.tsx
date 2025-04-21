@@ -5,7 +5,6 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager, Option, numberOfDefaultColorByOptions } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 import deviceState from "@/lib/DeviceState";
-import { PointCanvasAction } from "@/lib/PointCanvas";
 
 interface CellControlsProps {
     clearTracks: () => void;
@@ -22,7 +21,6 @@ interface CellControlsProps {
     colorBy: boolean;
     colorByEvent: Option;
     onSelectBinaryValue: (indices: number[], ids: Set<number>) => void;
-    dispatchCanvas: (action: PointCanvasAction) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -47,7 +45,6 @@ export default function CellControls(props: CellControlsProps) {
 
         try {
             // Disable track highlights and set point brightness to 1.0 before selecting cells
-            props.dispatchCanvas({ type: "POINT_BRIGHTNESS", brightness: 1.0 });
 
             // Use the annotTime from trackManager
             const points = await props.trackManager.fetchPointsAtTime(props.trackManager.annotTime);
