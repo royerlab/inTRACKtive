@@ -5,7 +5,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import { TrackManager, Option, numberOfDefaultColorByOptions } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 import deviceState from "@/lib/DeviceState";
-import { usePointCanvas } from "@/hooks/usePointCanvas";
+import { PointCanvasAction } from "@/lib/PointCanvas";
 
 interface CellControlsProps {
     clearTracks: () => void;
@@ -22,7 +22,7 @@ interface CellControlsProps {
     colorBy: boolean;
     colorByEvent: Option;
     onSelectBinaryValue: (indices: number[], ids: Set<number>) => void;
-    dispatchCanvas: (action: any) => void;
+    dispatchCanvas: (action: PointCanvasAction) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -44,37 +44,40 @@ export default function CellControls(props: CellControlsProps) {
 
     const handleBinarySelection = async () => {
         if (!props.trackManager) return;
-                
+
         try {
             // Disable track highlights and set point brightness to 1.0 before selecting cells
             props.dispatchCanvas({ type: "POINT_BRIGHTNESS", brightness: 1.0 });
-            
-            // Use the annot_time from trackManager
+
+            // Use the annotTime from trackManager
             const points = await props.trackManager.fetchPointsAtTime(props.trackManager.annotTime);
             // Use the correct attribute index by subtracting numberOfDefaultColorByOptions
             const attributeIndex = props.colorByEvent.label - numberOfDefaultColorByOptions;
-            const attributes = await props.trackManager.fetchAttributesAtTime(props.trackManager.annotTime, attributeIndex);
-            
+            const attributes = await props.trackManager.fetchAttributesAtTime(
+                props.trackManager.annotTime,
+                attributeIndex,
+            );
+
             // Calculate how many actual points we have (points array contains x,y,z for each point)
             const numPoints = points.length / 3;
-            
+
             const selectedIndices: number[] = [];
             const selectedIds = new Set<number>();
-            
+
             // Process only valid points
             for (let i = 0; i < numPoints && i < attributes.length; i++) {
-                if (attributes[i] === 16711680) { // RED color
+                if (attributes[i] === 16711680) {
+                    // RED color
                     selectedIndices.push(i);
-                    
+
                     // Calculate pointId using maxPointsPerTimepoint to match Python conversion
                     const pointId = props.trackManager.annotTime * props.trackManager.maxPointsPerTimepoint + i;
                     selectedIds.add(pointId);
                 }
             }
-            
+
             // Select the cells
             props.onSelectBinaryValue(selectedIndices, selectedIds);
-            
         } catch (error) {
             console.error("Error during binary selection:", error);
         }
@@ -95,15 +98,9 @@ export default function CellControls(props: CellControlsProps) {
                 <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
-            
-            {props.trackManager &&
-             props.colorBy &&
-             props.colorByEvent.type === "hex-binary" && (
-                <Button
-                    sdsStyle="square"
-                    sdsType="primary"
-                    onClick={handleBinarySelection}
-                >
+
+            {props.trackManager && props.colorBy && props.colorByEvent.type === "hex-binary" && (
+                <Button sdsStyle="square" sdsType="primary" onClick={handleBinarySelection}>
                     Track Red Cells
                 </Button>
             )}

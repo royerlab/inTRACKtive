@@ -381,10 +381,10 @@ export default function App() {
                                 colorBy={canvas.colorBy}
                                 colorByEvent={canvas.colorByEvent}
                                 onSelectBinaryValue={(indices: number[], pointIds: Set<number>) => {
-                                    dispatchCanvas({ 
-                                        type: ActionType.ADD_SELECTED_POINT_IDS, 
+                                    dispatchCanvas({
+                                        type: ActionType.ADD_SELECTED_POINT_IDS,
                                         selectedPointIndices: indices,
-                                        selectedPointIds: pointIds
+                                        selectedPointIds: pointIds,
                                     });
                                 }}
                                 dispatchCanvas={dispatchCanvas}
@@ -482,9 +482,11 @@ export default function App() {
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
                     {numSelectedCells > 0 && <ColorMapTracks />}
-                    {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && canvas.colorByEvent.type !== "hex-binary" && (
-                        <ColorMapCells colorByEvent={canvas.colorByEvent} />
-                    )}
+                    {canvas.colorByEvent.type !== "default" &&
+                        canvas.colorByEvent.type !== "hex" &&
+                        canvas.colorByEvent.type !== "hex-binary" && (
+                            <ColorMapCells colorByEvent={canvas.colorByEvent} />
+                        )}
                 </Box>
 
                 {/* The playback controls */}

@@ -356,7 +356,7 @@ export async function loadTrackManager(url: string) {
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
         let attributes = null;
-        let annot_time = 0;
+        let annotTime = 0;
         let attributeOptions: Option[] = resetDropDownOptions();
         try {
             attributes = await openArray({
@@ -368,8 +368,8 @@ export async function loadTrackManager(url: string) {
             console.debug("attribute names found: %s", zattrs["attribute_names"]);
             console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
-            annot_time = zattrs["annot_time"] ?? 0;
-            console.log("annot_time: %s", annot_time);
+            annotTime = zattrs["annot_time"] ?? 0;
+            console.log("annot_time: %s", annotTime);
 
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {
@@ -396,7 +396,7 @@ export async function loadTrackManager(url: string) {
             attributes,
             attributeOptions,
             scaleSettings,
-            annot_time
+            annotTime,
         );
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
