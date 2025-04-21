@@ -393,6 +393,16 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
                                 }}
                                 selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
+                                colorBy={canvas.colorBy}
+                                colorByEvent={canvas.colorByEvent}
+                                onSelectBinaryValue={(indices: number[], pointIds: Set<number>) => {
+                                    dispatchCanvas({ 
+                                        type: ActionType.ADD_SELECTED_POINT_IDS, 
+                                        selectedPointIndices: indices,
+                                        selectedPointIds: pointIds
+                                    });
+                                }}
+                                dispatchCanvas={dispatchCanvas}
                             />
                             <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper
@@ -487,7 +497,7 @@ export default function App() {
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
                     {numSelectedCells > 0 && <ColorMapTracks />}
-                    {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && (
+                    {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && canvas.colorByEvent.type !== "hex-binary" && (
                         <ColorMapCells colorByEvent={canvas.colorByEvent} />
                     )}
                 </Box>

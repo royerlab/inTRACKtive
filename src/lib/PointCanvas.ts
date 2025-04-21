@@ -426,7 +426,8 @@ export class PointCanvas {
                 if (
                     this.colorByEvent.action != "provided-normalized" &&
                     attributes.length > 0 &&
-                    this.colorByEvent.type != "hex"
+                    this.colorByEvent.type != "hex" &&
+                    this.colorByEvent.type != "hex-binary"
                 ) {
                     attributes = this.normalizeAttributeVector(attributes);
                 }
@@ -443,7 +444,7 @@ export class PointCanvas {
             for (let i = 0; i < numPoints; i++) {
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
-        } else if (this.colorByEvent.type === "hex") {
+        } else if (this.colorByEvent.type === "hex" || this.colorByEvent.type === "hex-binary") {
             for (let i = 0; i < numPoints; i++) {
                 const hexInt = attributes[i]; // must be [0 1]
                 if (hexInt === undefined) {
