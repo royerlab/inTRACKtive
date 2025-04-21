@@ -20,7 +20,7 @@ interface CellControlsProps {
     selectorScale: number;
     colorBy: boolean;
     colorByEvent: Option;
-    onSelectBinaryValue: (indices: number[], ids: Set<number>) => void;
+    onSelectBinaryValue: (ids: Set<number>) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -53,18 +53,16 @@ export default function CellControls(props: CellControlsProps) {
 
             const numPoints = points.length / 3;
 
-            // Process selection if under limit
-            const selectedIndices: number[] = [];
             const selectedIds = new Set<number>();
             for (let i = 0; i < numPoints && i < attributes.length; i++) {
                 if (attributes[i] === 16711680) {
-                    selectedIndices.push(i);
                     const pointId = props.trackManager.annotTime * props.trackManager.maxPointsPerTimepoint + i;
                     selectedIds.add(pointId);
                 }
             }
 
-            props.onSelectBinaryValue(selectedIndices, selectedIds);
+            props.onSelectBinaryValue(selectedIds);
+
         } catch (error) {
             console.error("Error during binary selection:", error);
         }

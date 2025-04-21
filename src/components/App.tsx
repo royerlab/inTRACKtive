@@ -379,10 +379,10 @@ export default function App() {
                                 selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
                                 colorBy={canvas.colorBy}
                                 colorByEvent={canvas.colorByEvent}
-                                onSelectBinaryValue={(indices: number[], pointIds: Set<number>) => {
+                                onSelectBinaryValue={(pointIds: Set<number>) => {
                                     dispatchCanvas({
                                         type: ActionType.ADD_SELECTED_POINT_IDS,
-                                        selectedPointIndices: indices,
+                                        selectedPointIndices: [],
                                         selectedPointIds: pointIds,
                                     });
                                 }}
