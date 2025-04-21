@@ -85,6 +85,16 @@ export default function CellControls(props: CellControlsProps) {
                 <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
+
+            {props.trackManager &&
+                props.colorBy &&
+                props.colorByEvent.type === "hex-binary" &&
+                (props.numSelectedCells ?? 0) == 0 && (
+                    <Button sdsStyle="square" sdsType="primary" onClick={handleBinarySelection}>
+                        Load tracks for annotated cells
+                    </Button>
+                )}
+
             {/* Selection mode buttons */}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
