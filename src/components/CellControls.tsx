@@ -96,7 +96,7 @@ export default function CellControls(props: CellControlsProps) {
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
 
-            {props.trackManager && props.colorBy && props.colorByEvent.type === "hex-binary" && (
+            {props.trackManager && props.colorBy && props.colorByEvent.type === "hex-binary" && (props.numSelectedCells ?? 0) == 0 && (
                 <Button sdsStyle="square" sdsType="primary" onClick={handleBinarySelection}>
                     Track Red Cells
                 </Button>
