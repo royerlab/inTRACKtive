@@ -275,52 +275,37 @@ export default function App() {
 
     const getTrackDownloadData = () => {
         const trackData: TrackDownloadData[] = [];
-        canvas.tracks.forEach((track, trackID) => {
-            // Keep track of the timepoints we've seen in this track to avoid duplication
-            // This is necessary because if a track contains a single point, we set
-            // the start and end positions to be the same
-            const timepointsInTrack = new Set();
 
-            const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
-            const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
+        // For each selected point ID
+        canvas.selectedPointIds.forEach((pointId) => {
+            // Calculate time and index from pointId
+            const time = Math.floor(pointId / canvas.maxPointsPerTimepoint);
 
-            for (let i = 0; i < startTimes.count; i++) {
-                timepointsInTrack.add(startTimes.getX(i));
-                trackData.push([
-                    // trackID is 1-indexed in input and output CSVs
-                    trackID + 1,
-                    startTimes.getX(i),
-                    startPositions.getX(i),
-                    startPositions.getY(i),
-                    startPositions.getZ(i),
-                    track.parentTrackID,
-                ]);
-            }
-            const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
-            const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
-            const lastIndex = endPositions.count - 1;
+            // Find which track contains this point
+            canvas.tracks.forEach((track, trackID) => {
+                // Check if this point is in this track
+                const pointIndex = track.threeTrack.pointIds.indexOf(pointId);
+                if (pointIndex !== -1) {
+                    // Get position data for this specific point
+                    const positions = track.threeTrack.geometry.getAttribute("instanceStart");
 
-            // Only add the end position if it's not the same as the start position
-            if (!timepointsInTrack.has(endTimes.getX(lastIndex))) {
-                trackData.push([
-                    // trackID is 1-indexed in input and output CSVs
-                    trackID + 1,
-                    endTimes.getX(lastIndex),
-                    endPositions.getX(lastIndex),
-                    endPositions.getY(lastIndex),
-                    endPositions.getZ(lastIndex),
-                    track.parentTrackID,
-                ]);
-            }
+                    // Add just this point to the export data
+                    trackData.push([
+                        // trackID is 1-indexed in input and output CSVs
+                        trackID + 1,
+                        time,
+                        positions.getX(pointIndex),
+                        positions.getY(pointIndex),
+                        positions.getZ(pointIndex),
+                        track.parentTrackID,
+                    ]);
+                }
+            });
         });
 
-        // Sort the trackData by track ID (first column) and then by time (second column)
+        // Sort the trackData by track ID and then by time
         trackData.sort((a, b) => {
-            // First compare by trackID (a[0], b[0])
-            if (a[0] !== b[0]) {
-                return a[0] - b[0];
-            }
-            // If trackID is the same, compare by time (a[1], b[1])
+            if (a[0] !== b[0]) return a[0] - b[0];
             return a[1] - b[1];
         });
 
