@@ -387,6 +387,9 @@ export default function App() {
                                         selectedPointIds: pointIds,
                                     });
                                 }}
+                                maxNumSelectedCells={maxNumSelectedCells}
+                                setShowWarningDialog={setShowWarningDialog}
+                                setNumUnfetchedPoints={setNumUnfetchedPoints}
                             />
                             <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper

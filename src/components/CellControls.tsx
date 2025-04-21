@@ -21,6 +21,9 @@ interface CellControlsProps {
     colorBy: boolean;
     colorByEvent: Option;
     onSelectBinaryValue: (indices: number[], ids: Set<number>) => void;
+    maxNumSelectedCells: number;
+    setShowWarningDialog: (show: boolean) => void;
+    setNumUnfetchedPoints: (num: number) => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -44,36 +47,42 @@ export default function CellControls(props: CellControlsProps) {
         if (!props.trackManager) return;
 
         try {
-            // Disable track highlights and set point brightness to 1.0 before selecting cells
-
-            // Use the annotTime from trackManager
             const points = await props.trackManager.fetchPointsAtTime(props.trackManager.annotTime);
-            // Use the correct attribute index by subtracting numberOfDefaultColorByOptions
             const attributeIndex = props.colorByEvent.label - numberOfDefaultColorByOptions;
             const attributes = await props.trackManager.fetchAttributesAtTime(
                 props.trackManager.annotTime,
                 attributeIndex,
             );
 
-            // Calculate how many actual points we have (points array contains x,y,z for each point)
             const numPoints = points.length / 3;
 
-            const selectedIndices: number[] = [];
-            const selectedIds = new Set<number>();
-
-            // Process only valid points
+            // Count red cells first
+            let numRedCells = 0;
             for (let i = 0; i < numPoints && i < attributes.length; i++) {
                 if (attributes[i] === 16711680) {
                     // RED color
-                    selectedIndices.push(i);
+                    numRedCells++;
+                }
+            }
 
-                    // Calculate pointId using maxPointsPerTimepoint to match Python conversion
+            // Show warning if too many cells
+            if (numRedCells > props.maxNumSelectedCells) {
+                props.setNumUnfetchedPoints(numRedCells);
+                props.setShowWarningDialog(true);
+                return;
+            }
+
+            // Process selection if under limit
+            const selectedIndices: number[] = [];
+            const selectedIds = new Set<number>();
+            for (let i = 0; i < numPoints && i < attributes.length; i++) {
+                if (attributes[i] === 16711680) {
+                    selectedIndices.push(i);
                     const pointId = props.trackManager.annotTime * props.trackManager.maxPointsPerTimepoint + i;
                     selectedIds.add(pointId);
                 }
             }
 
-            // Select the cells
             props.onSelectBinaryValue(selectedIndices, selectedIds);
         } catch (error) {
             console.error("Error during binary selection:", error);
@@ -96,11 +105,14 @@ export default function CellControls(props: CellControlsProps) {
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
 
-            {props.trackManager && props.colorBy && props.colorByEvent.type === "hex-binary" && (props.numSelectedCells ?? 0) == 0 && (
-                <Button sdsStyle="square" sdsType="primary" onClick={handleBinarySelection}>
-                    Track Red Cells
-                </Button>
-            )}
+            {props.trackManager &&
+                props.colorBy &&
+                props.colorByEvent.type === "hex-binary" &&
+                (props.numSelectedCells ?? 0) == 0 && (
+                    <Button sdsStyle="square" sdsType="primary" onClick={handleBinarySelection}>
+                        Track Red Cells
+                    </Button>
+                )}
 
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>
