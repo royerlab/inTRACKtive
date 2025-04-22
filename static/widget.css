@@ -1,12 +1,27 @@
 /* src/css/app.css */
 #app {
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+    height: 600px;  /* Fixed height for the widget */
+    width: 100%;    /* Take full width of the cell */
+    display: flex;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Override MUI Drawer styles to contain it within the widget */
+.MuiDrawer-root {
+    position: absolute !important;
+    height: 100% !important;
+}
+
+.MuiDrawer-paper {
+    position: relative !important;
+    height: 100% !important;
+}
+
+/* Ensure the canvas maintains aspect ratio */
+canvas {
+    width: 100%;
+    height: 100%;
 }
 
 /* node_modules/@czi-sds/components/dist/variables.css */
