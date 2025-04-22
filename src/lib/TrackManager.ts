@@ -369,7 +369,7 @@ export async function loadTrackManager(url: string) {
             console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
             annotTime = zattrs["annot_time"] ?? 0;
-            console.log("annotTime:", annotTime);
+            console.debug("annotTime:", annotTime);
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {
                     name: zattrs["attribute_names"][column],
