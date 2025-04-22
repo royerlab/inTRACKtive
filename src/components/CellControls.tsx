@@ -62,7 +62,6 @@ export default function CellControls(props: CellControlsProps) {
             }
 
             props.onSelectBinaryValue(selectedIds);
-
         } catch (error) {
             console.error("Error during binary selection:", error);
         }
