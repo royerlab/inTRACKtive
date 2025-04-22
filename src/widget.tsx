@@ -6,7 +6,7 @@ function Widget() {
   return (
     <div style={{ 
       width: '100%', 
-      height: '600px',
+      height: '800px',
       position: 'relative',
       overflow: 'hidden'
     }}>
