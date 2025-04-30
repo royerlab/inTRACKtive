@@ -1,3 +1,40 @@
+if (typeof document !== "undefined") {
+    const style = document.createElement("style");
+    style.textContent = `
+      /* Switch overrides */
+      .MuiSwitch-root .MuiSwitch-track {
+        background-color: #E0E0E0 !important;
+      }
+      .MuiSwitch-root .MuiSwitch-thumb {
+        background-color: #FFFFFF !important;
+        border: 1px solid #C4C4C4 !important;
+      }
+      .MuiSwitch-root .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+        background-color: #FFFFFF !important;
+      }
+      .MuiSwitch-root .MuiSwitch-switchBase.Mui-checked .MuiSwitch-thumb {
+        background-color: #1976d2 !important;
+      }
+  
+      /* Slider overrides */
+      /* Gray “rail” (unfilled track) */
+      .MuiSlider-root .MuiSlider-rail {
+        background-color: #E0E0E0 !important;
+      }
+      /* Blue “track” (filled portion) */
+      .MuiSlider-root .MuiSlider-track {
+        background-color: #1976d2 !important;
+      }
+      /* White thumb with blue border */
+      .MuiSlider-root .MuiSlider-thumb {
+        background-color: #FFFFFF !important;
+        border: 2px solid #1976d2 !important;
+        box-shadow: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+}
+
 import { createRender } from "@anywidget/react";
 import App from "./components/App";
 
