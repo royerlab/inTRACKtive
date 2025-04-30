@@ -339,13 +339,7 @@ export default function App() {
                     sx={{
                         "width": drawerWidth,
                         "flexShrink": 0,
-                        "position": "relative",
-                        "& .MuiDrawer-paper": { 
-                            width: drawerWidth, 
-                            boxSizing: "border-box",
-                            position: "relative",
-                            height: "100%"
-                        },
+                        "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
                     }}
                 >
                     <Box
@@ -505,8 +499,6 @@ export default function App() {
                         padding: ".5em",
                         height: detectedDevice.isMobile ? "150px" : "50px", // leaving extra space for mobile
                         paddingLeft: 0,
-                        position: "relative",
-                        zIndex: 1200  // Add z-index to ensure controls appear above sidebar
                     }}
                 >
                     <PlaybackControls
