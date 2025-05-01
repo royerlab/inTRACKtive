@@ -1,6 +1,7 @@
 declare global {
     interface Window {
         INITIAL_DATASET_URL?: string;
+        SELECTION_CHANGED_CALLBACK?: (pointIndices: number[]) => void;
     }
 }
 
@@ -45,8 +46,15 @@ import { createRender, useModelState } from "@anywidget/react";
 import App from "./components/App";
 
 function Widget() {
-    // We'll let the bundled App handle the state
     const [datasetUrl] = useModelState<string>("dataset_url");
+    const [, setSelectedTracks] = useModelState<number[]>("selected_tracks");
+
+    // Set up the global callback that the selectors will use
+    if (typeof window !== "undefined") {
+        window.SELECTION_CHANGED_CALLBACK = (trackIDs: number[]) => {
+            setSelectedTracks(trackIDs);
+        };
+    }
 
     // Set a global variable for the app to read on startup
     if (typeof window !== "undefined" && datasetUrl) {
