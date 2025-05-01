@@ -1,3 +1,9 @@
+declare global {
+    interface Window {
+        INITIAL_DATASET_URL?: string;
+    }
+}
+
 if (typeof document !== "undefined") {
     const style = document.createElement("style");
     style.textContent = `
@@ -17,11 +23,11 @@ if (typeof document !== "undefined") {
       }
   
       /* Slider overrides */
-      /* Gray “rail” (unfilled track) */
+      /* Gray "rail" (unfilled track) */
       .MuiSlider-root .MuiSlider-rail {
         background-color: #E0E0E0 !important;
       }
-      /* Blue “track” (filled portion) */
+      /* Blue "track" (filled portion) */
       .MuiSlider-root .MuiSlider-track {
         background-color: #1976d2 !important;
       }
@@ -35,10 +41,18 @@ if (typeof document !== "undefined") {
     document.head.appendChild(style);
 }
 
-import { createRender } from "@anywidget/react";
+import { createRender, useModelState } from "@anywidget/react";
 import App from "./components/App";
 
 function Widget() {
+    // We'll let the bundled App handle the state
+    const [datasetUrl] = useModelState<string>("dataset_url");
+
+    // Set a global variable for the app to read on startup
+    if (typeof window !== "undefined" && datasetUrl) {
+        window.INITIAL_DATASET_URL = datasetUrl;
+    }
+
     return (
         <div
             style={{
