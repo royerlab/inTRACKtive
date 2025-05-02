@@ -65,15 +65,22 @@ function Widget() {
     }
 
     useEffect(() => {
-      console.log("useEffect triggered, selectedCells:", selectedCells);
-      console.log("useEffect triggered, selectedCells:", selectedCells, "type:", typeof selectedCells, "isArray:", Array.isArray(selectedCells));
-      if (typeof window !== "undefined" && Array.isArray(selectedCells)) {
-          console.log('callback1')
-          if (window.select_cells) {
-              console.log('callback2')
-              window.select_cells(selectedCells);
-          }
-      }
+        console.log("useEffect triggered, selectedCells:", selectedCells);
+        console.log(
+            "useEffect triggered, selectedCells:",
+            selectedCells,
+            "type:",
+            typeof selectedCells,
+            "isArray:",
+            Array.isArray(selectedCells),
+        );
+        if (typeof window !== "undefined" && Array.isArray(selectedCells)) {
+            console.log("callback1");
+            if (window.select_cells) {
+                console.log("callback2");
+                window.select_cells(selectedCells);
+            }
+        }
     }, [selectedCells]);
 
     return (
