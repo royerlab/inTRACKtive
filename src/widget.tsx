@@ -47,7 +47,7 @@ import App from "./components/App";
 
 function Widget() {
     const [datasetUrl] = useModelState<string>("dataset_url");
-    const [, setSelectedTracks] = useModelState<number[]>("selected_tracks");
+    const [, setSelectedTracks] = useModelState<number[]>("get_selected_tracks");
 
     // Set up the global callback that the selectors will use
     if (typeof window !== "undefined") {
