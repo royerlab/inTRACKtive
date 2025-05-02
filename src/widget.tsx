@@ -2,6 +2,7 @@ declare global {
     interface Window {
         INITIAL_DATASET_URL?: string;
         SELECTION_CHANGED_CALLBACK?: (pointIndices: number[]) => void;
+        select_cells?: (pointIds: number[]) => void;
     }
 }
 
@@ -44,10 +45,12 @@ if (typeof document !== "undefined") {
 
 import { createRender, useModelState } from "@anywidget/react";
 import App from "./components/App";
+import { useEffect } from "react";
 
 function Widget() {
     const [datasetUrl] = useModelState<string>("dataset_url");
     const [, setSelectedTracks] = useModelState<number[]>("get_selected_tracks");
+    const [selectedCells] = useModelState<number[]>("selected_cells");
 
     // Set up the global callback that the selectors will use
     if (typeof window !== "undefined") {
@@ -60,6 +63,18 @@ function Widget() {
     if (typeof window !== "undefined" && datasetUrl) {
         window.INITIAL_DATASET_URL = datasetUrl;
     }
+
+    useEffect(() => {
+      console.log("useEffect triggered, selectedCells:", selectedCells);
+      console.log("useEffect triggered, selectedCells:", selectedCells, "type:", typeof selectedCells, "isArray:", Array.isArray(selectedCells));
+      if (typeof window !== "undefined" && Array.isArray(selectedCells)) {
+          console.log('callback1')
+          if (window.select_cells) {
+              console.log('callback2')
+              window.select_cells(selectedCells);
+          }
+      }
+    }, [selectedCells]);
 
     return (
         <div
