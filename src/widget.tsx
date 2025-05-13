@@ -43,6 +43,15 @@ if (typeof document !== "undefined") {
         border: 2px solid #1976d2 !important;
         box-shadow: none !important;
       }
+
+      /* Button overrides for play and rotate */
+      .MuiButton-root.MuiButton-containedPrimary {
+        background-color: #1976d2 !important;
+      }
+      .MuiButton-root.MuiButton-containedSecondary {
+        background-color: #FFFFFF !important;
+        border: 1px solid #C4C4C4 !important;
+      }
     `;
     document.head.appendChild(style);
 }
@@ -50,6 +59,7 @@ if (typeof document !== "undefined") {
 import { createRender, useModelState } from "@anywidget/react";
 import App from "./components/App";
 import { useEffect } from "react";
+import { ViewerState } from "@/lib/ViewerState";
 
 function Widget() {
     const [model] = useModelState("model");
@@ -66,6 +76,16 @@ function Widget() {
 
     if (typeof window !== "undefined" && datasetUrl) {
         window.INITIAL_DATASET_URL = datasetUrl;
+    }
+    
+    // Create initialViewerState using the correct datasetUrl
+    let initialViewerState;
+    if (typeof window !== "undefined") {
+        initialViewerState = ViewerState.fromUrlHash(window.location.hash);
+        if (window.INITIAL_DATASET_URL) {
+            window.history.replaceState(null, "", window.location.pathname);
+            initialViewerState.dataUrl = window.INITIAL_DATASET_URL;
+        }
     }
 
     useEffect(() => {
@@ -85,7 +105,7 @@ function Widget() {
                 overflow: "hidden",
             }}
         >
-            <App />
+            <App/>
         </div>
     );
 }
