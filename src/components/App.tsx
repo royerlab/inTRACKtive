@@ -28,6 +28,12 @@ const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
 console.log("initial viewer state: ", initialViewerState);
+if (typeof window !== "undefined" && window.INITIAL_DATASET_URL) {
+    // Clear any existing state first
+    window.history.replaceState(null, "", window.location.pathname);
+    // Set the new dataset URL
+    initialViewerState.dataUrl = window.INITIAL_DATASET_URL;
+}
 clearUrlHash();
 
 const drawerWidth = 256;
@@ -233,7 +239,12 @@ export default function App() {
     useEffect(() => {
         console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
-        if (canvas.selectedPointIds.size == 0) return;
+        if (canvas.selectedPointIds.size == 0) {
+            if (window.SELECTION_CHANGED_CALLBACK) {
+                window.SELECTION_CHANGED_CALLBACK(Array.from(canvas.selectedPointIds));
+            }
+            return;
+        }
 
         // check how many new points are selected
         let numUnfetchedPoints = 0;
