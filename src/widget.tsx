@@ -3,7 +3,10 @@ declare global {
         INITIAL_DATASET_URL?: string;
         SELECTION_CHANGED_CALLBACK?: (pointIndices: number[]) => void;
         select_cells?: (pointIds: number[]) => void;
-        model? : any;
+        model?: {
+            model: unknown;
+            setSelectedCells: (cells: number[]) => void;
+        };
     }
 }
 
@@ -55,14 +58,14 @@ function Widget() {
     const [selectedCells, setSelectedCells] = useModelState("selected_cells");
 
     if (typeof window !== "undefined") {
-      window.SELECTION_CHANGED_CALLBACK = (trackIDs) => {
-        setSelectedTracks(trackIDs);
-      };
-      window.model = {model, setSelectedCells};
+        window.SELECTION_CHANGED_CALLBACK = (trackIDs) => {
+            setSelectedTracks(trackIDs);
+        };
+        window.model = { model, setSelectedCells };
     }
 
     if (typeof window !== "undefined" && datasetUrl) {
-      window.INITIAL_DATASET_URL = datasetUrl;
+        window.INITIAL_DATASET_URL = datasetUrl;
     }
 
     useEffect(() => {
