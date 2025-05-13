@@ -60,7 +60,7 @@ function Widget() {
 
     if (typeof window !== "undefined") {
         window.SELECTION_CHANGED_CALLBACK = (trackIDs) => {
-            setSelectedTracks(trackIDs);
+          setSelectedTracks([...trackIDs].sort((a, b) => a - b));
         };
         window.model = { model, setSelectedCells };
     }
