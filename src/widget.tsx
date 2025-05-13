@@ -43,15 +43,6 @@ if (typeof document !== "undefined") {
         border: 2px solid #1976d2 !important;
         box-shadow: none !important;
       }
-
-      /* Button overrides for play and rotate */
-      .MuiButton-root.MuiButton-containedPrimary {
-        background-color: #1976d2 !important;
-      }
-      .MuiButton-root.MuiButton-containedSecondary {
-        background-color: #FFFFFF !important;
-        border: 1px solid #C4C4C4 !important;
-      }
     `;
     document.head.appendChild(style);
 }
