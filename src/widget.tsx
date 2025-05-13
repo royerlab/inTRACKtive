@@ -77,7 +77,7 @@ function Widget() {
     if (typeof window !== "undefined" && datasetUrl) {
         window.INITIAL_DATASET_URL = datasetUrl;
     }
-    
+
     // Create initialViewerState using the correct datasetUrl
     let initialViewerState;
     if (typeof window !== "undefined") {
@@ -105,7 +105,7 @@ function Widget() {
                 overflow: "hidden",
             }}
         >
-            <App/>
+            <App />
         </div>
     );
 }
