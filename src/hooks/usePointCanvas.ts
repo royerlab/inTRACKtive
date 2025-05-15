@@ -260,6 +260,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.pointBrightness = 1.0;
             newCanvas.resetPointColors();
             newCanvas.updatePreviewPoints();
+
+            // setSelectedCells necessary in anywidget
+            if (typeof window !== "undefined" && window.model) {
+                window.model.setSelectedCells([]);
+            }
             break;
         case ActionType.SELECTION_MODE: {
             const modeOld: PointSelectionMode | null = canvas.selector.selectionMode;

@@ -490,6 +490,7 @@ def dataframe_to_browser(
     attribute_types: Iterable[str] = (),
     add_radius: bool = False,
     pre_normalized: bool = False,
+    flag_open_browser: bool = True,
 ) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
@@ -549,7 +550,11 @@ def dataframe_to_browser(
     )  # full hash that encodes viewerState
     LOG.info("Copy the following URL into the Google Chrome browser:")
     LOG.info("full URL: %s", fullUrl)
-    webbrowser.open(fullUrl)
+
+    if flag_open_browser:
+        webbrowser.open(fullUrl)
+    else:
+        return dataUrl
 
 
 def check_if_columns_exist(
