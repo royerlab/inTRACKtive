@@ -233,7 +233,7 @@ export default function App() {
     useEffect(() => {
         console.debug("effect-selectedPointIds: ", trackManager, canvas.selectedPointIds);
         if (!trackManager) return;
-        if (canvas.selectedPointIds.size == 0) return; 
+        if (canvas.selectedPointIds.size == 0) return;
 
         // check how many new points are selected
         let numUnfetchedPoints = 0;
