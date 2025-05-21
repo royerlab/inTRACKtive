@@ -143,6 +143,14 @@ where `path/to/data` is the full path to the folder containing your data (e.g., 
 
 Open this link in the browser, navigate to the exact dataset, right-click on the dataset (`tracks-bundle.zarr`) and `copy link` (depending on the browser). Then, open [the `inTRACKtive` viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
 
+Alternatively, you can use use a single command to serve and view the Zarr bundle with inTRACKtive: 
+
+```
+intracktive open path/to/zarr
+```
+
+where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. 
+
 ---
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
