@@ -546,7 +546,6 @@ def dataframe_to_browser(
     add_radius: bool = False,
     pre_normalized: bool = False,
     flag_open_browser: bool = True,
-    flag_open_browser: bool = True,
 ) -> None:
     """
     Open a Tracks DataFrame in inTRACKtive in the browser. In detail: this function
