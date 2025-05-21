@@ -143,6 +143,14 @@ where `path/to/data` is the full path to the folder containing your data (e.g., 
 
 Open this link in the browser, navigate to the exact dataset, right-click on the dataset (`tracks-bundle.zarr`) and `copy link` (depending on the browser). Then, open [the `inTRACKtive` viewer](https://intracktive.sf.czbiohub.org/), paste the copied link into the viewer (use the :globe_with_meridians: icon in the lower-left corner), and visualize your own data!
 
+Alternatively, you can use use a single command to serve and view the Zarr bundle with inTRACKtive: 
+
+```
+intracktive open path/to/zarr
+```
+
+where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. 
+
 ---
 
 ### ii) Open `inTRACKtive` using a Jupyter Notebook
@@ -154,7 +162,7 @@ dataframe_to_browser(data, zarr_dir)
 ```
 where `data` is a `pandas.DataFrame` containing the tracking data, and `zarr_dir` is a directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
 
-> ⚠️ Currently `dataframe_to_browser` only works for Chrome and Firefox
+> ⚠️ Currently `dataframe_to_browser` only works for Google Chrome and Firefox (not Safari)
 
 ### iii) Open `inTRACKtive` using the napari widget
 

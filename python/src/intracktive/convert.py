@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from intracktive.createHash import generate_viewer_state_hash
-from intracktive.server import serve_directory
+from intracktive.server import DEFAULT_HOST, find_available_port, serve_directory
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
 
@@ -483,6 +483,61 @@ def convert_dataframe_to_zarr(
     return zarr_path
 
 
+def zarr_to_browser(
+    zarr_path: Path,
+    flag_open_browser: bool = True,
+    threaded: bool = True,
+) -> None:
+    """
+    Open a Zarr store in inTRACKtive in the browser. This function will
+    1) host the zarr path as localhost, 2) open the localhost in the browser with inTRACKtive.
+
+    Parameters
+    ----------
+    zarr_path : Path
+        The full path to the Zarr store (including the .zarr extension)
+    flag_open_browser : bool, optional
+        Whether to automatically open the browser, by default True
+    threaded : bool, optional
+        Whether to run the server in a separate thread, by default True
+    """
+    zarr_dir = zarr_path.parent
+
+    # Calculate URLs before starting server
+    host = DEFAULT_HOST
+    port = find_available_port(8000)
+    hostURL = f"http://{host}:{port}"
+    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
+    dataUrl = (
+        hostURL + "/" + zarr_path.name + "/"
+    )  # exact path of the data (on localhost)
+    fullUrl = baseUrl + generate_viewer_state_hash(
+        data_url=str(dataUrl)
+    )  # full hash that encodes viewerState
+
+    LOG.info("Copy the following URL into the Google Chrome browser:")
+    LOG.info("full URL: %s", fullUrl)
+
+    # Open browser before starting server if not threaded
+    if flag_open_browser and not threaded:
+        webbrowser.open(fullUrl)
+
+    # Start server
+    serve_directory(
+        path=zarr_dir,
+        host=host,
+        port=port,
+        threaded=threaded,
+    )
+
+    # Open browser after starting server if threaded
+    if flag_open_browser and threaded:
+        webbrowser.open(fullUrl)
+
+    if not flag_open_browser:
+        return dataUrl, fullUrl
+
+
 def dataframe_to_browser(
     df: pd.DataFrame,
     zarr_dir: Path,
@@ -490,6 +545,7 @@ def dataframe_to_browser(
     attribute_types: Iterable[str] = (),
     add_radius: bool = False,
     pre_normalized: bool = False,
+    flag_open_browser: bool = True,
     flag_open_browser: bool = True,
 ) -> None:
     """
@@ -505,10 +561,15 @@ def dataframe_to_browser(
         The directory to save the Zarr bundle, only the path to the folder is required (excluding the zarr_bundle.zarr filename)
     extra_cols : Iterable[str], optional
         List of extra columns to include in the Zarr store, by default empty list
+    attribute_types : Iterable[str], optional
+        List of attribute types for the extra columns, by default empty list
     add_radius: bool, optional
-            Boolean indicating whether to include the column radius as cell size, by default False
+        Boolean indicating whether to include the column radius as cell size, by default False
+    pre_normalized: bool, optional
+        Whether the attributes are already normalized to [0,1], by default False
+    flag_open_browser: bool, optional
+        Whether to automatically open the browser, by default True
     """
-
     if str(zarr_dir) in (".", None):
         with tempfile.TemporaryDirectory() as temp_dir:
             zarr_dir = Path(temp_dir)
@@ -606,11 +667,9 @@ def get_col_type(column: pd.Series) -> str:
 
 
 @click.command(name="convert")
-@click.option(
-    "--input_file",
+@click.argument(
+    "input_file",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Path to the input file (CSV or Parquet)",
-    required=True,
 )
 @click.option(
     "--out_dir",
@@ -676,7 +735,10 @@ def convert_cli(
     velocity_smoothing_windowsize: int,
 ) -> None:
     """
-    Convert a CSV or Parquet file of tracks to a sparse Zarr store
+    Convert a CSV or Parquet file of tracks to a sparse Zarr store.
+
+    Arguments:
+        INPUT_FILE: Path to the input file (CSV or Parquet)
     """
     start = time.monotonic()
 
