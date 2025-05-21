@@ -1,0 +1,55 @@
+import click
+from pathlib import Path
+from intracktive.convert import zarr_to_browser
+
+@click.command("open")
+@click.argument(
+    "zarr_path",
+    type=click.Path(exists=True, path_type=Path),
+)
+@click.option(
+    "--no-browser",
+    is_flag=True,
+    default=False,
+    help="Don't open browser automatically, just print the URL",
+)
+def open_cli(
+    zarr_path: Path,
+    no_browser: bool,
+) -> None:
+    """
+    Open a Zarr store in inTRACKtive viewer.
+    
+    Arguments:
+        ZARR_PATH: Path to the Zarr store (directory ending in .zarr)
+    
+    This command will:
+    1. Start a local server to host the Zarr store
+    2. Generate a URL for viewing in inTRACKtive
+    3. Open the browser (unless --no-browser is specified)
+    
+    The server will keep running until interrupted with Ctrl+C.
+    
+    Example usage:
+    
+    intracktive open /path/to/data.zarr
+    intracktive open /path/to/data.zarr --no-browser
+    """
+    if not zarr_path.suffix == '.zarr':
+        raise click.BadParameter(
+            f"Path must end in .zarr, got: {zarr_path}"
+        )
+    
+    if not zarr_path.exists():
+        raise click.BadParameter(
+            f"Zarr store does not exist: {zarr_path}"
+        )
+
+    zarr_to_browser(
+        zarr_path=zarr_path,
+        flag_open_browser=not no_browser,
+        threaded=False
+    )
+
+if __name__ == "__main__":
+    open_cli()

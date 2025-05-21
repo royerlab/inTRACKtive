@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import List
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from click.testing import CliRunner
 from intracktive.main import main
 
 
@@ -23,7 +25,6 @@ def test_convert_cli_simple(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -41,7 +42,6 @@ def test_convert_cli_without_output_path(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
         ]
     )
@@ -57,7 +57,6 @@ def test_convert_cli_single_attribute(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -77,7 +76,6 @@ def test_convert_cli_single_hex_attribute(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -97,7 +95,6 @@ def test_convert_cli_two_types_of_attributes(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -119,7 +116,6 @@ def test_convert_cli_multiple_attributes(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -139,7 +135,6 @@ def test_convert_cli_all_attributes(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -159,7 +154,6 @@ def test_convert_cli_missing_attributes(
         _run_command(
             [
                 "convert",
-                "--input_file",
                 str(tmp_path / "sample_data.csv"),
                 "--out_dir",
                 str(tmp_path),
@@ -179,7 +173,6 @@ def test_convert_cli_all_attributes_prenormalized(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -201,7 +194,6 @@ def test_convert_cli_invalid_format(
         _run_command(
             [
                 "convert",
-                "--input_file",
                 str(invalid_file),
                 "--out_dir",
                 str(tmp_path),
@@ -229,7 +221,6 @@ def test_convert_cli_simple_file_formats(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(input_file),
             "--out_dir",
             str(tmp_path),
@@ -247,7 +238,6 @@ def test_convert_cli_velocity_smoothing(
     _run_command(
         [
             "convert",
-            "--input_file",
             str(tmp_path / "sample_data.csv"),
             "--out_dir",
             str(tmp_path),
@@ -256,3 +246,57 @@ def test_convert_cli_velocity_smoothing(
             "3",
         ]
     )
+
+
+def test_open_cli_simple(tmp_path: Path) -> None:
+    zarr_path = tmp_path / "test.zarr"
+    zarr_path.mkdir()
+
+    with patch("intracktive.open.zarr_to_browser") as mock_zarr_to_browser:
+        _run_command(
+            [
+                "open",
+                str(zarr_path),
+            ]
+        )
+
+        mock_zarr_to_browser.assert_called_once_with(
+            zarr_path=zarr_path, flag_open_browser=True, threaded=False
+        )
+
+
+def test_open_cli_no_browser(tmp_path: Path) -> None:
+    zarr_path = tmp_path / "test.zarr"
+    zarr_path.mkdir()
+
+    with patch("intracktive.open.zarr_to_browser") as mock_zarr_to_browser:
+        _run_command(
+            [
+                "open",
+                str(zarr_path),
+                "--no-browser",
+            ]
+        )
+
+        mock_zarr_to_browser.assert_called_once_with(
+            zarr_path=zarr_path, flag_open_browser=False, threaded=False
+        )
+
+
+def test_open_cli_validates_zarr_extension(tmp_path: Path) -> None:
+    non_zarr_path = tmp_path / "test.txt"
+    non_zarr_path.touch()  # Create the file so it exists
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["open", str(non_zarr_path)])
+    assert result.exit_code == 2
+    assert "Path must end in .zarr" in result.output
+
+
+def test_open_cli_validates_zarr_exists(tmp_path: Path) -> None:
+    zarr_path = tmp_path / "test.zarr"  # Correct extension but doesn't exist
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["open", str(zarr_path)])
+    assert result.exit_code == 2
+    assert "does not exist" in result.output
