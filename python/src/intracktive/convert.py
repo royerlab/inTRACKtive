@@ -659,14 +659,14 @@ def make_track_ids_consecutive(df: pd.DataFrame, inplace: bool = False) -> pd.Da
     """
     Remap track IDs to be consecutive starting from 1, preserving parent-child relationships.
     Uses ArrayMap from skimage for efficient array-based mapping.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame containing 'track_id' and 'parent_track_id' columns
     inplace : bool, optional
         If True, modifies the dataframe in place. If False, returns a copy.
-        
+
     Returns
     -------
     pd.DataFrame
@@ -674,18 +674,19 @@ def make_track_ids_consecutive(df: pd.DataFrame, inplace: bool = False) -> pd.Da
     """
     if not inplace:
         df = df.copy()
-        
+
     uniq_track_ids = df["track_id"].unique()
-    extended_uniq_track_ids = np.append(uniq_track_ids, -1)  # include -1 for orphaned tracklets
+    extended_uniq_track_ids = np.append(
+        uniq_track_ids, -1
+    )  # include -1 for orphaned tracklets
     fwd_map = ArrayMap(
-        extended_uniq_track_ids, 
-        np.append(np.arange(1, 1 + len(uniq_track_ids)), -1)
+        extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1)
     )
 
     # relabeling from 1 to N
     df["track_id"] = fwd_map[df["track_id"].to_numpy()]
     df["parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
-    
+
     return df
 
 
