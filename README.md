@@ -8,7 +8,7 @@
 
 # inTRACKtive
 
-`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [video](public/docs/videos.md)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous lazy data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet microscopy 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/), but can be used to visualize any tracking data acquired with any 2D ([example](https://t.ly/K-hA7)) or 3D microscopy modality from which tracking data can be obtained, from organoids down to single molecules.
@@ -38,7 +38,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
