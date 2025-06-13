@@ -66,7 +66,7 @@ See the image below with the explanation of the `inTRACKtive` UI:
 <details open>
     <summary>collapse</summary></br>
 
-We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (ckeck [video 5](public/docs/videos.md)): _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
+We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (check [video 5](public/docs/videos.md)): _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
 
 
 #### Note: Tracking data format
