@@ -8,7 +8,7 @@
 
 # inTRACKtive
 
-`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous lazy data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet microscopy 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/), but can be used to visualize any tracking data acquired with any 2D ([example](https://t.ly/K-hA7)) or 3D microscopy modality from which tracking data can be obtained, from organoids down to single molecules.
@@ -38,7 +38,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
@@ -66,7 +66,7 @@ See the image below with the explanation of the `inTRACKtive` UI:
 <details open>
     <summary>collapse</summary></br>
 
-We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow: _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
+We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (check [video 5](public/docs/videos.md)): _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
 
 
 #### Note: Tracking data format
@@ -120,7 +120,7 @@ intracktive convert --input_file path/to/tracks.csv --add_radius
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
 
-Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
+Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb), and [videos](public/docs/videos.md)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
 ```
 #add specific column as attribute
 intracktive convert --input_file path/to/file.csv --add_attribute cell_size
