@@ -66,7 +66,7 @@ See the image below with the explanation of the `inTRACKtive` UI:
 <details open>
     <summary>collapse</summary></br>
 
-We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow: _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
+We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (ckeck [video 5](public/docs/videos.md)): _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
 
 
 #### Note: Tracking data format
@@ -120,7 +120,7 @@ intracktive convert --input_file path/to/tracks.csv --add_radius
 
 Or use `intracktive convert --help` for the documentation on the inputs and outputs
 
-Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
+Additionally, inTRACKtive has the option of giving each cell a different color based on provided data attributes (see the example [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook1_inTRACKtive_from_notebook.ipynb), and [videos](public/docs/videos.md)). One can add any attributes to the Zarr file, as long as they are present as columns in the `tracks.csv` tracking data. Using the following command-line interface, you can add one/multiple/all columns as attributes to the data:
 ```
 #add specific column as attribute
 intracktive convert --input_file path/to/file.csv --add_attribute cell_size
