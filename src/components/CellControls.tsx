@@ -55,7 +55,7 @@ export default function CellControls(props: CellControlsProps) {
 
             const selectedIds = new Set<number>();
             for (let i = 0; i < numPoints && i < attributes.length; i++) {
-                if (attributes[i] === 16711680) {
+                if (attributes[i] != 4210752) {
                     const pointId = props.trackManager.annotTime * props.trackManager.maxPointsPerTimepoint + i;
                     selectedIds.add(pointId);
                 }
