@@ -2,6 +2,7 @@ import logging
 import tempfile
 import time
 import webbrowser
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Iterable
 
@@ -11,6 +12,7 @@ import pandas as pd
 import zarr
 from intracktive.createHash import generate_viewer_state_hash
 from intracktive.server import DEFAULT_HOST, find_available_port, serve_directory
+from intracktive.vendored.ultrack import inv_tracks_df_forest
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
 
@@ -198,10 +200,10 @@ def validate_coordinates(df, threshold=-9000):
     for col in ["x", "y", "z"]:
         if (df[col] <= threshold).any():
             problematic = df[df[col] <= threshold]
-            print(
+            LOG.warning(
                 f"WARNING: Found {len(problematic)} points with {col} coordinates below {threshold}"
             )
-            print(f"This might conflict with the fill value {INF_SPACE}")
+            LOG.warning(f"This might conflict with the fill value {INF_SPACE}")
             return True
     return False
 
@@ -485,6 +487,7 @@ def convert_dataframe_to_zarr(
 
 def zarr_to_browser(
     zarr_path: Path,
+    csv_path: Path | None = None,
     flag_open_browser: bool = True,
     threaded: bool = True,
 ) -> None:
@@ -496,12 +499,23 @@ def zarr_to_browser(
     ----------
     zarr_path : Path
         The full path to the Zarr store (including the .zarr extension)
+    csv_path : Path, optional
+        The full path to the CSV file with cells to select. Normally this is the CSV file that is exported from inTRACKtive which the user wants to load again, by default None
     flag_open_browser : bool, optional
         Whether to automatically open the browser, by default True
     threaded : bool, optional
         Whether to run the server in a separate thread, by default True
     """
     zarr_dir = zarr_path.parent
+
+    selected_cells = []
+    maxPointsPerTimepoint = 0
+    if csv_path:
+        selected_cells, maxPointsPerTimepoint = get_selected_cells_and_max_points(
+            csv_path, zarr_path
+        )
+        LOG.info(f"Selected cells: {selected_cells}")
+        LOG.info(f"Max points per timepoint: {maxPointsPerTimepoint}")
 
     # Calculate URLs before starting server
     host = DEFAULT_HOST
@@ -512,7 +526,9 @@ def zarr_to_browser(
         hostURL + "/" + zarr_path.name + "/"
     )  # exact path of the data (on localhost)
     fullUrl = baseUrl + generate_viewer_state_hash(
-        data_url=str(dataUrl)
+        data_url=str(dataUrl),
+        selected_cells=selected_cells,
+        maxPointsPerTimepoint=maxPointsPerTimepoint,
     )  # full hash that encodes viewerState
 
     LOG.info("Copy the following URL into the Google Chrome browser:")
@@ -645,6 +661,243 @@ def get_col_type(column: pd.Series) -> str:
         return "categorical"
     else:
         return "continuous"
+
+
+def get_selected_cells_and_max_points(
+    csv_path: Path | None, zarr_path: Path
+) -> tuple[list[int], int]:
+    """
+    Get selected cells from CSV and max points per timepoint from zarr store.
+
+    Parameters
+    ----------
+    csv_path : Path | None
+        Path to CSV file with track data, or None if no CSV provided
+    zarr_path : Path
+        Path to zarr store
+
+    Returns
+    -------
+    tuple[list[int], int]
+        Tuple of (selected_cells, maxPointsPerTimepoint)
+    """
+    selected_cells = []
+    maxPointsPerTimepoint = 0
+
+    if csv_path:
+        # Check if file exists
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV file does not exist: {csv_path}")
+
+        # Read the csv file
+        df = pd.read_csv(csv_path)
+
+        # Check if the csv file has the required columns
+        if not all(col in df.columns for col in ["track_id", "parent_track_id"]):
+            raise ValueError(
+                "CSV file does not have the columns track_id and parent_track_id"
+            )
+
+        # Get selected cells from the csv file
+        graph = inv_tracks_df_forest(df)
+        selected_tracks = split_graph_and_find_selected_tracks(graph)
+        LOG.info(f"Selected tracks: {selected_tracks}")
+        selected_cells = [
+            get_point_id_for_track_from_zarr(zarr_path, track_id)
+            for track_id in selected_tracks
+        ]
+        LOG.info(f"Selected cells: {selected_cells}")
+
+    # Get maxPointsPerTimepoint from the zarr store
+    try:
+        zarr_store = zarr.open_group(zarr_path)
+        points_group = zarr_store["points"]
+        attrs = points_group.attrs.asdict()
+        values_per_point = attrs.get("values_per_point", 3)
+        points_shape = points_group.shape
+        maxPointsPerTimepoint = points_shape[1] // values_per_point
+        LOG.info(
+            f"Calculated max points per timepoint from zarr: {maxPointsPerTimepoint}"
+        )
+    except Exception as e:
+        LOG.warning(f"Could not read from zarr, using fallback: {e}")
+        if csv_path:
+            # Use CSV data as fallback
+            df = pd.read_csv(csv_path)
+            maxPointsPerTimepoint = df.groupby("t").size().max()
+            LOG.info(
+                f"Using CSV fallback max points per timepoint: {maxPointsPerTimepoint}"
+            )
+        else:
+            # Use default fallback
+            maxPointsPerTimepoint = 1000
+            LOG.info(f"Using default max points per timepoint: {maxPointsPerTimepoint}")
+
+    return selected_cells, maxPointsPerTimepoint
+
+
+def get_point_id_for_track_from_zarr(zarr_store_path, track_id):
+    """
+    Get the point ID for a specific track from the zarr store.
+
+    Parameters
+    ----------
+    zarr_store_path : str
+        Path to the zarr store
+    track_id : int
+        The track ID (0-indexed)
+
+    Returns
+    -------
+    int
+        The point ID for the last point in the track
+    """
+
+    zarr_store = zarr.open_group(zarr_store_path)
+    tracks_to_points_group = zarr_store["tracks_to_points"]
+
+    indices = tracks_to_points_group["indices"][:]
+    indptr = tracks_to_points_group["indptr"][:]
+
+    n_tracks = len(indptr) - 1
+    # The indices array contains point IDs, not the total number of points
+    # We need to find the maximum point ID to determine the matrix size
+    max_point_id = np.max(indices) if len(indices) > 0 else 0
+    n_points = max_point_id + 1  # Point IDs are 0-indexed
+
+    # Create a CSR matrix where the data is just 1s (indicating presence of points)
+    # The actual coordinates are stored separately in the data array
+    csr_matrix_data = np.ones(len(indices), dtype=np.int32)
+
+    tracks_to_points_csr = csr_matrix(
+        (csr_matrix_data, indices, indptr), shape=(n_tracks, n_points)
+    )
+
+    # Get the row for this track
+    track_row = tracks_to_points_csr[track_id]
+
+    # Get the column indices (point IDs) where this track has non-zero values
+    point_indices = track_row.indices
+
+    # Return the last point ID for this track (point IDs are 0-indexed)
+    return int(point_indices[-1] - 1)
+
+
+def split_graph_and_find_selected_tracks(graph):
+    """
+    Given graph: dict[daughter]=parent,
+    returns the inferred set of originally selected cells.
+    """
+    # 1) find undirected components
+    nodes = set(graph) | set(graph.values())
+    adj = defaultdict(set)
+    for d, p in graph.items():
+        adj[d].add(p)
+        adj[p].add(d)
+
+    seen = set()
+    all_selected = []
+
+    def get_component(start):
+        comp = {start}
+        q = deque([start])
+        seen.add(start)
+        while q:
+            u = q.popleft()
+            for v in adj[u]:
+                if v not in seen:
+                    seen.add(v)
+                    comp.add(v)
+                    q.append(v)
+        return comp
+
+    for n in nodes:
+        if n in seen:
+            continue
+        comp = get_component(n)
+
+        # build children/parent maps restricted to comp
+        children = defaultdict(list)
+        parent = {}
+        for d, p in graph.items():
+            if d in comp and p in comp:
+                children[p].append(d)
+                parent[d] = p
+
+        # compute closure of x = {x} ∪ all its ancestors ∪ all its descendants
+        def closure(x):
+            anc = set()
+            cur = x
+            while cur in parent:
+                cur = parent[cur]
+                anc.add(cur)
+            desc = set()
+            q = deque([x])
+            while q:
+                u = q.popleft()
+                for c in children[u]:
+                    if c not in desc:
+                        desc.add(c)
+                        q.append(c)
+            return anc | desc | {x}
+
+        # compute depth of x (distance from root)
+        def depth(x):
+            d = 0
+            cur = x
+            while cur in parent:
+                cur = parent[cur]
+                d += 1
+            return d
+
+        # helper to count how many of u's direct children are non-leaf
+        def non_leaf_kids(u):
+            return sum(1 for c in children[u] if children[c])
+
+        # check for perfect-binary property of subtree rooted at u
+        def is_perfect(u):
+            stk = [u]
+            while stk:
+                v = stk.pop()
+                c = children[v]
+                if len(c) not in (0, 2):
+                    return False
+                stk.extend(c)
+            return True
+
+        # 1) find all full-coverers: nodes whose closure == comp
+        full = [u for u in comp if closure(u) == comp]
+
+        # 2) filter to those that genuinely “explain” the tree:
+        #    - no children (pure chain leaf)
+        #    - OR branching but ≤1 non-leaf child
+        #    - OR perfect binary subtree
+        candidates = []
+        for u in full:
+            k = len(children[u])
+            nl = non_leaf_kids(u)
+            if k == 0 or (k >= 2 and nl <= 1) or is_perfect(u):
+                candidates.append(u)
+
+        if candidates:
+            # pick the deepest candidate
+            pick = max(candidates, key=depth)
+            all_selected.append(pick)
+            continue
+
+        # 3) otherwise, greedy leaf-cover
+        uncovered = set(comp)
+        sel = []
+        while uncovered:
+            leaves = [
+                u for u in uncovered if all(c not in uncovered for c in children[u])
+            ]
+            x = leaves[0]
+            sel.append(x)
+            uncovered -= closure(x)
+        all_selected.extend(sel)
+
+    return all_selected
 
 
 @click.command(name="convert")

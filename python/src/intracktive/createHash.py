@@ -4,7 +4,9 @@ import urllib.parse
 HASH_KEY = "viewerState"
 
 
-def generate_viewer_state_hash(data_url: str) -> str:
+def generate_viewer_state_hash(
+    data_url: str, selected_cells: list[int] = [], maxPointsPerTimepoint: int = 0
+) -> str:
     """
     Generate a hash string that can be appended to a URL to load inTRACKtive with a specific viewer state.
 
@@ -34,9 +36,11 @@ def generate_viewer_state_hash(data_url: str) -> str:
         "curTime": 0,
         "minTime": -6,
         "maxTime": 5,
-        "maxPointsPerTimepoint": 0,
+        "maxPointsPerTimepoint": maxPointsPerTimepoint
+        if maxPointsPerTimepoint is not None
+        else 0,
         "pointBrightness": 1.0,
-        "selectedPointIds": [],
+        "selectedPointIds": selected_cells,
         "showTracks": True,
         "showTrackHighlights": True,
         "cameraPosition": [-4, 0, 0],
