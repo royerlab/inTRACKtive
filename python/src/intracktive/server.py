@@ -90,7 +90,7 @@ def serve_directory(
         )
         return
 
-    # Factory to pass directory to CORSRequestHandler
+    # Factory to pass directory and logging flag to CORSRequestHandler
     def handler_factory(*args, **kwargs):
         return CORSRequestHandler(
             *args, directory=str(path), enable_logging=enable_request_logging, **kwargs

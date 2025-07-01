@@ -290,20 +290,10 @@ def convert_dataframe_to_zarr(
     n_time_points = df["t"].max() + 1
     max_values_per_time_point = df.groupby("t").size().max()
 
-    uniq_track_ids = df["track_id"].unique()
-    extended_uniq_track_ids = np.append(
-        uniq_track_ids, -1
-    )  # include -1 for orphaned tracklets
-    fwd_map = ArrayMap(
-        extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1)
-    )
-
-    # relabeling from 0 to N-1
-    df["track_id"] = fwd_map[df["track_id"].to_numpy()]
-    # orphaned are set to 0 according to skimage convention
-    df["parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
-
+    # Replace the manual remapping code with the new function call
+    df = make_track_ids_consecutive(df, inplace=True)
     n_tracklets = df["track_id"].nunique()
+
     # (z, y, x) + extra_cols
     num_values_per_point = 4 if add_radius else 3
 
@@ -595,8 +585,26 @@ def dataframe_to_browser(
         pre_normalized=pre_normalized,
     )
 
-    # Use the new zarr_to_browser function
-    zarr_to_browser(zarr_dir_with_storename, flag_open_browser)
+    hostURL = serve_directory(
+        path=zarr_dir,
+        threaded=True,
+    )
+
+    LOG.info("localhost successfully launched, serving: %s", zarr_dir_with_storename)
+    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
+    dataUrl = (
+        hostURL + "/" + zarr_path.name + "/"
+    )  # exact path of the data (on localhost)
+    fullUrl = baseUrl + generate_viewer_state_hash(
+        data_url=str(dataUrl)
+    )  # full hash that encodes viewerState
+    LOG.info("Copy the following URL into the Google Chrome browser:")
+    LOG.info("full URL: %s", fullUrl)
+
+    if flag_open_browser:
+        webbrowser.open(fullUrl)
+    else:
+        return dataUrl
 
 
 def check_if_columns_exist(
@@ -645,6 +653,41 @@ def get_col_type(column: pd.Series) -> str:
         return "categorical"
     else:
         return "continuous"
+
+
+def make_track_ids_consecutive(df: pd.DataFrame, inplace: bool = False) -> pd.DataFrame:
+    """
+    Remap track IDs to be consecutive starting from 1, preserving parent-child relationships.
+    Uses ArrayMap from skimage for efficient array-based mapping.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing 'track_id' and 'parent_track_id' columns
+    inplace : bool, optional
+        If True, modifies the dataframe in place. If False, returns a copy.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with remapped consecutive track IDs
+    """
+    if not inplace:
+        df = df.copy()
+
+    uniq_track_ids = df["track_id"].unique()
+    extended_uniq_track_ids = np.append(
+        uniq_track_ids, -1
+    )  # include -1 for orphaned tracklets
+    fwd_map = ArrayMap(
+        extended_uniq_track_ids, np.append(np.arange(1, 1 + len(uniq_track_ids)), -1)
+    )
+
+    # relabeling from 1 to N
+    df["track_id"] = fwd_map[df["track_id"].to_numpy()]
+    df["parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
+
+    return df
 
 
 @click.command(name="convert")

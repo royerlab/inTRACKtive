@@ -6,7 +6,7 @@ from unittest.mock import patch
 import napari
 import pandas as pd
 import pytest
-from intracktive.widget import IntracktiveWidget
+from intracktive.napari_widget import IntracktiveWidget
 
 
 def test_intracktive_widget_2D(
