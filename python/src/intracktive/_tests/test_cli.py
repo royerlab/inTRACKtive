@@ -261,7 +261,7 @@ def test_open_cli_simple(tmp_path: Path) -> None:
         )
 
         mock_zarr_to_browser.assert_called_once_with(
-            zarr_path=zarr_path, flag_open_browser=True, threaded=False
+            zarr_path=zarr_path, flag_open_browser=True, threaded=False, csv_path=None
         )
 
 
@@ -279,7 +279,7 @@ def test_open_cli_no_browser(tmp_path: Path) -> None:
         )
 
         mock_zarr_to_browser.assert_called_once_with(
-            zarr_path=zarr_path, flag_open_browser=False, threaded=False
+            zarr_path=zarr_path, flag_open_browser=False, threaded=False, csv_path=None
         )
 
 

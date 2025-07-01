@@ -1,7 +1,9 @@
-import pandas as pd
 from typing import Dict
 
+import pandas as pd
+
 NO_PARENT = -1
+
 
 def inv_tracks_df_forest(df: pd.DataFrame) -> Dict[int, int]:
     """

@@ -612,7 +612,7 @@ def dataframe_to_browser(
     )
 
     # Use the new zarr_to_browser function
-    zarr_to_browser(zarr_dir_with_storename, flag_open_browser)
+    zarr_to_browser(zarr_dir_with_storename, flag_open_browser=flag_open_browser)
 
 
 def check_if_columns_exist(
