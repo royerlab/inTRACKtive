@@ -701,6 +701,15 @@ def get_selected_cells_and_max_points(
         # Get selected cells from the csv file
         graph = inv_tracks_df_forest(df)
         selected_tracks = split_graph_and_find_selected_tracks(graph)
+
+        LOG.info(f"Selected tracks: {selected_tracks}")
+
+        # Add track_ids from df that are not in the graph
+        all_track_ids_in_df = set(df["track_id"].tolist())
+        track_ids_in_graph = set(graph.keys()) | set(graph.values())
+        track_ids_not_in_graph = all_track_ids_in_df - track_ids_in_graph
+        selected_tracks.extend(list(track_ids_not_in_graph))
+
         LOG.info(f"Selected tracks: {selected_tracks}")
         selected_cells = [
             get_point_id_for_track_from_zarr(zarr_path, track_id)
