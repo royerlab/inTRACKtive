@@ -10,6 +10,11 @@ from intracktive.convert import zarr_to_browser
     type=click.Path(exists=True, path_type=Path),
 )
 @click.option(
+    "--csv-path",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to the CSV file with cells to select",
+)
+@click.option(
     "--no-browser",
     is_flag=True,
     default=False,
@@ -17,7 +22,8 @@ from intracktive.convert import zarr_to_browser
 )
 def open_cli(
     zarr_path: Path,
-    no_browser: bool,
+    csv_path: Path | None = None,
+    no_browser: bool = False,
 ) -> None:
     """
     Open a Zarr store in inTRACKtive viewer.
@@ -43,8 +49,14 @@ def open_cli(
     if not zarr_path.exists():
         raise click.BadParameter(f"Zarr store does not exist: {zarr_path}")
 
+    if csv_path:
+        print(f"CSV path provided: {csv_path}")
+
     zarr_to_browser(
-        zarr_path=zarr_path, flag_open_browser=not no_browser, threaded=False
+        zarr_path=zarr_path,
+        flag_open_browser=not no_browser,
+        threaded=False,
+        csv_path=csv_path,
     )
 
 

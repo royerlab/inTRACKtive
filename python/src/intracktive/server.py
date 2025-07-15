@@ -29,6 +29,10 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
+        # Add headers to help with Firefox compatibility
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -41,6 +45,30 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         if self.enable_logging:
             super().log_message(format, *args)
+
+    def handle_one_request(self):
+        """Override to handle broken pipe errors gracefully."""
+        try:
+            super().handle_one_request()
+        except (BrokenPipeError, ConnectionResetError) as e:
+            # Client disconnected, this is normal and not an error
+            if self.enable_logging:
+                logging.debug(f"Client disconnected: {e}")
+        except Exception as e:
+            # Log other errors but don't crash the server
+            logging.error(f"Request handling error: {e}")
+
+    def copyfile(self, source, outputfile):
+        """Override to handle broken pipe errors during file transfer."""
+        try:
+            super().copyfile(source, outputfile)
+        except (BrokenPipeError, ConnectionResetError) as e:
+            # Client disconnected during file transfer, this is normal
+            if self.enable_logging:
+                logging.debug(f"Client disconnected during file transfer: {e}")
+        except Exception as e:
+            # Log other errors but don't crash the server
+            logging.error(f"File transfer error: {e}")
 
 
 def find_available_port(starting_port=8000):
