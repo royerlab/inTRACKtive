@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from intracktive.createHash import generate_viewer_state_hash
+from intracktive.geff import is_geff_dataset, read_geff_to_df
 from intracktive.server import DEFAULT_HOST, find_available_port, serve_directory
 from scipy.sparse import csr_matrix, lil_matrix
 from skimage.util._map_array import ArrayMap
@@ -650,7 +651,7 @@ def get_col_type(column: pd.Series) -> str:
 @click.command(name="convert")
 @click.argument(
     "input_file",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    type=click.Path(exists=True, dir_okay=True, path_type=Path),
 )
 @click.option(
     "--out_dir",
@@ -716,10 +717,10 @@ def convert_cli(
     velocity_smoothing_windowsize: int,
 ) -> None:
     """
-    Convert a CSV or Parquet file of tracks to a sparse Zarr store.
+    Convert a CSV/Parquet/GEFF file of tracks to a sparse Zarr store.
 
     Arguments:
-        INPUT_FILE: Path to the input file (CSV or Parquet)
+        INPUT_FILE: Path to the input file (CSV, Parquet, or GEFF)
     """
     start = time.monotonic()
 
@@ -736,9 +737,11 @@ def convert_cli(
         tracks_df = pd.read_csv(input_file)
     elif file_extension == ".parquet":
         tracks_df = pd.read_parquet(input_file)
+    elif is_geff_dataset(input_file):
+        tracks_df = read_geff_to_df(input_file)
     else:
         raise ValueError(
-            f"Unsupported file format: {file_extension}. Only .csv and .parquet files are supported."
+            f"Unsupported file format: {file_extension}. Only .csv, .parquet and GEFF files are supported."
         )
 
     LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
