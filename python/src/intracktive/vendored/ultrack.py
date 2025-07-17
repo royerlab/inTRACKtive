@@ -1,9 +1,11 @@
+from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
 from numba import njit, typed, types
 
 NO_PARENT = -1
+
 
 @njit
 def _fast_path_transverse(
@@ -55,6 +57,7 @@ def _fast_path_transverse(
 
     return path
 
+
 @njit
 def _fast_forest_transverse(
     roots: List[int],
@@ -93,6 +96,7 @@ def _fast_forest_transverse(
             track_id += 1
 
     return paths, track_ids, parent_track_ids, lengths
+
 
 @njit
 def _create_tracks_forest(
