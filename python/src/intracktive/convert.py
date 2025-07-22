@@ -9,6 +9,7 @@ import click
 import numpy as np
 import pandas as pd
 import zarr
+from intracktive.__about__ import __version__
 from intracktive.createHash import generate_viewer_state_hash
 from intracktive.geff import is_geff_dataset, read_geff_to_df
 from intracktive.server import DEFAULT_HOST, find_available_port, serve_directory
@@ -412,6 +413,9 @@ def convert_dataframe_to_zarr(
         overwrite=True,
         zarr_format=2,  # Use Zarr format 2 to maintain backward compatibility
     )
+
+    # Add inTRACKtive version to the top-level group attributes
+    top_level_group.attrs["intracktive_version"] = __version__
 
     points = top_level_group.create_array(
         "points",
