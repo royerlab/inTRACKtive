@@ -199,10 +199,10 @@ def validate_coordinates(df, threshold=-9000):
     for col in ["x", "y", "z"]:
         if (df[col] <= threshold).any():
             problematic = df[df[col] <= threshold]
-            print(
-                f"WARNING: Found {len(problematic)} points with {col} coordinates below {threshold}"
+            LOG.warning(
+                f"Found {len(problematic)} points with {col} coordinates below {threshold}"
             )
-            print(f"This might conflict with the fill value {INF_SPACE}")
+            LOG.warning(f"This might conflict with the fill value {INF_SPACE}")
             return True
     return False
 

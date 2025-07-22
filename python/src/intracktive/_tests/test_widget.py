@@ -17,7 +17,6 @@ def test_intracktive_widget_2D(
     df = make_sample_data
     filtered_df = df[df["parent_track_id"] != -1]
     graph = dict(zip(filtered_df["track_id"], filtered_df["parent_track_id"]))
-    print(graph)
 
     viewer = make_napari_viewer()
     widget = IntracktiveWidget()
@@ -50,7 +49,6 @@ def test_intracktive_widget_2D_with_provided_zarr_path(
     df = make_sample_data
     filtered_df = df[df["parent_track_id"] != -1]
     graph = dict(zip(filtered_df["track_id"], filtered_df["parent_track_id"]))
-    print(graph)
 
     viewer = make_napari_viewer()
     widget = IntracktiveWidget()

@@ -1,31 +1,41 @@
 import numpy as np
 import pandas as pd
 import zarr
+from geff.geff_reader import GeffReader
+from geff.metadata_schema import GeffMetadata
+from geff.utils import validate
 from intracktive.vendored.ultrack import add_track_ids_to_tracks_df
+from zarr.storage import StoreLike
 
 
-def is_geff_dataset(zarr_path: str) -> bool:
+def is_geff_dataset(zarr_store: StoreLike) -> bool:
     """
-    Check if a zarr group/store is a geff dataset by looking for geff_version in .zattrs.
+    Check if a zarr group/store is a geff dataset by checking if metadata can be loaded.
 
     Parameters
     ----------
-    zarr_path : str
-        Path to the zarr group
+    zarr_store : StoreLike
+        Zarr store
 
     Returns
     -------
     bool
-        True if it's a geff dataset (contains geff_version in .zattrs), False otherwise
+        True if it's a geff dataset (can load GeffMetadata), False otherwise
     """
-    try:
-        # Open the zarr group
-        group = zarr.open_group(zarr_path, mode="r")
 
-        # Check if .zattrs exists and contains geff_version
-        if hasattr(group, "attrs"):
-            attrs = group.attrs.asdict()
-            return "geff_version" in attrs
+    try:
+        #use the geff validation function
+        validate(zarr_store)
+
+        # Open the zarr group
+        group = zarr.open_group(zarr_store, mode="r")
+
+        # Read geff metadata from the zarr group
+        metadata = GeffMetadata.read(group)
+
+        # Check if the metadata has a geff_version
+        if hasattr(metadata, "geff_version") and metadata.geff_version is not None:
+            return True
         else:
             return False
     except Exception as e:
@@ -33,49 +43,99 @@ def is_geff_dataset(zarr_path: str) -> bool:
         return False
 
 
-def geff_to_arrays(zarr_path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def remove_non_consecutive_edges(
+    node_ids: np.ndarray, edge_ids: np.ndarray, node_times: np.ndarray
+) -> tuple[bool, np.ndarray]:
     """
-    Read nodes and edges from a zarr group with the specified structure.
+    Check if all edges connect nodes that are consecutive in time.
 
     Parameters
     ----------
-    zarr_path : str
-        Path to the zarr group containing 'nodes' and 'edges' subgroups
+    node_ids : np.ndarray
+        Array of node IDs (shape: (N,))
+    edge_ids : np.ndarray
+        Array of edge pairs (shape: (E, 2)) where each row is [parent_id, daughter_id]
+    node_times : np.ndarray
+        Array of node times (shape: (N,))
 
     Returns
     -------
-    tuple
-        (node_ids, node_positions, edge_ids) where:
-        - node_ids: numpy array of shape (N,) dtype uint64
-        - node_positions: numpy array of shape (N, 3) dtype float16
-        - edge_ids: numpy array of shape (E, 2) dtype uint64
+    tuple[bool, np.ndarray]
+        (is_consecutive, consecutive_edges) where:
+        - is_consecutive: True if all edges connect nodes with consecutive times, False otherwise
+        - consecutive_edges: Array of consecutive edges (all edges if is_consecutive=True, filtered edges if False)
     """
-    # Open the zarr group
-    group = zarr.open_group(zarr_path, mode="r")
+    # Create a mapping from node_id to its time
+    id_to_time = {node_id: time for node_id, time in zip(node_ids, node_times)}
 
-    # Read nodes
-    nodes_group = group["nodes"]
-    node_ids = nodes_group["ids"][:]  # shape: (N,) dtype: uint64
-    node_positions = nodes_group["attrs"]["position"]["values"][
-        :
-    ]  # shape: (N, 3) dtype: float16
-    node_times = nodes_group["attrs"]["t"]["values"][:]  # shape: (N,) dtype: float16
+    consecutive_edges = []
+    all_consecutive = True
 
-    # Read edges
-    edges_group = group["edges"]
-    edge_ids = edges_group["ids"][:]  # shape: (E, 2) dtype: uint64
+    # Check each edge
+    for parent_id, daughter_id in edge_ids:
+        parent_time = id_to_time[parent_id]
+        daughter_time = id_to_time[daughter_id]
 
-    return node_ids, node_positions, node_times, edge_ids
+        # Check if times are consecutive (daughter time = parent time + 1)
+        # the +1 check is fine, because we check whether the graph is directed before
+        if daughter_time == parent_time + 1:
+            consecutive_edges.append([parent_id, daughter_id])
+        else:
+            all_consecutive = False
+
+    if len(edge_ids) - len(consecutive_edges) > 0:
+        print(
+            f"{len(edge_ids) - len(consecutive_edges)} edges are not consecutive in time"
+        )
+
+    return all_consecutive, np.array(consecutive_edges)
 
 
-def read_geff_to_df(zarr_path: str) -> pd.DataFrame:
+def remove_merging_edges(edge_ids: np.ndarray) -> tuple[bool, np.ndarray]:
+    """
+    Remove edges where a daughter cell appears multiple times, since cells cannot merge.
+
+    Parameters
+    ----------
+    edge_ids : np.ndarray
+        Array of edge pairs (shape: (E, 2)) where each row is [parent_id, daughter_id]
+
+    Returns
+    -------
+    tuple[bool, np.ndarray]
+        (no_merging, non_merging_edges) where:
+        - no_merging: True if no merging edges were found, False otherwise
+        - non_merging_edges: Array of edges without merging (all edges if no_merging=True, filtered edges if False)
+    """
+    # Convert to DataFrame for efficient duplicate removal
+    df = pd.DataFrame(edge_ids, columns=["parent", "daughter"])
+
+    # Keep only the first occurrence of each daughter (drop_duplicates keeps first by default)
+    df_no_merging = df.drop_duplicates(subset=["daughter"], keep="first")
+
+    # Convert back to numpy array
+    non_merging_edges = df_no_merging[["parent", "daughter"]].values
+
+    # Check if any duplicates were removed
+    removed_count = len(edge_ids) - len(non_merging_edges)
+    no_merging = removed_count == 0
+
+    if removed_count > 0:
+        print(
+            f"warning: {removed_count} merging edges removed (daughter cells appeared multiple times)"
+        )
+
+    return no_merging, non_merging_edges
+
+
+def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     """
     Read geff data and convert to pandas DataFrame with columns: id, parent_id, t, y, x
 
     Parameters
     ----------
-    zarr_path : str
-        Path to the zarr group containing geff data
+    zarr_store : StoreLike
+        Zarr store (str | Path | zarr store) containing geff data
 
     Returns
     -------
@@ -88,7 +148,42 @@ def read_geff_to_df(zarr_path: str) -> pd.DataFrame:
         - y: y coordinates
         - x: x coordinates
     """
-    node_ids, node_positions, node_times, edge_ids = geff_to_arrays(zarr_path)
+
+    file_reader = GeffReader(zarr_store, validate=True)
+
+    assert file_reader.metadata.directed, "Geff dataset must be directed"
+
+    # Get temporal and spatial axes from metadata (keep original order)
+    temporal_axes = [axis for axis in file_reader.metadata.axes if axis.type == "time"]
+    spatial_axes = [axis for axis in file_reader.metadata.axes if axis.type == "space"]
+
+    if len(spatial_axes) < 2 or len(spatial_axes) > 3:
+        raise ValueError(f"Expected 2 or 3 spatial axes, got {len(spatial_axes)}")
+
+    if len(temporal_axes) == 0:
+        raise ValueError("No temporal axis found in metadata")
+
+    # Use first temporal axis and spatial axes in metadata order
+    temporal_axis = temporal_axes[0]  # Take the first temporal axis
+    prop_names = [temporal_axis.name] + [axis.name for axis in spatial_axes]
+
+    file_reader.read_node_props(prop_names)
+    graph_dict = file_reader.build()
+
+    node_ids = graph_dict["nodes"]
+    node_times = graph_dict["node_props"][temporal_axis.name]["values"]
+
+    # Extract spatial coordinates in metadata order
+    spatial_coords = []
+    for axis in spatial_axes:
+        spatial_coords.append(graph_dict["node_props"][axis.name]["values"])
+
+    node_positions = np.stack(spatial_coords, axis=1)
+    edge_ids = graph_dict["edges"]
+
+    # Checks on edges
+    _, edge_ids = remove_non_consecutive_edges(node_ids, edge_ids, node_times)
+    _, edge_ids = remove_merging_edges(edge_ids)
 
     # Create mapping from string IDs to integers
     unique_ids = np.unique(np.concatenate([node_ids, edge_ids.flatten()]))
@@ -101,16 +196,14 @@ def read_geff_to_df(zarr_path: str) -> pd.DataFrame:
     )
 
     # Create DataFrame with node data
-    df_data = {
-        "id": node_ids_int,
-        "t": node_times,
-        "y": node_positions[:, 0],
-        "x": node_positions[:, 1],
-    }
+    ndim = node_positions.shape[1]
+    df_data = {"id": node_ids_int, "t": node_times}  # Always use "t" for time column
 
-    # Add z column if positions are 3D
-    if node_positions.shape[1] == 3:
-        df_data["z"] = node_positions[:, 2]
+    # Map spatial coordinates to z/y/x based on position in metadata
+    # First axis becomes z (for 3D) or y (for 2D), second becomes y or x, third becomes x
+    spatial_names = ["z", "y", "x"] if ndim == 3 else ["y", "x"]
+    for i, axis in enumerate(spatial_axes):
+        df_data[spatial_names[i]] = node_positions[:, i]
 
     df = pd.DataFrame(df_data)
 
@@ -135,8 +228,11 @@ def read_geff_to_df(zarr_path: str) -> pd.DataFrame:
 
     df = add_track_ids_to_tracks_df(df)
 
-    # Define required columns (excluding z as requested)
-    required_columns = ["track_id", "t", "y", "x", "parent_track_id"]
+    # Define required columns based on dimensions
+    if ndim == 3:
+        required_columns = ["track_id", "t", "z", "y", "x", "parent_track_id"]
+    else:  # ndim == 2
+        required_columns = ["track_id", "t", "y", "x", "parent_track_id"]
 
     # Check if all required columns are present
     missing_columns = [col for col in required_columns if col not in df.columns]

@@ -29,6 +29,7 @@ dependencies = [
   "pandas",
   "zarr<3",
   "pyarrow",
+  "geff @ git+https://github.com/live-image-tracking-tools/geff.git@flexible-dummy-graph-fixture"
 ]
 
 [project.urls]
@@ -44,6 +45,9 @@ intracktive = "intracktive:napari.yaml"
 
 [tool.hatch.version]
 path = "src/intracktive/__about__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.coverage.run]
 source_pkgs = ["intracktive"]
