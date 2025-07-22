@@ -24,11 +24,11 @@ def is_geff_dataset(zarr_store: StoreLike) -> bool:
     """
 
     try:
-        #use the geff validation function
+        # use the geff validation function
         validate(zarr_store)
 
         # Open the zarr group
-        group = zarr.open_group(zarr_store, mode="r")
+        group = zarr.open(zarr_store, mode="r")
 
         # Read geff metadata from the zarr group
         metadata = GeffMetadata.read(group)

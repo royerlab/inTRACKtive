@@ -27,7 +27,7 @@ dependencies = [
   "scipy",
   "scikit-image",
   "pandas",
-  "zarr<3",
+  "zarr>3",
   "pyarrow",
   "geff @ git+https://github.com/live-image-tracking-tools/geff.git@flexible-dummy-graph-fixture"
 ]

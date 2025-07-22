@@ -10,9 +10,9 @@ from intracktive.convert import convert_dataframe_to_zarr, dataframe_to_browser
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
-    assert new_group.keys() == old_group.keys()
+    assert sorted(list(new_group.keys())) == sorted(list(old_group.keys()))
 
-    for key in new_group.keys():
+    for key in sorted(new_group.keys()):
         new = new_group[key]
         old = old_group[key]
 
