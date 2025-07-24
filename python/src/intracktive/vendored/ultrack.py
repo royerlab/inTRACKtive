@@ -1,7 +1,12 @@
+import logging
+import time
 from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 NO_PARENT = -1
 
@@ -136,6 +141,8 @@ def add_track_ids_to_tracks_df(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Inplace modified input dataframe with additional columns.
     """
+    start = time.monotonic()
+
     assert df.shape[0] > 0
 
     df.index = df.index.astype(int)
@@ -157,5 +164,7 @@ def add_track_ids_to_tracks_df(df: pd.DataFrame) -> pd.DataFrame:
     assert not np.any(
         unlabeled_tracks
     ), f"Something went wrong. Found unlabeled tracks\n{df[unlabeled_tracks]}"
+
+    LOG.info(f"Calculated track_ids in {time.monotonic() - start} seconds")
 
     return df

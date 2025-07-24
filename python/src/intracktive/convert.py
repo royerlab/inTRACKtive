@@ -351,7 +351,6 @@ def convert_dataframe_to_zarr(
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
 
-    print("convert: extra_cols", extra_cols)
     for col in extra_cols:
         attribute_array = attribute_array_empty.copy()
         for t, group in df.groupby("t"):
@@ -731,7 +730,9 @@ def convert_file(
             f"Unsupported file format: {file_extension}. Only .csv, .parquet and GEFF files are supported."
         )
 
-    LOG.info(f"Read {len(tracks_df)} points in {time.monotonic() - start} seconds")
+    LOG.info(
+        f"Read and converted {len(tracks_df)} points in {time.monotonic() - start} seconds"
+    )
 
     extra_cols = []
     col_types = []
@@ -756,9 +757,6 @@ def convert_file(
                 f"Columns included as hex attributes: {', '.join(selected_columns)}"
             )
     LOG.info(f"Column types: {col_types}")
-
-    print("extra_cols", extra_cols)
-    print("col_types", col_types)
 
     # TODO: do the calc_velocity BEFORE the zarr conversion, because now we check the existance of attributes in the dataframe, before the conversion script
     zarr_path = convert_dataframe_to_zarr(

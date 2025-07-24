@@ -104,7 +104,7 @@ pip install intracktive
 
 This approach consists of two steps: converting the tracking data into our specialized Zarr format, and hosting the data to make it accessible for the browser. 
 
-For the first step, we assume your cell tracking data is saved as `tracks.csv` (or `tracks.parquet`) in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, (parent_track_id)]`), where `z` and `parent_track_id` are optional (no `z` column assumes 2D data, and no `parent_track_id` column assumes no cell divisions). This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
+For the first step, we assume your cell tracking data is saved as `tracks.csv` (or `tracks.parquet`, or [GEFF](https://live-image-tracking-tools.github.io/geff/main/#installation) file) in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, (parent_track_id)]`), where `z` and `parent_track_id` are optional (no `z` column assumes 2D data, and no `parent_track_id` column assumes no cell divisions). This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
 
 ```
 intracktive convert --input_file /path/to/tracks.csv
@@ -146,10 +146,16 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 Alternatively, you can use use a single command to serve and view the Zarr bundle with inTRACKtive: 
 
 ```
-intracktive open path/to/zarr
+intracktive open path/to/.zarr
+
+intracktive open path/to/.csv
+
+intracktive open path/to/.parquet
+
+intracktive open path/to/.geff
 ```
 
-where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. 
+where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. If you `intracktive open` an csv/parquet/GEFF file, the command will first convert the input to our Zarr format and open that file. 
 
 ---
 

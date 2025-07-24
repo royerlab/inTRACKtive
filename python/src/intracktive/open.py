@@ -1,7 +1,11 @@
+import logging
 from pathlib import Path
 
 import click
 from intracktive.convert import convert_file, is_geff_dataset, zarr_to_browser
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 
 def open_file(
@@ -95,7 +99,7 @@ def open_file(
             raise click.UsageError(f"Input file does not exist: {input_path}")
 
         # Convert to Zarr
-        print(f"Converting {input_path} to Zarr format...")
+        LOG.info(f"Converting {input_path} to Zarr format...")
         zarr_path = convert_file(
             input_file=input_path,
             out_dir=out_dir,
@@ -107,9 +111,9 @@ def open_file(
             calc_velocity=calc_velocity,
             velocity_smoothing_windowsize=velocity_smoothing_windowsize,
         )
-        print(f"Conversion completed! Zarr store created at: {zarr_path}")
+        LOG.info(f"Conversion completed! Zarr store created at: {zarr_path}")
 
-    print("zarr_path in open_file", zarr_path)
+    LOG.info(f"zarr_path in open_file: {zarr_path}")
     # Open in browser
     zarr_to_browser(
         zarr_path=zarr_path, flag_open_browser=not no_browser, threaded=False
