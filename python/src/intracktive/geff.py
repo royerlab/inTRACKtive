@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import zarr
@@ -6,6 +8,9 @@ from geff.metadata_schema import GeffMetadata
 from geff.utils import validate
 from intracktive.vendored.ultrack import add_track_ids_to_tracks_df
 from zarr.storage import StoreLike
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 
 def is_geff_dataset(zarr_store: StoreLike) -> bool:
@@ -31,7 +36,7 @@ def is_geff_dataset(zarr_store: StoreLike) -> bool:
         group = zarr.open(zarr_store, mode="r")
 
         # Read geff metadata from the zarr group
-        metadata = GeffMetadata.read(group)
+        metadata = GeffMetadata.read(group)  # type: ignore[arg-type]
 
         # Check if the metadata has a geff_version
         if hasattr(metadata, "geff_version") and metadata.geff_version is not None:
@@ -85,7 +90,7 @@ def remove_non_consecutive_edges(
 
     if len(edge_ids) - len(consecutive_edges) > 0:
         print(
-            f"{len(edge_ids) - len(consecutive_edges)} edges are not consecutive in time"
+            f"{len(edge_ids) - len(consecutive_edges)} edges of {len(edge_ids)} are not consecutive in time"
         )
 
     return all_consecutive, np.array(consecutive_edges)
@@ -149,11 +154,16 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
         - x: x coordinates
     """
 
+    LOG.info("Reading GEFF file...")
+
     file_reader = GeffReader(zarr_store, validate=True)
 
     assert file_reader.metadata.directed, "Geff dataset must be directed"
 
     # Get temporal and spatial axes from metadata (keep original order)
+    if file_reader.metadata.axes is None:
+        raise ValueError("No axes found in metadata")
+
     temporal_axes = [axis for axis in file_reader.metadata.axes if axis.type == "time"]
     spatial_axes = [axis for axis in file_reader.metadata.axes if axis.type == "space"]
 
@@ -170,7 +180,7 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     file_reader.read_node_props(prop_names)
     graph_dict = file_reader.build()
 
-    node_ids = graph_dict["nodes"]
+    node_ids = graph_dict["node_ids"]
     node_times = graph_dict["node_props"][temporal_axis.name]["values"]
 
     # Extract spatial coordinates in metadata order
@@ -179,7 +189,12 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
         spatial_coords.append(graph_dict["node_props"][axis.name]["values"])
 
     node_positions = np.stack(spatial_coords, axis=1)
-    edge_ids = graph_dict["edges"]
+    edge_ids = graph_dict["edge_ids"]
+
+    # time mapping
+    unique_times = np.unique(node_times)
+    time_mapping = {time: i for i, time in enumerate(unique_times)}
+    node_times = np.array([time_mapping[time] for time in node_times])
 
     # Checks on edges
     _, edge_ids = remove_non_consecutive_edges(node_ids, edge_ids, node_times)
@@ -209,7 +224,7 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
 
     # Create parent mapping using vectorized operations
     # edge_ids_int contains [parent, daughter] pairs as integers
-    parent_df = pd.DataFrame(edge_ids_int, columns=["parent", "daughter"])
+    parent_df = pd.DataFrame(edge_ids_int, columns=["parent", "daughter"], dtype=int)
 
     # Use merge to efficiently map daughters to parents
     df = df.merge(
@@ -218,7 +233,9 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
 
     # Rename 'parent' to 'parent_id' and fill NaN values with -1
     df = df.rename(columns={"parent": "parent_id"})
-    df["parent_id"] = df["parent_id"].fillna(-1).astype(int)
+    df.loc[:, "parent_id"] = df["parent_id"].fillna(-1).astype(int)
+
+    df["parent_id"] = df["parent_id"].astype(int)
 
     # Drop the temporary 'daughter' column
     df = df.drop("daughter", axis=1)

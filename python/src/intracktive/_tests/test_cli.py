@@ -252,6 +252,16 @@ def test_open_cli_simple(tmp_path: Path) -> None:
     zarr_path = tmp_path / "test.zarr"
     zarr_path.mkdir()
 
+    # Create required folders for a valid inTRACKtive Zarr store
+    required_folders = [
+        "points",
+        "points_to_tracks",
+        "tracks_to_points",
+        "tracks_to_tracks",
+    ]
+    for folder in required_folders:
+        (zarr_path / folder).mkdir()
+
     with patch("intracktive.open.zarr_to_browser") as mock_zarr_to_browser:
         _run_command(
             [
@@ -269,6 +279,16 @@ def test_open_cli_no_browser(tmp_path: Path) -> None:
     zarr_path = tmp_path / "test.zarr"
     zarr_path.mkdir()
 
+    # Create required folders for a valid inTRACKtive Zarr store
+    required_folders = [
+        "points",
+        "points_to_tracks",
+        "tracks_to_points",
+        "tracks_to_tracks",
+    ]
+    for folder in required_folders:
+        (zarr_path / folder).mkdir()
+
     with patch("intracktive.open.zarr_to_browser") as mock_zarr_to_browser:
         _run_command(
             [
@@ -283,14 +303,18 @@ def test_open_cli_no_browser(tmp_path: Path) -> None:
         )
 
 
-def test_open_cli_validates_zarr_extension(tmp_path: Path) -> None:
-    non_zarr_path = tmp_path / "test.txt"
-    non_zarr_path.touch()  # Create the file so it exists
+def test_open_cli_validates_unsupported_format(tmp_path: Path) -> None:
+    unsupported_path = tmp_path / "test.txt"
+    unsupported_path.touch()  # Create the file so it exists
 
     runner = CliRunner()
-    result = runner.invoke(main, ["open", str(non_zarr_path)])
+    result = runner.invoke(main, ["open", str(unsupported_path)])
     assert result.exit_code == 2
-    assert "Path must end in .zarr" in result.output
+    print("result.output", result.output)
+    assert (
+        "Unsupported file format: .txt. Only .zarr, .csv, .parquet and GEFF files are supported."
+        in result.output
+    )
 
 
 def test_open_cli_validates_zarr_exists(tmp_path: Path) -> None:

@@ -2,17 +2,15 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from numba import njit, typed, types
 
 NO_PARENT = -1
 
 
-@njit
 def _fast_path_transverse(
     node: int,
     track_id: int,
     queue: List[Tuple[int, int]],
-    forest: Dict[int, Tuple[int]],
+    forest: Dict[int, List[int]],
 ) -> List[int]:
     """Transverse a path in the forest directed graph and add path (track) split into queue.
 
@@ -24,7 +22,7 @@ def _fast_path_transverse(
         Reference track id for path split.
     queue : List[Tuple[int, int]]
         Source nodes and path (track) id reference queue.
-    forest : Dict[int, Tuple[int]]
+    forest : Dict[int, List[int]]
         Directed graph (tree) of paths relationships.
 
     Returns
@@ -32,7 +30,7 @@ def _fast_path_transverse(
     List[int]
         Sequence of nodes in the path.
     """
-    path = typed.List.empty_list(types.int64)
+    path = []
 
     while True:
         path.append(node)
@@ -58,7 +56,6 @@ def _fast_path_transverse(
     return path
 
 
-@njit
 def _fast_forest_transverse(
     roots: List[int],
     forest: Dict[int, List[int]],
@@ -98,7 +95,6 @@ def _fast_forest_transverse(
     return paths, track_ids, parent_track_ids, lengths
 
 
-@njit
 def _create_tracks_forest(
     node_ids: np.ndarray, parent_ids: np.ndarray
 ) -> Dict[int, List[int]]:
@@ -118,7 +114,7 @@ def _create_tracks_forest(
     """
     forest = {}
     for parent in parent_ids:
-        forest[parent] = typed.List.empty_list(types.int64)
+        forest[parent] = []
 
     for i in range(len(parent_ids)):
         forest[parent_ids[i]].append(node_ids[i])
@@ -145,7 +141,7 @@ def add_track_ids_to_tracks_df(df: pd.DataFrame) -> pd.DataFrame:
     df.index = df.index.astype(int)
     df["parent_id"] = df["parent_id"].astype(int)
 
-    forest = _create_tracks_forest(df.index.values, df["parent_id"].values)
+    forest = _create_tracks_forest(df.index.values, df["parent_id"].to_numpy())
     roots = forest.pop(NO_PARENT)
 
     df["track_id"] = NO_PARENT
