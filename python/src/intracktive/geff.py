@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 import zarr
-from geff.geff_reader import GeffReader
+from geff.geff_reader import read_to_memory
 from geff.metadata_schema import GeffMetadata
 from geff.utils import validate
 from intracktive.vendored.ultrack import add_track_ids_to_tracks_df
@@ -156,16 +156,17 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
 
     LOG.info("Reading GEFF file...")
 
-    file_reader = GeffReader(zarr_store, validate=True)
+    group = zarr.open(zarr_store, mode="r")
+    metadata = GeffMetadata.read(group)
 
-    assert file_reader.metadata.directed, "Geff dataset must be directed"
+    assert metadata.directed, "Geff dataset must be directed"
 
     # Get temporal and spatial axes from metadata (keep original order)
-    if file_reader.metadata.axes is None:
+    if metadata.axes is None:
         raise ValueError("No axes found in metadata")
 
-    temporal_axes = [axis for axis in file_reader.metadata.axes if axis.type == "time"]
-    spatial_axes = [axis for axis in file_reader.metadata.axes if axis.type == "space"]
+    temporal_axes = [axis for axis in metadata.axes if axis.type == "time"]
+    spatial_axes = [axis for axis in metadata.axes if axis.type == "space"]
 
     if len(spatial_axes) < 2 or len(spatial_axes) > 3:
         raise ValueError(f"Expected 2 or 3 spatial axes, got {len(spatial_axes)}")
@@ -177,19 +178,18 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     temporal_axis = temporal_axes[0]  # Take the first temporal axis
     prop_names = [temporal_axis.name] + [axis.name for axis in spatial_axes]
 
-    file_reader.read_node_props(prop_names)
-    graph_dict = file_reader.build()
+    InMemoryGeff = read_to_memory(zarr_store, validate=True, node_props=prop_names)
 
-    node_ids = graph_dict["node_ids"]
-    node_times = graph_dict["node_props"][temporal_axis.name]["values"]
+    node_ids = InMemoryGeff["node_ids"]
+    node_times = InMemoryGeff["node_props"][temporal_axis.name]["values"]
 
     # Extract spatial coordinates in metadata order
     spatial_coords = []
     for axis in spatial_axes:
-        spatial_coords.append(graph_dict["node_props"][axis.name]["values"])
+        spatial_coords.append(InMemoryGeff["node_props"][axis.name]["values"])
 
     node_positions = np.stack(spatial_coords, axis=1)
-    edge_ids = graph_dict["edge_ids"]
+    edge_ids = InMemoryGeff["edge_ids"]
 
     # time mapping
     unique_times = np.unique(node_times)
