@@ -222,6 +222,158 @@ def test_read_geff_to_df_non_numerical_dtype():
     assert "label" not in df.columns
 
 
+def test_read_geff_to_df_with_nan_values():
+    """Test that read_geff_to_df handles NaN values correctly."""
+    import numpy as np
+    from geff.testing.data import create_memory_mock_geff
+
+    # Create a GEFF store with NaN values
+    node_dtype = "int8"
+    node_prop_dtypes = {"position": "double", "time": "double"}
+    # Create property with NaN values
+    num_nodes = 7
+    nan_property = np.array([1.0, 2.0, np.nan, 4.0, 5.0, np.nan, 7.0], dtype=np.float32)
+    extra_node_props = {"intensity": nan_property}
+    extra_edge_props = {"score": "float64"}
+    directed = True
+    num_edges = 16
+
+    store, _ = create_memory_mock_geff(
+        node_dtype,
+        node_prop_dtypes,
+        extra_node_props=extra_node_props,
+        extra_edge_props=extra_edge_props,
+        directed=directed,
+        num_nodes=num_nodes,
+        num_edges=num_edges,
+        include_z=True,
+    )
+
+    # This should not raise an error but should log a warning and skip the property
+    df = read_geff_to_df(store, include_all_attributes=True)
+
+    # The property with NaN values should not be included in the DataFrame
+    assert "intensity" not in df.columns
+
+
+def test_read_geff_to_df_with_inf_values():
+    """Test that read_geff_to_df handles infinite values correctly."""
+    import numpy as np
+    from geff.testing.data import create_memory_mock_geff
+
+    # Create a GEFF store with infinite values
+    node_dtype = "int8"
+    node_prop_dtypes = {"position": "double", "time": "double"}
+    # Create property with infinite values
+    num_nodes = 7
+    inf_property = np.array(
+        [1.0, 2.0, np.inf, 4.0, 5.0, -np.inf, 7.0], dtype=np.float32
+    )
+    extra_node_props = {"intensity": inf_property}
+    extra_edge_props = {"score": "float64"}
+    directed = True
+    num_edges = 16
+
+    store, _ = create_memory_mock_geff(
+        node_dtype,
+        node_prop_dtypes,
+        extra_node_props=extra_node_props,
+        extra_edge_props=extra_edge_props,
+        directed=directed,
+        num_nodes=num_nodes,
+        num_edges=num_edges,
+        include_z=True,
+    )
+
+    # This should normalize the values and clip infinite values to [0, 1]
+    df = read_geff_to_df(store, include_all_attributes=True)
+
+    # The property should be included and normalized
+    assert "intensity" in df.columns
+
+    # Check that values are normalized to [0, 1] range
+    intensity_values = df["intensity"].values
+    assert np.all(intensity_values >= 0.0)
+    assert np.all(intensity_values <= 1.0)
+
+    # Check that infinite values were clipped
+    assert not np.any(np.isinf(intensity_values))
+
+
+def test_read_geff_to_df_with_all_inf_values():
+    """Test that read_geff_to_df handles all infinite values correctly."""
+    import numpy as np
+    from geff.testing.data import create_memory_mock_geff
+
+    # Create a GEFF store with all infinite values
+    node_dtype = "int8"
+    node_prop_dtypes = {"position": "double", "time": "double"}
+    # Create property with all infinite values
+    num_nodes = 7
+    all_inf_property = np.array(
+        [np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf], dtype=np.float32
+    )
+    extra_node_props = {"intensity": all_inf_property}
+    extra_edge_props = {"score": "float64"}
+    directed = True
+    num_edges = 16
+
+    store, _ = create_memory_mock_geff(
+        node_dtype,
+        node_prop_dtypes,
+        extra_node_props=extra_node_props,
+        extra_edge_props=extra_edge_props,
+        directed=directed,
+        num_nodes=num_nodes,
+        num_edges=num_edges,
+        include_z=True,
+    )
+
+    # This should skip the property entirely since all values are infinite
+    df = read_geff_to_df(store, include_all_attributes=True)
+
+    # The property with all infinite values should not be included in the DataFrame
+    assert "intensity" not in df.columns
+
+
+def test_read_geff_to_df_with_constant_values():
+    """Test that read_geff_to_df handles constant values correctly."""
+    import numpy as np
+    from geff.testing.data import create_memory_mock_geff
+
+    # Create a GEFF store with constant values
+    node_dtype = "int8"
+    node_prop_dtypes = {"position": "double", "time": "double"}
+    # Create property with constant values
+    num_nodes = 7
+    constant_property = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0], dtype=np.float32)
+    extra_node_props = {"intensity": constant_property}
+    extra_edge_props = {"score": "float64"}
+    directed = True
+    num_edges = 16
+
+    store, _ = create_memory_mock_geff(
+        node_dtype,
+        node_prop_dtypes,
+        extra_node_props=extra_node_props,
+        extra_edge_props=extra_edge_props,
+        directed=directed,
+        num_nodes=num_nodes,
+        num_edges=num_edges,
+        include_z=True,
+    )
+
+    # This should set all values to 0.5 (middle of range)
+    df = read_geff_to_df(store, include_all_attributes=True)
+
+    # The property should be included
+    assert "intensity" in df.columns
+
+    # Check that all values are set to 0.5
+    intensity_values = df["intensity"].values
+    assert np.all(intensity_values == 0.5)
+
+
 def test_read_geff_to_df_missing_geff_version():
     """Test that read_geff_to_df raises error when geff version is missing."""
     import zarr

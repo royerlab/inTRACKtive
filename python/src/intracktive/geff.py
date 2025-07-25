@@ -239,21 +239,59 @@ def read_geff_to_df(
     if include_all_attributes:
         # Use the properties that were actually loaded
         for prop_name in InMemoryGeff["node_props"].keys():
-            if prop_name in InMemoryGeff["node_props"]:
-                prop_data = InMemoryGeff["node_props"][prop_name]["values"]
-                # Check if dtype is numerical (not string/unicode/object)
-                if np.issubdtype(prop_data.dtype, np.number):
-                    # normalize the values to the range 0-1
-                    prop_data = (prop_data - prop_data.min()) / (
-                        prop_data.max() - prop_data.min()
-                    )
-                    df_data[prop_name] = prop_data
+            prop_data = InMemoryGeff["node_props"][prop_name]["values"]
+            # Check if dtype is numerical (not string/unicode/object)
+            if np.issubdtype(prop_data.dtype, np.number):
+                # Debug: Print information about the property data
+                # Handle infinite values by excluding them from min/max calculations
+                finite_mask = np.isfinite(prop_data)
+                has_inf = not np.all(finite_mask)
+
+                if has_inf:
+                    # Use only finite values for min/max calculation
+                    finite_data = prop_data[finite_mask]
+                    if len(finite_data) > 0:
+                        prop_min = finite_data.min()
+                        prop_max = finite_data.max()
+                    else:
+                        # All values are infinite, skip this property
+                        LOG.warning(
+                            f"Property '{prop_name}' has only infinite values, skipping"
+                        )
+                        continue
                 else:
+                    # All values are finite, use normal min/max
+                    prop_min = prop_data.min()
+                    prop_max = prop_data.max()
+
+                has_nan = np.any(np.isnan(prop_data))
+                is_constant = prop_max == prop_min
+
+                # normalize the values to the range 0-1, but handle constant data
+                if has_nan:
                     LOG.warning(
-                        f"Property '{prop_name}' has non-numerical dtype {prop_data.dtype}, skipping fetching from GEFF"
+                        f"Property '{prop_name}' has NaN values, skipping fetching from GEFF"
                     )
+                    continue
+                elif is_constant:
+                    # For constant data, set all values to 0.5 (middle of range)
+                    df_data[prop_name] = np.full_like(prop_data, 0.5)
+                else:
+                    # Normalize finite values
+                    prop_data = (prop_data - prop_min) / (prop_max - prop_min)
+
+                    # Clip infinite values to 0 and 1
+                    if has_inf:
+                        prop_data = np.clip(prop_data, 0, 1)
+                        LOG.info(
+                            f"Property '{prop_name}' had infinite values, clipped to [0, 1]"
+                        )
+
+                    df_data[prop_name] = prop_data
             else:
-                LOG.warning(f"Property '{prop_name}' not found in GEFF data")
+                LOG.warning(
+                    f"Property '{prop_name}' has non-numerical dtype {prop_data.dtype}, skipping fetching from GEFF"
+                )
 
     df = pd.DataFrame(df_data)
 
