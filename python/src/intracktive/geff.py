@@ -44,7 +44,7 @@ def is_geff_dataset(zarr_store: StoreLike) -> bool:
         else:
             return False
     except Exception as e:
-        print(f"Error checking geff dataset: {e}")
+        LOG.error(f"Error checking geff dataset: {e}")
         return False
 
 
@@ -89,7 +89,7 @@ def remove_non_consecutive_edges(
             all_consecutive = False
 
     if len(edge_ids) - len(consecutive_edges) > 0:
-        print(
+        LOG.warning(
             f"{len(edge_ids) - len(consecutive_edges)} edges of {len(edge_ids)} are not consecutive in time"
         )
 
@@ -126,7 +126,7 @@ def remove_merging_edges(edge_ids: np.ndarray) -> tuple[bool, np.ndarray]:
     no_merging = removed_count == 0
 
     if removed_count > 0:
-        print(
+        LOG.warning(
             f"warning: {removed_count} merging edges removed (daughter cells appeared multiple times)"
         )
 
