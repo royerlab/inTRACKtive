@@ -686,7 +686,7 @@ def convert_file(
     add_radius : bool, optional
         Boolean indicating whether to include the column radius as cell size, by default False
     add_all_attributes : bool, optional
-        Boolean indicating whether to include extra columns as attributes, by default False
+        Boolean indicating whether to include all extra columns as attributes, by default False
     add_attribute : str | None, optional
         Comma-separated list of column names to include as attributes, by default None
     add_hex_attribute : str | None, optional
@@ -723,8 +723,30 @@ def convert_file(
         tracks_df = pd.read_csv(input_file)
     elif file_extension == ".parquet":
         tracks_df = pd.read_parquet(input_file)
+    elif file_extension == ".geff":
+        # Only include all attributes if user has specified they want attributes
+        include_all_attributes = (
+            add_all_attributes or add_attribute or add_hex_attribute
+        )
+        if include_all_attributes:
+            pre_normalized = (
+                True  # because the GEFF node properties are normalized upon reading
+            )
+        tracks_df = read_geff_to_df(
+            input_file, include_all_attributes=include_all_attributes
+        )
     elif is_geff_dataset(input_file):
-        tracks_df = read_geff_to_df(input_file)
+        # Handle Zarr stores that are GEFF datasets
+        include_all_attributes = (
+            add_all_attributes or add_attribute or add_hex_attribute
+        )
+        if include_all_attributes:
+            pre_normalized = (
+                True  # because the GEFF node properties are normalized upon reading
+            )
+        tracks_df = read_geff_to_df(
+            input_file, include_all_attributes=include_all_attributes
+        )
     else:
         raise ValueError(
             f"Unsupported file format: {file_extension}. Only .csv, .parquet and GEFF files are supported."
@@ -736,26 +758,28 @@ def convert_file(
 
     extra_cols = []
     col_types = []
+
+    # Process attributes the same way for all file types
     if add_all_attributes:
         columns_standard = REQUIRED_COLUMNS
         extra_cols = tracks_df.columns.difference(columns_standard).to_list()
-    else:
-        if add_attribute:
-            selected_columns = [col.strip() for col in add_attribute.split(",")]
-            check_if_columns_exist(selected_columns, tracks_df.columns)
-            extra_cols = selected_columns
-            for c in selected_columns:
-                col_types.append(get_col_type(tracks_df[c]))
-            LOG.info(f"Columns included as attributes: {', '.join(selected_columns)}")
-        if add_hex_attribute:
-            selected_columns = [col.strip() for col in add_hex_attribute.split(",")]
-            check_if_columns_exist(selected_columns, tracks_df.columns)
-            extra_cols = extra_cols + selected_columns
-            for c in selected_columns:
-                col_types.append("hex")
-            LOG.info(
-                f"Columns included as hex attributes: {', '.join(selected_columns)}"
-            )
+        for c in extra_cols:
+            col_types.append(get_col_type(tracks_df[c]))
+        LOG.info(f"All attributes included: {', '.join(extra_cols)}")
+    if add_attribute:
+        selected_columns = [col.strip() for col in add_attribute.split(",")]
+        check_if_columns_exist(selected_columns, tracks_df.columns)
+        extra_cols = extra_cols + selected_columns
+        for c in selected_columns:
+            col_types.append(get_col_type(tracks_df[c]))
+        LOG.info(f"Columns included as attributes: {', '.join(selected_columns)}")
+    if add_hex_attribute:
+        selected_columns = [col.strip() for col in add_hex_attribute.split(",")]
+        check_if_columns_exist(selected_columns, tracks_df.columns)
+        extra_cols = extra_cols + selected_columns
+        for c in selected_columns:
+            col_types.append("hex")
+        LOG.info(f"Columns included as hex attributes: {', '.join(selected_columns)}")
     LOG.info(f"Column types: {col_types}")
 
     # TODO: do the calc_velocity BEFORE the zarr conversion, because now we check the existance of attributes in the dataframe, before the conversion script
@@ -796,7 +820,7 @@ def convert_file(
 @click.option(
     "--add_all_attributes",
     is_flag=True,
-    help="Boolean indicating whether to include extra columns as attributes for colors the cells in the viewer",
+    help="Boolean indicating whether to include all extra columns as attributes for colors the cells in the viewer",
     default=False,
     type=bool,
 )

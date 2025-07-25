@@ -52,7 +52,7 @@ allow-direct-references = true
 [tool.coverage.run]
 source_pkgs = ["intracktive"]
 branch = true
-parallel = true
+parallel = false
 omit = [
   "src/intracktive/__about__.py",
 ]

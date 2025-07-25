@@ -133,7 +133,10 @@ def remove_merging_edges(edge_ids: np.ndarray) -> tuple[bool, np.ndarray]:
     return no_merging, non_merging_edges
 
 
-def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
+def read_geff_to_df(
+    zarr_store: StoreLike,
+    include_all_attributes: bool = False,
+) -> pd.DataFrame:
     """
     Read geff data and convert to pandas DataFrame with columns: id, parent_id, t, y, x
 
@@ -141,6 +144,8 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     ----------
     zarr_store : StoreLike
         Zarr store (str | Path | zarr store) containing geff data
+    include_all_attributes : bool, optional
+        Whether to include all available attributes, by default False
 
     Returns
     -------
@@ -152,6 +157,7 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
         - z: z coordinates (only for 3D data, otherwise not present)
         - y: y coordinates
         - x: x coordinates
+        - Additional attributes if include_all_attributes=True
     """
 
     LOG.info("Reading GEFF file...")
@@ -177,6 +183,15 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     # Use first temporal axis and spatial axes in metadata order
     temporal_axis = temporal_axes[0]  # Take the first temporal axis
     prop_names = [temporal_axis.name] + [axis.name for axis in spatial_axes]
+
+    # Add all available properties if requested
+    if include_all_attributes:
+        # Discover available node properties from the zarr store structure
+        available_props = list(group["nodes/props"].keys())
+        # Include all properties including spatial axes (temporal axis is already included)
+        additional_props = [prop for prop in available_props]
+        prop_names.extend(additional_props)
+        LOG.info(f"Loading all properties: {prop_names}")
 
     InMemoryGeff = read_to_memory(zarr_store, validate=True, node_props=prop_names)
 
@@ -220,6 +235,26 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     for i, axis in enumerate(spatial_axes):
         df_data[spatial_names[i]] = node_positions[:, i]
 
+    # Add additional properties to the DataFrame if they were loaded
+    if include_all_attributes:
+        # Use the properties that were actually loaded
+        for prop_name in InMemoryGeff["node_props"].keys():
+            if prop_name in InMemoryGeff["node_props"]:
+                prop_data = InMemoryGeff["node_props"][prop_name]["values"]
+                # Check if dtype is numerical (not string/unicode/object)
+                if np.issubdtype(prop_data.dtype, np.number):
+                    # normalize the values to the range 0-1
+                    prop_data = (prop_data - prop_data.min()) / (
+                        prop_data.max() - prop_data.min()
+                    )
+                    df_data[prop_name] = prop_data
+                else:
+                    LOG.warning(
+                        f"Property '{prop_name}' has non-numerical dtype {prop_data.dtype}, skipping fetching from GEFF"
+                    )
+            else:
+                LOG.warning(f"Property '{prop_name}' not found in GEFF data")
+
     df = pd.DataFrame(df_data)
 
     # Create parent mapping using vectorized operations
@@ -244,6 +279,7 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     df = df.set_index("id")
 
     df = add_track_ids_to_tracks_df(df)
+    df = df.drop(columns=["parent_id"])
 
     # Define required columns based on dimensions
     if ndim == 3:
@@ -256,7 +292,10 @@ def read_geff_to_df(zarr_store: StoreLike) -> pd.DataFrame:
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
 
-    # Select only the required columns in the correct order
-    df = df[required_columns]
+    # Select required columns first, then add any additional columns
+    final_columns = required_columns + [
+        col for col in df.columns if col not in required_columns
+    ]
+    df = df[final_columns]
 
     return df

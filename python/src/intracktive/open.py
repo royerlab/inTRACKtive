@@ -36,7 +36,7 @@ def open_file(
     add_radius : bool, optional
         Boolean indicating whether to include the column radius as cell size, by default False
     add_all_attributes : bool, optional
-        Boolean indicating whether to include extra columns as attributes, by default False
+        Boolean indicating whether to include all extra columns as attributes, by default False
     add_attribute : str | None, optional
         Comma-separated list of column names to include as attributes, by default None
     add_hex_attribute : str | None, optional
@@ -88,7 +88,7 @@ def open_file(
             )
     else:
         # Need to convert CSV/Parquet/GEFF to Zarr
-        if file_extension not in [".csv", ".parquet"] and not is_geff_dataset(
+        if file_extension not in [".csv", ".parquet", ".geff"] and not is_geff_dataset(
             input_path
         ):
             raise click.UsageError(
@@ -149,7 +149,7 @@ def open_file(
 @click.option(
     "--add_all_attributes",
     is_flag=True,
-    help="Boolean indicating whether to include extra columns as attributes for colors the cells in the viewer",
+    help="Boolean indicating whether to include all extra columns as attributes for colors the cells in the viewer",
     default=False,
     type=bool,
 )
