@@ -29,7 +29,7 @@ dependencies = [
   "pandas",
   "zarr>3",
   "pyarrow",
-  "geff @ git+https://github.com/live-image-tracking-tools/geff.git"
+  "geff"
 ]
 
 [project.urls]
