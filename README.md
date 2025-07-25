@@ -66,7 +66,7 @@ See the image below with the explanation of the `inTRACKtive` UI:
 <details open>
     <summary>collapse</summary></br>
 
-We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (check [video 5](public/docs/videos.md)): _i_) use the command-line interface for data conversion and hosting, _ii_) open `inTRACKtive` from the napari plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
+We tried to make it as easy as possible to visualize your own data with `inTRACKtive`, there are currently three pathways you can follow (check [video 5](public/docs/videos.md)): _i_) use the command-line interface, _ii_) from the _napari_ plugin, or _iii_) from a Jupyter Notebook. All three options are outlined below, after the note regarding the file format. 
 
 
 #### Note: Tracking data format
@@ -88,7 +88,7 @@ In order to view your own cell tracking data with `inTRACKtive`, make sure your 
 
 where `track_id` is the label of each track (consistent over time), and `parent_track_id` the `track_id` of the parent cell after cell division (a `parent_track_id` of `-1` indicates that the cell has no parent. The absence of this column in the tracking data assumes that there are no cell divisions). In this example, cell `1` divides into cells `2` and `3` in at `t=2`. Make sure that `t` is continuous and starts at `0` and that `track_id` is integer-valued and starts from `1`. This can be in a `csv` format, or `pandas.DataFrame`, or anything equivalent. Note that the order of the columns is not important, since they are accessed by name. We are working on conversion script from popular cell tracking algorithms into our format, they will be available soon.
 
-For `inTRACKtive`, the data described above needs to be converted into our specialized Zarr format. We have python and command-line functions (see below at point _i_), while the napari and Jupyter Notebook solutions do this under the hood. 
+For `inTRACKtive`, the data described above needs to be converted into our specialized Zarr format. We have python and command-line functions (see below at point _i_), while the _napari_ and Jupyter Notebook solutions do this under the hood. 
 
 The common first step for all three approaches is to start with a clean conda environment, and git install the package: 
 
@@ -104,7 +104,7 @@ pip install intracktive
 
 This approach consists of two steps: converting the tracking data into our specialized Zarr format, and hosting the data to make it accessible for the browser. 
 
-For the first step, we assume your cell tracking data is saved as `tracks.csv` (or `tracks.parquet`) in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, (parent_track_id)]`), where `z` and `parent_track_id` are optional (no `z` column assumes 2D data, and no `parent_track_id` column assumes no cell divisions). This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
+For the first step, we assume your cell tracking data is saved as `tracks.csv` (or `tracks.parquet`, or [GEFF](https://live-image-tracking-tools.github.io/geff/main/#installation) file) in the format as described above (5-6 columns, with column names: `track_id, t, (z), y, x, (parent_track_id)]`), where `z` and `parent_track_id` are optional (no `z` column assumes 2D data, and no `parent_track_id` column assumes no cell divisions). This `tracks.csv` file can be converted to our Zarr format using the following command-line function (found in [/python/src/intracktive/convert.py](/python/src/intracktive/convert.py)):
 
 ```
 intracktive convert --input_file /path/to/tracks.csv
@@ -146,10 +146,16 @@ Open this link in the browser, navigate to the exact dataset, right-click on the
 Alternatively, you can use use a single command to serve and view the Zarr bundle with inTRACKtive: 
 
 ```
-intracktive open path/to/zarr
+intracktive open path/to/.zarr
+
+intracktive open path/to/.csv
+
+intracktive open path/to/.parquet
+
+intracktive open path/to/.geff
 ```
 
-where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. 
+where `path/to/zarr` is the full path to the Zarr bundle, including the Zarr filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. If you `intracktive open` an csv/parquet/GEFF file, the command will first convert the input to our Zarr format and open that file. 
 
 ---
 
@@ -164,22 +170,22 @@ where `data` is a `pandas.DataFrame` containing the tracking data, and `zarr_dir
 
 > ⚠️ Currently `dataframe_to_browser` only works for Google Chrome and Firefox (not Safari)
 
-### iii) Open `inTRACKtive` using the napari widget
+### iii) Open `inTRACKtive` using the _napari_ widget
 
-Using the same capabilities of the `dataframe_to_browser`, we made a [napari](https://napari.org/stable/) widget. The widget (`intracktiveWidget`) is part of the Python package after `pip install`, and automatically shows up in the napari widget list (`plugins>inTRACKtive`). To keep the `inTRACKtive` python package light-weight, napari is not listed as one of its dependencies. To make use of the napari widget, please `pip install napari[all]` in the same conda environment as `inTRACKtive`. The widget takes the tracking data from a [`tracks`](https://napari.org/dev/howtos/layers/tracks.html) layer in napari and opens an `inTRACKtive` browser window with the data. We provide an example of how to use the widget in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook2_inTRACKtive_from_napari.ipynb). 
+Using the same capabilities of the `dataframe_to_browser`, we made a [_napari_](https://napari.org/stable/) widget. The widget (`intracktiveWidget`) is part of the Python package after `pip install`, and automatically shows up in the _napari_ widget list (`plugins>inTRACKtive`). To keep the `inTRACKtive` python package light-weight, _napari_ is not listed as one of its dependencies. To make use of the _napari_ widget, please `pip install "napari[all]"` in the same conda environment as `inTRACKtive`. The widget takes the tracking data from a [`TracksLayer`](https://napari.org/dev/howtos/layers/tracks.html) layer in _napari_ and opens an `inTRACKtive` browser window with the data. We provide an example of how to use the widget in a [Jupyter Notebook (`/napari/src/intracktive/examples`)](/python/src/intracktive/examples/notebook2_inTRACKtive_from_napari.ipynb). 
 
 <p align="center">
   <img src="/public/docs/images/napari_widget.png" width="75%">
   <p align="center">
-    <em>Figure 2 - the inTRACKtive napari widget</em>
+    <em>Figure 2 - the inTRACKtive _napari_ widget</em>
   </p>
 </p>
 
 Some notes: 
-- The user can select a tracks layer to open in `inTRACKtive`
+- The user can select a `TracksLayer` to open in `inTRACKtive`
 - The user can choose the directory where to save the Zarr (either provide a directory, or leave blank, and the widget will save in a temporary location)
 
-> ⚠️ Note that when viewing a dataset that is hosted locally, sharing the dataset with someone else via the "shareable URL" option does not work, since the dataset only exists locally. Either share the dataset, or deposit the data on a public repository (examples: lab/university website, a public partition on a local cluster (HPC), AWS S3 bucket, Github Pages, Google Cloud Storage, etc)  
+> ⚠️ Note that when viewing a dataset that is hosted locally, sharing the dataset with someone else via the "shareable URL" option does not work, since the dataset only exists locally. Either share the dataset itself, or deposit the data on a public repository (examples: lab/university website, a public partition on a local cluster (HPC), AWS S3 bucket, Github Pages, Google Cloud Storage, etc)  
 
 ([↑Back to table of contents↑](#table-of-contents))
 
@@ -225,7 +231,7 @@ To customize the viewer, personalize the settings by simply changing elements in
     - color of the selected cells (`[0.9, 0, 0.9]`) = pink
     - color of the previewed cells (`[0.8, 0.8, 0]`) = yellow
 
-Of course, any other setting can be personalized by actively changing the code of `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application.
+Of course, any other setting can be personalized by cloning the repo and changing the code of `inTRACKtive`. For more technical details check the [architecture documentation](public/docs/architecture.md) of the application, and feel free to reach out of open an issue!
 
 ([↑Back to table of contents↑](#table-of-contents))
 
@@ -266,7 +272,7 @@ Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/)
 
 # Citation
 
-If you use `inTRACKtive` in your research, please cite the following [preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1):
+If you use `inTRACKtive` in your research, please cite the following [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1):
 ```
 @article {Huijben2024.10.18.618998,
 	author = {Huijben, Teun A.P.M. and Anderson, Ashley G. and Sweet, Andrew and Hoops, Erin and Larsen, Connor and Awayan, Kyle and Bragantini, Jordao and Chiu, Chi-Li and Royer, Loic A.},

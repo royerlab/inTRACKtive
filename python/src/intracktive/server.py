@@ -8,7 +8,9 @@ from pathlib import Path
 import click
 
 DEFAULT_HOST = "127.0.0.1"
-logging.basicConfig(level=logging.INFO)
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -85,9 +87,7 @@ def serve_directory(
 
     # Ensure path exists and is a directory
     if not path.exists() or not path.is_dir():
-        logging.error(
-            "The specified path does not exist or is not a directory: %s", path
-        )
+        LOG.error("The specified path does not exist or is not a directory: %s", path)
         return
 
     # Factory to pass directory to CORSRequestHandler
@@ -98,14 +98,14 @@ def serve_directory(
 
     def start_server():
         with ThreadingHTTPServer((host, port), handler_factory) as httpd:
-            logging.info("Serving %s at http://%s:%s", path, host, port)
+            LOG.info("Serving %s at http://%s:%s", path, host, port)
             try:
-                logging.info("Server running...")
+                LOG.info("Server running...")
                 httpd.serve_forever()
             except KeyboardInterrupt:
-                logging.info("Server interrupted, shutting down.")
+                LOG.info("Server interrupted, shutting down.")
             except Exception as e:
-                logging.error("An error occurred: %s", e)
+                LOG.error("An error occurred: %s", e)
 
     if threaded:
         server_thread = threading.Thread(target=start_server, daemon=True)
@@ -113,7 +113,7 @@ def serve_directory(
     else:
         start_server()
 
-    logging.info(f"Server started in background thread at http://{host}:{port}")
+    LOG.info(f"Server started in background thread at http://{host}:{port}")
 
     return f"http://{host}:{port}"
 
