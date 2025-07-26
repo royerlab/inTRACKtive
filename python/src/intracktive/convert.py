@@ -723,20 +723,15 @@ def convert_file(
         tracks_df = pd.read_csv(input_file)
     elif file_extension == ".parquet":
         tracks_df = pd.read_parquet(input_file)
-    elif file_extension == ".geff":
-        # Only include all attributes if user has specified they want attributes
-        include_all_attributes = (
-            add_all_attributes or add_attribute or add_hex_attribute
-        )
-        if include_all_attributes:
-            pre_normalized = (
-                True  # because the GEFF node properties are normalized upon reading
+    elif file_extension == ".geff" or is_geff_dataset(input_file):
+        # Handle both .geff files and Zarr stores that are GEFF datasets
+        # Validate that it's actually a GEFF dataset
+        if not is_geff_dataset(input_file):
+            raise ValueError(
+                f"File {input_file} has .geff extension but is not a valid GEFF dataset"
             )
-        tracks_df = read_geff_to_df(
-            input_file, include_all_attributes=include_all_attributes
-        )
-    elif is_geff_dataset(input_file):
-        # Handle Zarr stores that are GEFF datasets
+
+        # Only include all attributes if user has specified they want attributes
         include_all_attributes = (
             add_all_attributes or add_attribute or add_hex_attribute
         )
