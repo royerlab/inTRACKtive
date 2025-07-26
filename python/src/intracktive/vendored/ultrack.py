@@ -161,9 +161,8 @@ def add_track_ids_to_tracks_df(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[paths, "parent_track_id"] = np.repeat(parent_track_ids, lengths)
 
     unlabeled_tracks = df["track_id"] == NO_PARENT
-    assert not np.any(
-        unlabeled_tracks
-    ), f"Something went wrong. Found unlabeled tracks\n{df[unlabeled_tracks]}"
+    msg = f"Something went wrong. Found unlabeled tracks\n{df[unlabeled_tracks]}"
+    assert not np.any(unlabeled_tracks), msg
 
     LOG.info(f"Calculated track_ids in {time.monotonic() - start} seconds")
 

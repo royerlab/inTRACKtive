@@ -5,7 +5,7 @@ import pandas as pd
 import zarr
 from geff.geff_reader import read_to_memory
 from geff.metadata_schema import GeffMetadata
-from geff.utils import validate
+from geff.utils import remove_tilde, validate
 from intracktive.vendored.ultrack import add_track_ids_to_tracks_df
 from zarr.storage import StoreLike
 
@@ -29,6 +29,8 @@ def is_geff_dataset(zarr_store: StoreLike) -> bool:
     """
 
     try:
+        zarr_store = remove_tilde(zarr_store)
+
         # use the geff validation function
         validate(zarr_store)
 
@@ -162,6 +164,7 @@ def read_geff_to_df(
 
     LOG.info("Reading GEFF file...")
 
+    zarr_store = remove_tilde(zarr_store)
     group = zarr.open(zarr_store, mode="r")
     metadata = GeffMetadata.read(group)
 
@@ -188,8 +191,13 @@ def read_geff_to_df(
     if include_all_attributes:
         # Discover available node properties from the zarr store structure
         available_props = list(group["nodes/props"].keys())
-        # Include all properties including spatial axes (temporal axis is already included)
-        additional_props = [prop for prop in available_props]
+        # Exclude spatial and temporal axes from additional properties since they're already included
+        spatial_temporal_names = {temporal_axis.name} | {
+            axis.name for axis in spatial_axes
+        }
+        additional_props = [
+            prop for prop in available_props if prop not in spatial_temporal_names
+        ]
         prop_names.extend(additional_props)
         LOG.info(f"Loading all properties: {prop_names}")
 
@@ -237,57 +245,37 @@ def read_geff_to_df(
 
     # Add additional properties to the DataFrame if they were loaded
     if include_all_attributes:
-        # Use the properties that were actually loaded
-        for prop_name in InMemoryGeff["node_props"].keys():
+        # Use only the additional properties (exclude spatial and temporal axes)
+        additional_prop_names = [
+            prop
+            for prop in InMemoryGeff["node_props"].keys()
+            if prop not in spatial_temporal_names
+        ]
+
+        for prop_name in additional_prop_names:
             prop_data = InMemoryGeff["node_props"][prop_name]["values"]
             # Check if dtype is numerical (not string/unicode/object)
             if np.issubdtype(prop_data.dtype, np.number):
-                # Debug: Print information about the property data
-                # Handle infinite values by excluding them from min/max calculations
-                finite_mask = np.isfinite(prop_data)
-                has_inf = not np.all(finite_mask)
-
-                if has_inf:
-                    # Use only finite values for min/max calculation
-                    finite_data = prop_data[finite_mask]
-                    if len(finite_data) > 0:
-                        prop_min = finite_data.min()
-                        prop_max = finite_data.max()
-                    else:
-                        # All values are infinite, skip this property
-                        LOG.warning(
-                            f"Property '{prop_name}' has only infinite values, skipping"
-                        )
-                        continue
-                else:
-                    # All values are finite, use normal min/max
-                    prop_min = prop_data.min()
-                    prop_max = prop_data.max()
-
+                # Check for NaN values - skip properties with NaN
                 has_nan = np.any(np.isnan(prop_data))
-                is_constant = prop_max == prop_min
-
-                # normalize the values to the range 0-1, but handle constant data
                 if has_nan:
                     LOG.warning(
                         f"Property '{prop_name}' has NaN values, skipping fetching from GEFF"
                     )
                     continue
-                elif is_constant:
-                    # For constant data, set all values to 0.5 (middle of range)
-                    df_data[prop_name] = np.full_like(prop_data, 0.5)
-                else:
-                    # Normalize finite values
-                    prop_data = (prop_data - prop_min) / (prop_max - prop_min)
 
-                    # Clip infinite values to 0 and 1
-                    if has_inf:
-                        prop_data = np.clip(prop_data, 0, 1)
-                        LOG.info(
-                            f"Property '{prop_name}' had infinite values, clipped to [0, 1]"
-                        )
+                if len(prop_data.shape) != 1:
+                    LOG.warning(
+                        f"Property '{prop_name}' has shape {prop_data.shape}, expected 1D array, skipping fetching from GEFF"
+                    )
+                    continue
 
-                    df_data[prop_name] = prop_data
+                # Check for byte order compatibility
+                if prop_data.dtype.byteorder == ">":  # Big-endian
+                    prop_data = prop_data.astype(prop_data.dtype.newbyteorder("<"))
+
+                # Add the property to df_data without normalization
+                df_data[prop_name] = prop_data
             else:
                 LOG.warning(
                     f"Property '{prop_name}' has non-numerical dtype {prop_data.dtype}, skipping fetching from GEFF"
