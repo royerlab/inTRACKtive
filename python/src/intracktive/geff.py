@@ -272,9 +272,6 @@ def read_geff_to_df(
 
                 # Check for byte order compatibility
                 if prop_data.dtype.byteorder == ">":  # Big-endian
-                    LOG.warning(
-                        f"Property '{prop_name}' has big-endian byte order, converting to little-endian"
-                    )
                     prop_data = prop_data.astype(prop_data.dtype.newbyteorder("<"))
 
                 # Add the property to df_data without normalization
