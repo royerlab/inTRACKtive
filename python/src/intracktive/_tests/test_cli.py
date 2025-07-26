@@ -384,7 +384,6 @@ def test_open_cli_validates_unsupported_format(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["open", str(unsupported_path)])
     assert result.exit_code == 2
-    print("result.output", result.output)
     assert (
         "Unsupported file format: .txt. Only .zarr, .csv, .parquet and GEFF files are supported."
         in result.output

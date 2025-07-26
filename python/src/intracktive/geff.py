@@ -254,7 +254,6 @@ def read_geff_to_df(
 
         for prop_name in additional_prop_names:
             prop_data = InMemoryGeff["node_props"][prop_name]["values"]
-            print("prop_name:", prop_name, prop_data.shape, prop_data.dtype)
             # Check if dtype is numerical (not string/unicode/object)
             if np.issubdtype(prop_data.dtype, np.number):
                 # Check for NaN values - skip properties with NaN

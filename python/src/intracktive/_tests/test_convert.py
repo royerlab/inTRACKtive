@@ -21,7 +21,6 @@ def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
         if isinstance(new, zarr.Group):
             _evaluate(new, old)
         else:
-            print(f"{key}: new {new.shape} old {old.shape}")
             assert new.shape == old.shape, f"{key}: {new.shape} != {old.shape}"
             assert new.dtype == old.dtype, f"{key}: {new.dtype} != {old.dtype}"
             np.testing.assert_allclose(
