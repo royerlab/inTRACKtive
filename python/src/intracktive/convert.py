@@ -492,9 +492,9 @@ def convert_dataframe_to_zarr(
         )
         attributes.attrs["attribute_names"] = extra_cols
         attributes.attrs["attribute_types"] = attribute_types
-        attributes.attrs[
-            "pre_normalized"
-        ] = True  # Always True since normalization is handled here
+        attributes.attrs["pre_normalized"] = (
+            True  # Always True since normalization is handled here
+        )
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
