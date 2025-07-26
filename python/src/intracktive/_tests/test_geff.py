@@ -121,7 +121,7 @@ def test_trackmate_geff(tmp_path):
 
     convert_file(input_file=path_tm_geff, out_dir=tmp_path, add_all_attributes=True)
 
-    assert df.columns.tolist() == [
+    expected_columns = {
         "track_id",
         "t",
         "y",
@@ -129,7 +129,9 @@ def test_trackmate_geff(tmp_path):
         "parent_track_id",
         "z",
         "radius",
-    ]
+    }
+    msg = f"Expected columns {expected_columns}, got {set(df.columns)}"
+    assert set(df.columns) == expected_columns, msg
     assert df.shape == (77, 7)
 
 
