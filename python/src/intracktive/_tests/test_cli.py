@@ -477,9 +477,10 @@ def test_zarr_to_browser_not_threaded_with_browser(tmp_path: Path) -> None:
     for folder in required_folders:
         (zarr_path / folder).mkdir()
 
-    with patch("intracktive.convert.webbrowser.open") as mock_webbrowser, patch(
-        "intracktive.convert.serve_directory"
-    ) as mock_serve_directory:
+    with (
+        patch("intracktive.convert.webbrowser.open") as mock_webbrowser,
+        patch("intracktive.convert.serve_directory") as mock_serve_directory,
+    ):
         zarr_to_browser(zarr_path, flag_open_browser=True, threaded=False)
 
         # Should open browser before starting server when not threaded
