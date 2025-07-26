@@ -188,8 +188,13 @@ def read_geff_to_df(
     if include_all_attributes:
         # Discover available node properties from the zarr store structure
         available_props = list(group["nodes/props"].keys())
-        # Include all properties including spatial axes (temporal axis is already included)
-        additional_props = [prop for prop in available_props]
+        # Exclude spatial and temporal axes from additional properties since they're already included
+        spatial_temporal_names = {temporal_axis.name} | {
+            axis.name for axis in spatial_axes
+        }
+        additional_props = [
+            prop for prop in available_props if prop not in spatial_temporal_names
+        ]
         prop_names.extend(additional_props)
         LOG.info(f"Loading all properties: {prop_names}")
 
@@ -237,12 +242,17 @@ def read_geff_to_df(
 
     # Add additional properties to the DataFrame if they were loaded
     if include_all_attributes:
-        # Use the properties that were actually loaded
-        for prop_name in InMemoryGeff["node_props"].keys():
+        # Use only the additional properties (exclude spatial and temporal axes)
+        additional_prop_names = [
+            prop
+            for prop in InMemoryGeff["node_props"].keys()
+            if prop not in spatial_temporal_names
+        ]
+
+        for prop_name in additional_prop_names:
             prop_data = InMemoryGeff["node_props"][prop_name]["values"]
             # Check if dtype is numerical (not string/unicode/object)
             if np.issubdtype(prop_data.dtype, np.number):
-                # Debug: Print information about the property data
                 # Handle infinite values by excluding them from min/max calculations
                 finite_mask = np.isfinite(prop_data)
                 has_inf = not np.all(finite_mask)
