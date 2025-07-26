@@ -274,7 +274,9 @@ def convert_dataframe_to_zarr(
 
     for col in columns_to_check:
         if col not in df.columns:
-            raise ValueError(f"Column '{col}' not found in the DataFrame")
+            raise ValueError(
+                f"Column '{col}' not found in the DataFrame (case sensitive!)"
+            )
 
     for col in ("t", "track_id", "parent_track_id"):
         df.loc[:, col] = df[col].astype(int)
@@ -643,7 +645,9 @@ def dataframe_to_browser(
     # check if extra_cols are in df
     for col in extra_cols:
         if col not in df.columns:
-            raise ValueError(f"Column '{col}' not found in the DataFrame")
+            raise ValueError(
+                f"Column '{col}' not found in the DataFrame (case sensitive!)"
+            )
 
     # if attribute_types is not provided, get it from the extra_cols
     if not attribute_types:
@@ -683,7 +687,7 @@ def check_if_columns_exist(
     missing_columns = [col for col in selected_columns if col not in available_columns]
     if missing_columns:
         raise ValueError(
-            f"Columns not found in the input file: {', '.join(missing_columns)}"
+            f"Columns not found in the input file (case sensitive!): {', '.join(missing_columns)}"
         )
 
 
@@ -782,7 +786,7 @@ def convert_file(
 
         # Only include all attributes if user has specified they want attributes
         include_all_attributes = (
-            add_all_attributes or add_attribute or add_hex_attribute
+            add_all_attributes or add_attribute or add_hex_attribute or add_radius
         )
         # GEFF properties are not pre-normalized, they will be normalized in convert_dataframe_to_zarr
         tracks_df = read_geff_to_df(
