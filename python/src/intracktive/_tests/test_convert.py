@@ -341,3 +341,65 @@ def test_convert_with_parents_and_children(
         df=df,
         zarr_path=new_path,
     )
+
+
+def test_convert_dataframe_to_zarr_with_mixed_inf_nan_values(tmp_path):
+    """Test that convert_dataframe_to_zarr handles mixed infinite and NaN values correctly."""
+
+    # Create a simple DataFrame with mixed infinite and NaN values to test the normalization logic directly
+    # All points at the same time to ensure all data is preserved
+    test_df = pd.DataFrame(
+        {
+            "track_id": [1, 2, 3, 4, 5, 6, 7],
+            "t": [0, 0, 0, 0, 0, 0, 0],  # All at same time point
+            "z": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            "y": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0],
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            "parent_track_id": [-1, -1, -1, -1, -1, -1, -1],
+            "intensity": [1.0, np.inf, np.nan, 4.0, -np.inf, np.nan, 7.0],
+        }
+    )
+
+    # Convert to Zarr using convert_dataframe_to_zarr
+    zarr_path = tmp_path / "test_mixed_inf_nan_values.zarr"
+    convert_dataframe_to_zarr(
+        df=test_df,
+        zarr_path=zarr_path,
+        extra_cols=["intensity"],
+        attribute_types=["continuous"],
+    )
+
+    # Load the Zarr data and check the normalization
+    zarr_group = zarr.open(zarr_path)
+    assert "attributes" in zarr_group
+
+    # Check that the attribute was normalized correctly
+    attributes = zarr_group["attributes"][:]
+    attribute_names = zarr_group["attributes"].attrs["attribute_names"]
+    attribute_types = zarr_group["attributes"].attrs["attribute_types"]
+
+    assert "intensity" in attribute_names
+    assert "continuous" in attribute_types
+
+    # Get the intensity values from the attributes array
+    intensity_idx = attribute_names.index("intensity")
+    intensity_values = attributes[intensity_idx, :]
+
+    # With the new normalization logic:
+    # - -inf values are set to 0.0 before normalization
+    # - +inf values are set to 1.0 before normalization
+    # - NaN values are set to 0.0 before normalization
+    # - Then all values are normalized together
+    # - Original: [1.0, inf, nan, 4.0, -inf, nan, 7.0]
+    # - After replacement: [1.0, 1.0, 0.0, 4.0, 0.0, 0.0, 7.0]
+    # - Normalized: (value - 0.0) / (7.0 - 0.0) = value / 7.0
+    expected_normalized = np.array([1 / 7, 1 / 7, 0 / 7, 4 / 7, 0 / 7, 0 / 7, 7 / 7])
+    np.testing.assert_allclose(intensity_values, expected_normalized, rtol=1e-5)
+
+    # Check that all values are in [0, 1] range
+    assert np.all(intensity_values >= 0)
+    assert np.all(intensity_values <= 1)
+
+    print(
+        "✅ convert_dataframe_to_zarr handles mixed infinite and NaN values correctly!"
+    )

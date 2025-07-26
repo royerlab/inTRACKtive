@@ -16,7 +16,6 @@ def open_file(
     add_all_attributes: bool = False,
     add_attribute: str | None = None,
     add_hex_attribute: str | None = None,
-    pre_normalized: bool = False,
     calc_velocity: bool = False,
     velocity_smoothing_windowsize: int = 1,
 ) -> Path:
@@ -41,8 +40,6 @@ def open_file(
         Comma-separated list of column names to include as attributes, by default None
     add_hex_attribute : str | None, optional
         Comma-separated list of column names to include as HEX attributes, by default None
-    pre_normalized : bool, optional
-        Boolean indicating whether the attributes are prenormalized to [0,1], by default False
     calc_velocity : bool, optional
         Boolean indicating whether to calculate velocity of the cells, by default False
     velocity_smoothing_windowsize : int, optional
@@ -107,7 +104,6 @@ def open_file(
             add_all_attributes=add_all_attributes,
             add_attribute=add_attribute,
             add_hex_attribute=add_hex_attribute,
-            pre_normalized=pre_normalized,
             calc_velocity=calc_velocity,
             velocity_smoothing_windowsize=velocity_smoothing_windowsize,
         )
@@ -166,13 +162,6 @@ def open_file(
     help="Comma-separated list of column names to include as HEX attributes (e.i., columns with hexInt values, only internal use')",
 )
 @click.option(
-    "--pre_normalized",
-    is_flag=True,
-    help="Boolean indicating whether the extra column/columns with attributes are prenormalized to [0,1]",
-    default=False,
-    type=bool,
-)
-@click.option(
     "--calc_velocity",
     is_flag=True,
     help="Boolean indicating whether to calculate velocity of the cells (smoothing is recommended, please provide a --velocity_smoothing_windowsize)",
@@ -193,7 +182,6 @@ def open_cli(
     add_all_attributes: bool,
     add_attribute: str | None,
     add_hex_attribute: str | None,
-    pre_normalized: bool,
     calc_velocity: bool,
     velocity_smoothing_windowsize: int,
 ) -> None:
@@ -227,7 +215,6 @@ def open_cli(
         add_all_attributes=add_all_attributes,
         add_attribute=add_attribute,
         add_hex_attribute=add_hex_attribute,
-        pre_normalized=pre_normalized,
         calc_velocity=calc_velocity,
         velocity_smoothing_windowsize=velocity_smoothing_windowsize,
     )

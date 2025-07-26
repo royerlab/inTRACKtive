@@ -168,25 +168,6 @@ def test_convert_cli_missing_attributes(
         )
 
 
-def test_convert_cli_all_attributes_prenormalized(
-    tmp_path: Path,
-    make_sample_data: pd.DataFrame,
-) -> None:
-    df = make_sample_data
-    df.to_csv(tmp_path / "sample_data.csv", index=False)
-
-    _run_command(
-        [
-            "convert",
-            str(tmp_path / "sample_data.csv"),
-            "--out_dir",
-            str(tmp_path),
-            "--add_all_attributes",
-            "--pre_normalized",
-        ]
-    )
-
-
 def test_convert_cli_invalid_format(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,

@@ -219,7 +219,6 @@ def convert_dataframe_to_zarr(
     add_radius: bool = False,
     extra_cols: Iterable[str] = (),
     attribute_types: Iterable[str] = (),
-    pre_normalized: bool = False,
     calc_velocity: bool = False,
     velocity_smoothing_windowsize: int = 1,
 ) -> Path:
@@ -244,7 +243,13 @@ def convert_dataframe_to_zarr(
     start = time.monotonic()
 
     if "z" in df.columns:
-        flag_2D = False
+        # Check if all z values are very close to zero (effectively 2D data)
+        z_values = df["z"].values
+        if np.allclose(z_values, 0.0, atol=1e-10):
+            flag_2D = True
+            LOG.info("Z column present but all values are zero, treating as 2D data")
+        else:
+            flag_2D = False
     else:
         flag_2D = True
         df.loc[:, "z"] = 0.0
@@ -357,6 +362,52 @@ def convert_dataframe_to_zarr(
             group_size = int(len(group))
             t_idx = time_to_index[t]
             attribute_array[t_idx, :group_size] = group[col].to_numpy().ravel()
+
+        # Normalize the attribute if not pre-normalized and not a hex attribute
+        col_idx = list(extra_cols).index(col)
+        col_type = attribute_types[col_idx]
+
+        # Only normalize continuous and discrete types, not hex
+        if col_type in ["continuous", "categorical"]:
+            # Handle infinite and NaN values BEFORE normalization
+            neg_inf_mask = np.isneginf(attribute_array)
+            pos_inf_mask = np.isposinf(attribute_array)
+            nan_mask = np.isnan(attribute_array)
+            has_inf_or_nan = (
+                np.any(neg_inf_mask) or np.any(pos_inf_mask) or np.any(nan_mask)
+            )
+
+            if has_inf_or_nan:
+                # Set problematic values to safe values before normalization
+                attribute_array[neg_inf_mask] = 0.0
+                attribute_array[pos_inf_mask] = 1.0
+                attribute_array[nan_mask] = 0.0
+
+                LOG.info(
+                    f"Attribute '{col}' had infinite or NaN values: -inf→0, +inf→1, NaN→0.0"
+                )
+
+            # Now normalize all values (excluding INF_SPACE values)
+            # Get only the actual data values (not the padding INF_SPACE values)
+            actual_data_mask = attribute_array != INF_SPACE
+            if np.any(actual_data_mask):
+                actual_data = attribute_array[actual_data_mask]
+                attr_min = actual_data.min()
+                attr_max = actual_data.max()
+
+                # Check for constant data
+                if attr_max == attr_min:
+                    # For constant data, set all actual data values to 0.5 (middle of range)
+                    attribute_array[actual_data_mask] = 0.5
+                else:
+                    # Normalize only the actual data values
+                    attribute_array[actual_data_mask] = (actual_data - attr_min) / (
+                        attr_max - attr_min
+                    )
+            else:
+                # No actual data, set everything to 0.5
+                attribute_array = np.full_like(attribute_array, 0.5)
+
         attribute_arrays[col] = attribute_array
 
     LOG.info(f"Munged {len(df)} points in {time.monotonic() - start} seconds")
@@ -441,7 +492,9 @@ def convert_dataframe_to_zarr(
         )
         attributes.attrs["attribute_names"] = extra_cols
         attributes.attrs["attribute_types"] = attribute_types
-        attributes.attrs["pre_normalized"] = pre_normalized
+        attributes.attrs["pre_normalized"] = (
+            True  # Always True since normalization is handled here
+        )
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()
@@ -558,7 +611,6 @@ def dataframe_to_browser(
     extra_cols: Iterable[str] = (),
     attribute_types: Iterable[str] = (),
     add_radius: bool = False,
-    pre_normalized: bool = False,
     flag_open_browser: bool = True,
 ) -> None:
     """
@@ -578,8 +630,6 @@ def dataframe_to_browser(
         List of attribute types for the extra columns, by default empty list
     add_radius: bool, optional
         Boolean indicating whether to include the column radius as cell size, by default False
-    pre_normalized: bool, optional
-        Whether the attributes are already normalized to [0,1], by default False
     flag_open_browser: bool, optional
         Whether to automatically open the browser, by default True
     """
@@ -606,7 +656,6 @@ def dataframe_to_browser(
         extra_cols=extra_cols,
         add_radius=add_radius,
         attribute_types=attribute_types,
-        pre_normalized=pre_normalized,
     )
 
     # Use the new zarr_to_browser function
@@ -668,7 +717,6 @@ def convert_file(
     add_all_attributes: bool = False,
     add_attribute: str | None = None,
     add_hex_attribute: str | None = None,
-    pre_normalized: bool = False,
     calc_velocity: bool = False,
     velocity_smoothing_windowsize: int = 1,
 ) -> Path:
@@ -691,8 +739,6 @@ def convert_file(
         Comma-separated list of column names to include as attributes, by default None
     add_hex_attribute : str | None, optional
         Comma-separated list of column names to include as HEX attributes, by default None
-    pre_normalized : bool, optional
-        Boolean indicating whether the attributes are prenormalized to [0,1], by default False
     calc_velocity : bool, optional
         Boolean indicating whether to calculate velocity of the cells, by default False
     velocity_smoothing_windowsize : int, optional
@@ -715,6 +761,9 @@ def convert_file(
     else:
         out_dir = Path(out_dir)
 
+    if not isinstance(input_file, Path):
+        input_file = Path(input_file)
+
     zarr_path = out_dir / f"{input_file.stem}_bundle.zarr"
 
     # Read input file based on extension
@@ -735,10 +784,7 @@ def convert_file(
         include_all_attributes = (
             add_all_attributes or add_attribute or add_hex_attribute
         )
-        if include_all_attributes:
-            pre_normalized = (
-                True  # because the GEFF node properties are normalized upon reading
-            )
+        # GEFF properties are not pre-normalized, they will be normalized in convert_dataframe_to_zarr
         tracks_df = read_geff_to_df(
             input_file, include_all_attributes=include_all_attributes
         )
@@ -784,7 +830,6 @@ def convert_file(
         add_radius,
         extra_cols=extra_cols,
         attribute_types=col_types,
-        pre_normalized=pre_normalized,
         calc_velocity=calc_velocity,
         velocity_smoothing_windowsize=velocity_smoothing_windowsize,
     )
@@ -832,13 +877,6 @@ def convert_file(
     help="Comma-separated list of column names to include as HEX attributes (e.i., columns with hexInt values, only internal use')",
 )
 @click.option(
-    "--pre_normalized",
-    is_flag=True,
-    help="Boolean indicating whether the extra column/columns with attributes are prenormalized to [0,1]",
-    default=False,
-    type=bool,
-)
-@click.option(
     "--calc_velocity",
     is_flag=True,
     help="Boolean indicating whether to calculate velocity of the cells (smoothing is recommended, please provide a --velocity_smoothing_windowsize)",
@@ -858,7 +896,6 @@ def convert_cli(
     add_all_attributes: bool,
     add_attribute: str | None,
     add_hex_attribute: str | None,
-    pre_normalized: bool,
     calc_velocity: bool,
     velocity_smoothing_windowsize: int,
 ) -> None:
@@ -875,7 +912,6 @@ def convert_cli(
         add_all_attributes=add_all_attributes,
         add_attribute=add_attribute,
         add_hex_attribute=add_hex_attribute,
-        pre_normalized=pre_normalized,
         calc_velocity=calc_velocity,
         velocity_smoothing_windowsize=velocity_smoothing_windowsize,
     )
