@@ -1,4 +1,4 @@
-from python.src.intracktive.main import main
+from intracktive.main import main
 
 if __name__ == "__main__":
     main()
