@@ -15,7 +15,7 @@ LOG.setLevel(logging.INFO)
 
 def is_geff_dataset(zarr_store: StoreLike) -> bool:
     """
-    Check if a zarr group/store is a geff dataset by checking if metadata can be loaded.
+    Check if a zarr store (store | Path | str) is a geff dataset by checking if metadata can be loaded.
 
     Parameters
     ----------
@@ -34,11 +34,8 @@ def is_geff_dataset(zarr_store: StoreLike) -> bool:
         # use the geff validation function
         validate(zarr_store)
 
-        # Open the zarr group
-        group = zarr.open(zarr_store, mode="r")
-
-        # Read geff metadata from the zarr group
-        metadata = GeffMetadata.read(group)  # type: ignore[arg-type]
+        # Read geff metadata from the zarr store
+        metadata = GeffMetadata.read(zarr_store)  # type: ignore[arg-type]
 
         # Check if the metadata has a geff_version
         if hasattr(metadata, "geff_version") and metadata.geff_version is not None:
@@ -166,7 +163,7 @@ def read_geff_to_df(
 
     zarr_store = remove_tilde(zarr_store)
     group = zarr.open(zarr_store, mode="r")
-    metadata = GeffMetadata.read(group)
+    metadata = GeffMetadata.read(zarr_store)
 
     assert metadata.directed, "Geff dataset must be directed"
 
