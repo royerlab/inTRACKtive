@@ -38,7 +38,8 @@ const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
 const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
 
 const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
-const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+const factorPointSizeVsCellSize = 0.008; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
+// was 0.011 in branch
 const factorTrackWidthVsHighlight = 3; // choice to make the tracks 7x thinner than the track highlights
 
 // TrackType is a place to store the visual information about a track and any track-specific attributes
@@ -109,14 +110,23 @@ export class PointCanvas {
         const pointsGeometry = new BufferGeometry();
         const pointVertexShader = `
             attribute float size;
-            attribute vec3 color; //Declare the color attribute
+            attribute vec3 color;
             varying vec3 vColor;
+            uniform float viewportHeight;
+            uniform float pixelRatio;
 
             void main() {
-            vColor = color;
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_PointSize = size * (300.0 / -mvPosition.z); // Adjust scaling factor
-            gl_Position = projectionMatrix * mvPosition;
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                
+                // Convert size from world space to screen space while preserving world-space relationships
+                vec4 clipPos = projectionMatrix * mvPosition;
+                vec4 clipSize = projectionMatrix * vec4(size, 0.0, mvPosition.z, 1.0);
+                
+                // Scale point size to maintain world-space relationships
+                gl_PointSize = abs(clipSize.x / clipPos.w) * viewportHeight;
+                
+                gl_Position = clipPos;
             }
         `;
         const pointFragmentShader = `
@@ -134,15 +144,16 @@ export class PointCanvas {
             uniforms: {
                 color: { value: new Color(0xffffff) },
                 pointTexture: { value: new TextureLoader().load("/spark1.png") },
+                viewportHeight: { value: height },
+                pixelRatio: { value: Math.max(1, window.devicePixelRatio) }, // Ensure minimum of 1
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
-
             blending: NormalBlending,
-            depthTest: true, // true
-            // alphaTest: 0.1, //no effect
-            depthWrite: true, // true
-            transparent: false, // false
+            depthTest: true,
+            depthWrite: true,
+            transparent: false,
+            defines: { USE_SIZEATTENUATION: "" }, // Enable size attenuation
         });
         this.points = new Points(pointsGeometry, shaderMaterial);
 
@@ -531,6 +542,15 @@ export class PointCanvas {
         this.bloomPass.resolution.set(width, height);
         this.renderer.setSize(width, height);
         this.composer.setSize(width, height);
+
+        // Get actual device pixel ratio and viewport height
+        const pixelRatio = window.devicePixelRatio || 1;
+        const actualHeight = height * pixelRatio;
+
+        // Update the viewport height uniform with the actual pixel height
+        if (this.points.material instanceof ShaderMaterial) {
+            this.points.material.uniforms.viewportHeight.value = actualHeight;
+        }
     }
 
     initPointsGeometry(maxPointsPerTimepoint: number) {
