@@ -98,6 +98,7 @@ export class PointCanvas {
     constructor(width: number, height: number) {
         this.scene = new Scene();
         this.renderer = new WebGLRenderer();
+        this.renderer.setClearColor(0x808080, 1); // Set background to grey
 
         this.camera = new PerspectiveCamera(
             35, // FOV
