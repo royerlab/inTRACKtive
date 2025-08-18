@@ -98,6 +98,7 @@ export class PointCanvas {
     constructor(width: number, height: number) {
         this.scene = new Scene();
         this.renderer = new WebGLRenderer();
+        // this.renderer.setClearColor(0x808080, 1); // Set background to white
 
         this.camera = new PerspectiveCamera(
             35, // FOV
@@ -148,9 +149,9 @@ export class PointCanvas {
 
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
-        if (deviceState.current.isPhone) {
-            this.toggleAxesHelper();
-        }
+        // if (deviceState.current.isPhone) {
+        this.toggleAxesHelper(); // axishelper always off by default
+        // }
 
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
