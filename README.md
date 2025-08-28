@@ -110,7 +110,7 @@ For the first step, we assume your cell tracking data is saved as `tracks.csv` (
 intracktive convert --input_file /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to your `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to your `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py#L717) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
 
 By default, all the cells are represented by equally-sized dots in `inTRACKtive`. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
 
@@ -133,7 +133,7 @@ intracktive convert --input_file path/to/tracks.csv --add_all_attributes
 ```
 When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. The conversion script will detect whether each provided column represents a categorical or continuous attribute. This information is saved in the Zarr attributes information and loaded by inTRACKtive to use the appropriate colormap. 
 
-In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
+In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py#L57) to host the data locally:
 
 ```
 intracktive serve path/to/data
@@ -263,16 +263,16 @@ Team:
 # Contact us
 If you have any questions, requests, or awesome ideas, please contact us:
 
-Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben))
+Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben) / [Bluesky](https://bsky.app/profile/teunhuijben.bsky.social))
 
-Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/))
+Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/) / [Bluesky](https://bsky.app/profile/loicaroyer.bsky.social))
 
 <br/>
 
 
 # Citation
 
-If you use `inTRACKtive` in your research, please cite the following [paper](https://www.nature.com/articles/s41592-025-02777-1)/[PDF](https://rdcu.be/eCfyc):
+If you use `inTRACKtive` in your research, please cite the following *Nature Methods* [paper](https://www.nature.com/articles/s41592-025-02777-1)/[PDF](https://rdcu.be/eCfyc):
 ```
 @article{Huijben2025,
   author    = {Teun A. P. M. Huijben and Ashley G. Anderson and Andrew Sweet and Erin Hoops and Connor Larsen and Kyle Awayan and Jord{\~a}o Bragantini and Merlin Lange and Chi-Li Chiu and Lo{\"i}c A. Royer},
