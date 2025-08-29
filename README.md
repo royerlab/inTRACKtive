@@ -8,7 +8,7 @@
 
 # inTRACKtive
 
-`inTRACKtive`([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
+`inTRACKtive`(Huijben et al, *Nature Methods* (2025) [paper](https://www.nature.com/articles/s41592-025-02777-1), [PDF](https://rdcu.be/eCfyc), [videos](public/docs/videos.md)) is an application for data-efficient visualization and sharing of cell tracking data in the browser. The viewer allows users to navigate the tracked cells through time with a time slider, select specific cells, and trace cell lineages. The view of the explored lineage selections can be shared with a simple link, making it ideal for collaboration, education, and showcasing. This viewer eliminates the local setup of native software, making advanced lineage tracing and *in silico* fate mapping accessible to everyone with a browser. It is built in TypeScript, using [React](https://react.dev/) and
 [Three.js](https://threejs.org/), bundled with [Vite](https://vitejs.dev/), using [Zarr.js](https://github.com/gzuidhof/zarr.js) for light-weight data loading and the CZI [SDS](https://github.com/chanzuckerberg/sci-components?tab=readme-ov-file) component library. The viewer utilizes a specialized [tracking data format](public/docs/file_format.md) for asynchronous lazy data loading and on-the-fly interactivity. This tool makes it possible for everyone to visualize, host, and interact with your cell tracking data!
 
 This tool was originally built to explore the light-sheet microscopy 3D cell tracking results of the [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/), but can be used to visualize any tracking data acquired with any 2D ([example](https://t.ly/K-hA7)) or 3D microscopy modality from which tracking data can be obtained, from organoids down to single molecules.
@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/4d674696-0add-4f03-8f38-600b44c987e7
 <br/>
 
 # Table of contents
-`inTRACKtive` ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1)) has three main use-cases: 
+`inTRACKtive` ([paper](https://www.nature.com/articles/s41592-025-02777-1)) has three main use-cases: 
 
 1. Explore the Virtual Embryo Zoo ([↓1. Explore the Virtual Embryo Zoo↓](#1-explore-the-virtual-embryo-zoo))
 
@@ -38,7 +38,7 @@ Below we will explain each use-case in more detail.
 <details open>
     <summary>collapse</summary></br>
 
-The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) ([preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1), [videos](public/docs/videos.md)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
+The [Virtual Embryo Zoo](https://virtual-embryo-zoo.sf.czbiohub.org/) (Huijben et al, *Nature Methods* (2025) [paper](https://www.nature.com/articles/s41592-025-02777-1), [PDF](https://rdcu.be/eCfyc), [videos](public/docs/videos.md)) is a growing platform that empowers researchers to investigate single-cell embryogenesis of six commonly studied model organisms: Drosophila, zebrafish, C. elegans, Ascidian, mouse, and Tribolium. The Virtual Embryo Zoo webpage uses `inTRACKtive` for an intuitive and accessible web-based interface.
 
 
 https://github.com/user-attachments/assets/15147514-bc92-466f-a3ef-47bfe9fa2c6d
@@ -110,7 +110,7 @@ For the first step, we assume your cell tracking data is saved as `tracks.csv` (
 intracktive convert --input_file /path/to/tracks.csv
 ```
 
-This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to your `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
+This function converts `tracks.csv` to `tracks_bundle.zarr` (if interested, see the [Zarr format](public/docs/file_format.md)). Change `/path/to/tracks.csv` into the actual path to your `tracks.csv`. By default, `tracks_bundle.zarr` is saved in the same directory as `tracks.csv`, unless `--out_dir` is specified as the extra parameter to the function call (see the [function itself](python/src/intracktive/convert.py#L717) for more details). The conversion script works for 2D and 3D datasets (when the column `z` is not present, a 2D dataset is assumed, i.e., all `z`-values will be set to 0)
 
 By default, all the cells are represented by equally-sized dots in `inTRACKtive`. The conversion script has the option of giving each cell a different size. For this: 1) make sure `tracks.csv` has an extra column named `radius`, and 2) use the flag `--add_radius` when calling the conversion script:
 
@@ -133,7 +133,7 @@ intracktive convert --input_file path/to/tracks.csv --add_all_attributes
 ```
 When using `add_all_attributes`, the code will add all given columns as an attribute, apart from the default columns (`track_id`, `t`, `z`, `y`, `x`, and `parent_track_id`). If desired, one can manually add these columns as attributes using `add_attribute x`,  for example. The conversion script will detect whether each provided column represents a categorical or continuous attribute. This information is saved in the Zarr attributes information and loaded by inTRACKtive to use the appropriate colormap. 
 
-In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py) to host the data locally:
+In order for the viewer to access the data, the data must be hosted at a location the browser can access. For testing and visualizing data on your own computer, the easiest way is to host the data via `localhost`. This repository contains a [tool](python/src/intracktive//server.py#L57) to host the data locally:
 
 ```
 intracktive serve path/to/data
@@ -263,26 +263,31 @@ Team:
 # Contact us
 If you have any questions, requests, or awesome ideas, please contact us:
 
-Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben))
+Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben) / [Bluesky](https://bsky.app/profile/teunhuijben.bsky.social))
 
-Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/))
+Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/) / [Bluesky](https://bsky.app/profile/loicaroyer.bsky.social))
 
 <br/>
 
 
 # Citation
 
-If you use `inTRACKtive` in your research, please cite the following [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/2024.10.18.618998v1):
+If you use `inTRACKtive` in your research, please cite the following *Nature Methods* [paper](https://www.nature.com/articles/s41592-025-02777-1)/[PDF](https://rdcu.be/eCfyc):
 ```
-@article {Huijben2024.10.18.618998,
-	author = {Huijben, Teun A.P.M. and Anderson, Ashley G. and Sweet, Andrew and Hoops, Erin and Larsen, Connor and Awayan, Kyle and Bragantini, Jordao and Chiu, Chi-Li and Royer, Loic A.},
-	title = {inTRACKtive - A Web-Based Tool for Interactive Cell Tracking Visualization},
-	year = {2024},
-	doi = {10.1101/2024.10.18.618998},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2024/10/20/2024.10.18.618998},
-	journal = {bioRxiv}
+@article{Huijben2025,
+  author    = {Teun A. P. M. Huijben and Ashley G. Anderson and Andrew Sweet and Erin Hoops and Connor Larsen and Kyle Awayan and Jord{\~a}o Bragantini and Merlin Lange and Chi-Li Chiu and Lo{\"i}c A. Royer},
+  title     = {inTRACKtive: a web-based tool for interactive cell tracking visualization},
+  journal   = {Nature Methods},
+  year      = {2025},
+  volume    = {TBD},
+  number    = {TBD},
+  pages     = {TBD},
+  doi       = {10.1038/s41592-025-02777-1},
+  url       = {https://doi.org/10.1038/s41592-025-02777-1},
+  issn      = {1548-7105}
 }
+
+
 ```
 
 <br/>
