@@ -5,21 +5,33 @@
       "min" : 8.0,
       "name" : "t",
       "type" : "time",
-      "unit" : "min"
+      "unit" : "minute"
     }, {
       "max" : 50.396510520571624,
       "min" : 4.598631543650676,
       "name" : "y",
       "type" : "space",
-      "unit" : "µm"
+      "unit" : "micrometer"
     }, {
       "max" : 36.883307580924615,
       "min" : 8.141297507540001,
       "name" : "x",
       "type" : "space",
-      "unit" : "µm"
+      "unit" : "micrometer"
     } ],
     "directed" : true,
-    "geff_version" : "0.4.0"
+    "geff_version" : "0.4.0",
+    "node_props_metadata" : {
+      "t" : {"identifier" : "t", "dtype" : ">i4", "varlength" : false},
+      "y" : {"identifier" : "y", "dtype" : ">f8", "varlength" : false},
+      "x" : {"identifier" : "x", "dtype" : ">f8", "varlength" : false},
+      "z" : {"identifier" : "z", "dtype" : ">f8", "varlength" : false},
+      "radius" : {"identifier" : "radius", "dtype" : ">f8", "varlength" : false},
+      "color" : {"identifier" : "color", "dtype" : ">f4", "varlength" : false},
+      "track_id" : {"identifier" : "track_id", "dtype" : ">i4", "varlength" : false},
+      "covariance2d" : {"identifier" : "covariance2d", "dtype" : ">f4", "varlength" : false},
+      "covariance3d" : {"identifier" : "covariance3d", "dtype" : ">f4", "varlength" : false}
+    },
+    "edge_props_metadata" : {}
   }
 }

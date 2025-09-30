@@ -5,32 +5,26 @@ import numpy as np
 import pandas as pd
 import pytest
 import zarr
-from geff.testing.data import create_memory_mock_geff
+from geff.core_io._base_write import write_dicts
+from geff.testing.data import (
+    create_mock_geff,
+    create_simple_2d_geff,
+    create_simple_3d_geff,
+)
+from geff_spec import GeffMetadata
 from intracktive.convert import convert_dataframe_to_zarr, convert_file
 from intracktive.geff import is_geff_dataset, read_geff_to_df
+from pydantic import ValidationError
 
 
 @pytest.mark.parametrize("include_z", [False, True])
 def test_read_geff_to_df(include_z):
     """Create a minimal geff file for testing convert function."""
 
-    node_dtype = "int8"
-    node_prop_dtypes = {"position": "double", "time": "double"}
-    extra_edge_props = {"score": "float64", "color": "uint8"}
-    directed = True
-    num_nodes = 7
-    num_edges = 16
-
-    store, _ = create_memory_mock_geff(
-        node_dtype,
-        node_prop_dtypes,
-        extra_edge_props=extra_edge_props,
-        directed=directed,
-        num_nodes=num_nodes,
-        num_edges=num_edges,
-        include_z=include_z,
-    )
-
+    if include_z:
+        store, _ = create_simple_3d_geff(directed=True)
+    else:
+        store, _ = create_simple_2d_geff(directed=True)
     assert is_geff_dataset(store)
 
     df = read_geff_to_df(store)
@@ -53,7 +47,7 @@ def test_read_geff_to_df(include_z):
 def test_read_geff_to_df_with_attributes(include_all_attributes):
     """Test that read_geff_to_df can load all attributes when requested."""
 
-    node_dtype = "int8"
+    node_dtype = "uint8"
     # Basic node properties (spatial and temporal axes)
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Extra node properties for testing
@@ -63,7 +57,7 @@ def test_read_geff_to_df_with_attributes(include_all_attributes):
     num_nodes = 7
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -149,10 +143,10 @@ def test_read_geff_to_df_no_axes_metadata():
         "axis_names": ["t", "x", "y"],
         "axis_units": ["second", "nanometer", "nanometer"],
         "axis_types": ["time", "space", "space"],
-        # No axes field - this should trigger the error
+        # No axes field - this should trigger a validation error
     }
 
-    with pytest.raises(ValueError, match="No axes found in metadata"):
+    with pytest.raises(ValidationError):
         read_geff_to_df(store)
 
 
@@ -161,39 +155,46 @@ def test_read_geff_to_df_invalid_spatial_axes():
 
     # Test with only 1 spatial axis (should fail)
     store_1 = zarr.storage.MemoryStore()
-    group_1 = zarr.open_group(store_1, mode="w")
-    group_1.attrs["geff"] = {
-        "version": "1.0.0",
-        "directed": True,
-        "axis_names": ["t", "x"],  # Only 1 spatial axis
-        "axis_units": ["second", "nanometer"],
-        "axis_types": ["time", "space"],
-        "axes": [
-            {"name": "t", "type": "time", "unit": "second"},
-            {"name": "x", "type": "space", "unit": "nanometer"},  # Only 1 spatial axis
-        ],
-    }
+    axes_1 = [
+        {"name": "x", "type": "space", "unit": "nanometer"},  # Only 1 spatial axis
+    ]
+    meta_1 = GeffMetadata(
+        geff_version="0.3.0",
+        directed=True,
+        axes=axes_1,
+        node_props_metadata={},
+        edge_props_metadata={},
+    )
+
+    node_data_1 = [(float(node), {"x": 10}) for node in range(10)]
+    write_dicts(store_1, node_data_1, [], ["x"], [], metadata=meta_1)
 
     with pytest.raises(ValueError, match="Expected 2 or 3 spatial axes, got 1"):
         read_geff_to_df(store_1)
 
     # Test with 4 spatial axes (should fail)
     store_4 = zarr.storage.MemoryStore()
-    group_4 = zarr.open_group(store_4, mode="w")
-    group_4.attrs["geff"] = {
-        "version": "1.0.0",
-        "directed": True,
-        "axis_names": ["t", "x", "y", "z", "w"],  # 4 spatial axes
-        "axis_units": ["second", "nanometer", "nanometer", "nanometer", "nanometer"],
-        "axis_types": ["time", "space", "space", "space", "space"],
-        "axes": [
-            {"name": "t", "type": "time", "unit": "second"},
-            {"name": "x", "type": "space", "unit": "nanometer"},
-            {"name": "y", "type": "space", "unit": "nanometer"},
-            {"name": "z", "type": "space", "unit": "nanometer"},
-            {"name": "w", "type": "space", "unit": "nanometer"},  # 4th spatial axis
-        ],
-    }
+    axes_4 = [
+        {"name": "t", "type": "time", "unit": "second"},
+        {"name": "x", "type": "space", "unit": "nanometer"},
+        {"name": "y", "type": "space", "unit": "nanometer"},
+        {"name": "z", "type": "space", "unit": "nanometer"},
+        {"name": "w", "type": "space", "unit": "nanometer"},  # 4th spatial axis
+    ]
+    meta_4 = GeffMetadata(
+        geff_version="0.3.0",
+        directed=True,
+        axes=axes_4,
+        node_props_metadata={},
+        edge_props_metadata={},
+    )
+    node_data_4 = [
+        (float(node), {"t": 5, "x": 10, "y": 15, "z": 20, "w": 25})
+        for node in range(10)
+    ]
+    write_dicts(
+        store_4, node_data_4, [], ["t", "x", "y", "z", "w"], [], metadata=meta_4
+    )
 
     with pytest.raises(ValueError, match="Expected 2 or 3 spatial axes, got 4"):
         read_geff_to_df(store_4)
@@ -202,23 +203,23 @@ def test_read_geff_to_df_invalid_spatial_axes():
 def test_read_geff_to_df_no_temporal_axis():
     """Test that read_geff_to_df raises error when no temporal axis found."""
 
-    # Create a minimal zarr store
+    # Create a GEFF store with no temporal axis (only spatial axes)
     store = zarr.storage.MemoryStore()
-    group = zarr.open_group(store, mode="w")
+    axes = [
+        {"name": "x", "type": "space", "unit": "nanometer"},
+        {"name": "y", "type": "space", "unit": "nanometer"},
+        {"name": "z", "type": "space", "unit": "nanometer"},
+    ]
+    meta = GeffMetadata(
+        geff_version="0.3.0",
+        directed=True,
+        axes=axes,
+        node_props_metadata={},
+        edge_props_metadata={},
+    )
 
-    # Create a store with metadata that has no temporal axis
-    group.attrs["geff"] = {
-        "version": "1.0.0",
-        "directed": True,
-        "axis_names": ["x", "y", "z"],  # No temporal axis
-        "axis_units": ["nanometer", "nanometer", "nanometer"],
-        "axis_types": ["space", "space", "space"],
-        "axes": [
-            {"name": "x", "type": "space", "unit": "nanometer"},
-            {"name": "y", "type": "space", "unit": "nanometer"},
-            {"name": "z", "type": "space", "unit": "nanometer"},
-        ],  # No temporal axis
-    }
+    node_data = [(float(node), {"x": 10, "y": 15, "z": 20}) for node in range(10)]
+    write_dicts(store, node_data, [], ["x", "y", "z"], [], metadata=meta)
 
     with pytest.raises(ValueError, match="No temporal axis found in metadata"):
         read_geff_to_df(store)
@@ -228,7 +229,7 @@ def test_read_geff_to_df_non_numerical_dtype():
     """Test that read_geff_to_df handles non-numerical dtypes with warning."""
 
     # Create a GEFF store with string properties
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     extra_node_props = {"label": "str"}  # String dtype
     extra_edge_props = {"score": "float64"}
@@ -236,9 +237,9 @@ def test_read_geff_to_df_non_numerical_dtype():
     num_nodes = 7
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
-        node_dtype,
-        node_prop_dtypes,
+    store, _ = create_mock_geff(
+        node_id_dtype=node_dtype,
+        node_axis_dtypes=node_prop_dtypes,
         extra_node_props=extra_node_props,
         extra_edge_props=extra_edge_props,
         directed=directed,
@@ -258,7 +259,7 @@ def test_read_geff_to_df_with_nan_values():
     """Test that read_geff_to_df handles NaN values correctly."""
 
     # Create a GEFF store with NaN values
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Create property with NaN values
     num_nodes = 7
@@ -268,7 +269,7 @@ def test_read_geff_to_df_with_nan_values():
     directed = True
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -290,7 +291,7 @@ def test_read_geff_to_df_with_inf_values():
     """Test that read_geff_to_df handles infinite values correctly."""
 
     # Create a GEFF store with infinite values
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Create property with infinite values
     num_nodes = 7
@@ -302,7 +303,7 @@ def test_read_geff_to_df_with_inf_values():
     directed = True
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -333,7 +334,7 @@ def test_read_geff_to_df_with_all_inf_values():
     """Test that read_geff_to_df handles all infinite values correctly."""
 
     # Create a GEFF store with all infinite values
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Create property with all infinite values
     num_nodes = 7
@@ -345,7 +346,7 @@ def test_read_geff_to_df_with_all_inf_values():
     directed = True
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -372,7 +373,7 @@ def test_read_geff_to_df_with_constant_values():
     """Test that read_geff_to_df handles constant values correctly."""
 
     # Create a GEFF store with constant values
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Create property with constant values
     num_nodes = 7
@@ -382,7 +383,7 @@ def test_read_geff_to_df_with_constant_values():
     directed = True
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -431,7 +432,7 @@ def test_convert_geff_dataset_without_extension(tmp_path):
     """Test converting a GEFF dataset that doesn't have a .geff extension."""
 
     # Create a mock GEFF store
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     extra_node_props = {"intensity": "float32", "area": "float64"}
     extra_edge_props = {"score": "float64"}
@@ -439,7 +440,7 @@ def test_convert_geff_dataset_without_extension(tmp_path):
     num_nodes = 7
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -451,9 +452,9 @@ def test_convert_geff_dataset_without_extension(tmp_path):
     )
 
     # # Save the GEFF store to disk without .geff extension
-    graph, metadata = geff.read_nx(store)
+    graph, metadata = geff.read(store, backend="networkx")
     geff_path = tmp_path / "test_geff_data"
-    geff.write_nx(graph, geff_path, metadata=metadata)
+    geff.write(graph, geff_path, metadata=metadata)
 
     # Test conversion with attributes
     zarr_path = convert_file(
@@ -473,7 +474,7 @@ def test_convert_dataframe_to_zarr_with_nan_values(tmp_path):
     """Test that convert_dataframe_to_zarr handles NaN values correctly in normalization."""
 
     # Create a GEFF store with NaN values
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     # Create property with NaN values - use dtype string, not actual array
     num_nodes = 7
@@ -483,7 +484,7 @@ def test_convert_dataframe_to_zarr_with_nan_values(tmp_path):
     directed = True
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,

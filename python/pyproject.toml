@@ -28,7 +28,7 @@ dependencies = [
   "scikit-image",
   "pandas",
   "zarr>=3",
-  "geff>=0.5",
+  "geff==v1.0.0.1.0",
   "pyarrow",
 ]
 

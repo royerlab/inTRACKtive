@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from click import UsageError
 from click.testing import CliRunner
-from geff.testing.data import create_memory_mock_geff
+from geff.testing.data import create_mock_geff
 from intracktive.convert import zarr_to_browser
 from intracktive.main import main
 from intracktive.open import open_file
@@ -193,7 +193,7 @@ def test_convert_cli_geff_file(
     """Test conversion of GEFF files with and without attributes."""
 
     # Create a mock GEFF store
-    node_dtype = "int8"
+    node_dtype = "uint8"
     node_prop_dtypes = {"position": "double", "time": "double"}
     extra_node_props = {"intensity": "float32", "area": "float64"}
     extra_edge_props = {"score": "float64"}
@@ -201,7 +201,7 @@ def test_convert_cli_geff_file(
     num_nodes = 7
     num_edges = 16
 
-    store, _ = create_memory_mock_geff(
+    store, _ = create_mock_geff(
         node_dtype,
         node_prop_dtypes,
         extra_node_props=extra_node_props,
@@ -214,8 +214,8 @@ def test_convert_cli_geff_file(
 
     # Convert MemoryStore to disk-based Zarr store using GEFF read/write
     geff_file = tmp_path / "test.geff"
-    graph, metadata = geff.read_nx(store)
-    geff.write_nx(graph, geff_file, metadata=metadata)
+    graph, metadata = geff.read(store, backend="networkx")
+    geff.write(graph, geff_file, metadata=metadata)
 
     # Test basic GEFF conversion without attributes
     _run_command(
