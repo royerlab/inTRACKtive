@@ -109,7 +109,7 @@ def test_convert_file_with_nonexisting_file_with_geff_extension(tmp_path):
 
 
 def test_trackmate_geff(tmp_path):
-    path_tm_geff = Path(__file__).parent / "data" / "trackmate_example.geff"
+    path_tm_geff = Path(__file__).parent / "data" / "ctc_hela_example.geff"
 
     df = read_geff_to_df(path_tm_geff, include_all_attributes=True)
 
@@ -121,12 +121,11 @@ def test_trackmate_geff(tmp_path):
         "y",
         "x",
         "parent_track_id",
-        "z",
-        "radius",
+        "tracklet_id",
     }
     msg = f"Expected columns {expected_columns}, got {set(df.columns)}"
     assert set(df.columns) == expected_columns, msg
-    assert df.shape == (77, 7)
+    assert df.shape == (8639, 6)
 
 
 def test_read_geff_to_df_no_axes_metadata():
