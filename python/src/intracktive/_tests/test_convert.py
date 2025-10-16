@@ -333,7 +333,50 @@ def test_convert_with_parents_and_children(
 
     df = pd.concat([df, new_rows], ignore_index=True)
 
-    # Create a new column with parent-child relationships
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+    )
+
+
+def test_convert_negative_timepoints(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_rows = pd.DataFrame(
+        [
+            # track 4 is at t=1
+            [5, -4, 50, 50, 50, -1],  # track 5 is orphaned
+        ],
+        columns=["track_id", "t", "z", "y", "x", "parent_track_id"],
+    )
+
+    df = pd.concat([df, new_rows], ignore_index=True)
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+    )
+
+
+def test_convert_nonconsecutive_timepoints(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_rows = pd.DataFrame(
+        [
+            # track 4 is at t=1, track 5 and 6 are at t=20 and t=30
+            [5, 20, 50, 50, 50, -1],  # track 5 is orphaned
+            [6, 30, 60, 60, 60, -1],  # track 6 is orphaned
+        ],
+        columns=["track_id", "t", "z", "y", "x", "parent_track_id"],
+    )
+
+    df = pd.concat([df, new_rows], ignore_index=True)
 
     new_path = tmp_path / "sample_data_bundle.zarr"
     convert_dataframe_to_zarr(

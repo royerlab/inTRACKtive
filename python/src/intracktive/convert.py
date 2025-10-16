@@ -301,7 +301,7 @@ def convert_dataframe_to_zarr(
 
     start = time.monotonic()
 
-    n_time_points = int(df["t"].max() + 1)
+    n_time_points = len(df["t"].unique())
     max_values_per_time_point = int(df.groupby("t").size().max())
 
     uniq_track_ids = df["track_id"].unique()
