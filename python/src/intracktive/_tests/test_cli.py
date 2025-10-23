@@ -322,6 +322,94 @@ def test_convert_cli_velocity_smoothing(
     )
 
 
+def test_convert_cli_with_overwrite_zarr_true(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test CLI with --overwrite_zarr flag."""
+    df = make_sample_data
+    csv_path = tmp_path / "sample_data.csv"
+    df.to_csv(csv_path, index=False)
+
+    # First conversion
+    _run_command(
+        [
+            "convert",
+            str(csv_path),
+            "--out_dir",
+            str(tmp_path),
+        ]
+    )
+
+    # Check that the first zarr file was created
+    expected_zarr_path = tmp_path / "sample_data_bundle.zarr"
+    assert expected_zarr_path.exists()
+
+    # Second conversion with overwrite flag
+    _run_command(
+        [
+            "convert",
+            str(csv_path),
+            "--out_dir",
+            str(tmp_path),
+            "--overwrite_zarr",
+        ]
+    )
+
+    # Verify that the same zarr file still exists (was overwritten)
+    assert expected_zarr_path.exists()
+
+    # Verify no additional numbered files were created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 0, (
+        f"Found unexpected numbered files: {numbered_files}"
+    )
+
+
+def test_convert_cli_with_overwrite_zarr_false(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test CLI without --overwrite_zarr flag (default behavior)."""
+    df = make_sample_data
+    csv_path = tmp_path / "sample_data.csv"
+    df.to_csv(csv_path, index=False)
+
+    # First conversion
+    _run_command(
+        [
+            "convert",
+            str(csv_path),
+            "--out_dir",
+            str(tmp_path),
+        ]
+    )
+
+    # Check that the first zarr file was created
+    expected_zarr_path = tmp_path / "sample_data_bundle.zarr"
+    assert expected_zarr_path.exists()
+
+    # Second conversion without overwrite flag (should generate unique path)
+    _run_command(
+        [
+            "convert",
+            str(csv_path),
+            "--out_dir",
+            str(tmp_path),
+        ]
+    )
+
+    # Verify that the original file still exists
+    assert expected_zarr_path.exists()
+
+    # Verify that a numbered file was created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 1, (
+        f"Expected 1 numbered file, found: {numbered_files}"
+    )
+    assert "sample_data_bundle_1.zarr" in str(numbered_files[0])
+
+
 def test_open_cli_simple(tmp_path: Path) -> None:
     zarr_path = tmp_path / "test.zarr"
     zarr_path.mkdir()
