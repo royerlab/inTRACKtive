@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 import zarr
-from intracktive.convert import convert_dataframe_to_zarr, dataframe_to_browser
+from intracktive.convert import (
+    convert_dataframe_to_zarr,
+    convert_file,
+    dataframe_to_browser,
+)
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
@@ -67,6 +71,81 @@ def test_convert_if_zarr_file_exists(
         df=df,
         zarr_path=new_path,
         extra_cols=(),
+    )
+
+
+def test_convert_with_overwrite_zarr_true(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that overwrite_zarr=True overwrites existing zarr files."""
+    df = make_sample_data
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    # First conversion
+    result_path1 = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+    )
+
+    # Verify the file was created
+    assert result_path1.exists()
+    assert result_path1 == new_path
+
+    # Second conversion with overwrite_zarr=True
+    result_path2 = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+        overwrite_zarr=True,
+    )
+
+    # Should use the same path (overwritten)
+    assert result_path2 == new_path
+    assert result_path2.exists()
+
+    # Verify no additional numbered files were created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 0, (
+        f"Found unexpected numbered files: {numbered_files}"
+    )
+
+
+def test_convert_file_with_overwrite_zarr_true(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that convert_file with overwrite_zarr=True overwrites existing zarr files."""
+    df = make_sample_data
+    csv_path = tmp_path / "sample_data.csv"
+    df.to_csv(csv_path, index=False)
+
+    # First conversion
+    result_path1 = convert_file(
+        input_file=csv_path,
+        out_dir=tmp_path,
+        overwrite_zarr=False,  # Default behavior
+    )
+
+    # Verify the file was created
+    assert result_path1.exists()
+
+    # Second conversion with overwrite_zarr=True
+    result_path2 = convert_file(
+        input_file=csv_path,
+        out_dir=tmp_path,
+        overwrite_zarr=True,
+    )
+
+    # Should use the same path (overwritten)
+    assert result_path2 == result_path1
+    assert result_path2.exists()
+
+    # Verify no additional numbered files were created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 0, (
+        f"Found unexpected numbered files: {numbered_files}"
     )
 
 
