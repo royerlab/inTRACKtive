@@ -1,0 +1,79 @@
+{
+    "geff": {
+        "axes": [
+            {
+                "max": 91.0,
+                "min": 0.0,
+                "name": "t",
+                "offset": null,
+                "scale": null,
+                "scaled_unit": null,
+                "type": "time",
+                "unit": null
+            },
+            {
+                "max": 680.0,
+                "min": 4.088235294117647,
+                "name": "y",
+                "offset": null,
+                "scale": null,
+                "scaled_unit": null,
+                "type": "space",
+                "unit": null
+            },
+            {
+                "max": 1079.0,
+                "min": 14.0,
+                "name": "x",
+                "offset": null,
+                "scale": null,
+                "scaled_unit": null,
+                "type": "space",
+                "unit": null
+            }
+        ],
+        "directed": true,
+        "display_hints": null,
+        "edge_props_metadata": {},
+        "ellipsoid": null,
+        "extra": {},
+        "geff_version": "1.0.0.1.1.dev3+g1d804267a.d20250925",
+        "node_props_metadata": {
+            "t": {
+                "description": null,
+                "dtype": "int64",
+                "identifier": "t",
+                "name": null,
+                "unit": null,
+                "varlength": false
+            },
+            "tracklet_id": {
+                "description": null,
+                "dtype": "int64",
+                "identifier": "tracklet_id",
+                "name": null,
+                "unit": null,
+                "varlength": false
+            },
+            "x": {
+                "description": null,
+                "dtype": "float64",
+                "identifier": "x",
+                "name": null,
+                "unit": null,
+                "varlength": false
+            },
+            "y": {
+                "description": null,
+                "dtype": "float64",
+                "identifier": "y",
+                "name": null,
+                "unit": null,
+                "varlength": false
+            }
+        },
+        "related_objects": null,
+        "sphere": null,
+        "track_node_props": null
+    }
+}

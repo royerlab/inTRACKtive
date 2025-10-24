@@ -6,13 +6,17 @@ import numpy as np
 import pandas as pd
 import pytest
 import zarr
-from intracktive.convert import convert_dataframe_to_zarr, dataframe_to_browser
+from intracktive.convert import (
+    convert_dataframe_to_zarr,
+    convert_file,
+    dataframe_to_browser,
+)
 
 
 def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
-    assert new_group.keys() == old_group.keys()
+    assert sorted(list(new_group.keys())) == sorted(list(old_group.keys()))
 
-    for key in new_group.keys():
+    for key in sorted(new_group.keys()):
         new = new_group[key]
         old = old_group[key]
 
@@ -21,7 +25,6 @@ def _evaluate(new_group: zarr.Group, old_group: zarr.Group) -> None:
         if isinstance(new, zarr.Group):
             _evaluate(new, old)
         else:
-            print(f"{key}: new {new.shape} old {old.shape}")
             assert new.shape == old.shape, f"{key}: {new.shape} != {old.shape}"
             assert new.dtype == old.dtype, f"{key}: {new.dtype} != {old.dtype}"
             np.testing.assert_allclose(
@@ -68,6 +71,81 @@ def test_convert_if_zarr_file_exists(
         df=df,
         zarr_path=new_path,
         extra_cols=(),
+    )
+
+
+def test_convert_with_overwrite_zarr_true(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that overwrite_zarr=True overwrites existing zarr files."""
+    df = make_sample_data
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    # First conversion
+    result_path1 = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+    )
+
+    # Verify the file was created
+    assert result_path1.exists()
+    assert result_path1 == new_path
+
+    # Second conversion with overwrite_zarr=True
+    result_path2 = convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+        extra_cols=(),
+        overwrite_zarr=True,
+    )
+
+    # Should use the same path (overwritten)
+    assert result_path2 == new_path
+    assert result_path2.exists()
+
+    # Verify no additional numbered files were created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 0, (
+        f"Found unexpected numbered files: {numbered_files}"
+    )
+
+
+def test_convert_file_with_overwrite_zarr_true(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that convert_file with overwrite_zarr=True overwrites existing zarr files."""
+    df = make_sample_data
+    csv_path = tmp_path / "sample_data.csv"
+    df.to_csv(csv_path, index=False)
+
+    # First conversion
+    result_path1 = convert_file(
+        input_file=csv_path,
+        out_dir=tmp_path,
+        overwrite_zarr=False,  # Default behavior
+    )
+
+    # Verify the file was created
+    assert result_path1.exists()
+
+    # Second conversion with overwrite_zarr=True
+    result_path2 = convert_file(
+        input_file=csv_path,
+        out_dir=tmp_path,
+        overwrite_zarr=True,
+    )
+
+    # Should use the same path (overwritten)
+    assert result_path2 == result_path1
+    assert result_path2.exists()
+
+    # Verify no additional numbered files were created
+    numbered_files = list(tmp_path.glob("sample_data_bundle_*.zarr"))
+    assert len(numbered_files) == 0, (
+        f"Found unexpected numbered files: {numbered_files}"
     )
 
 
@@ -334,10 +412,115 @@ def test_convert_with_parents_and_children(
 
     df = pd.concat([df, new_rows], ignore_index=True)
 
-    # Create a new column with parent-child relationships
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+    )
+
+
+def test_convert_negative_timepoints(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_rows = pd.DataFrame(
+        [
+            # track 4 is at t=1
+            [5, -4, 50, 50, 50, -1],  # track 5 is orphaned
+        ],
+        columns=["track_id", "t", "z", "y", "x", "parent_track_id"],
+    )
+
+    df = pd.concat([df, new_rows], ignore_index=True)
 
     new_path = tmp_path / "sample_data_bundle.zarr"
     convert_dataframe_to_zarr(
         df=df,
         zarr_path=new_path,
+    )
+
+
+def test_convert_nonconsecutive_timepoints(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    new_rows = pd.DataFrame(
+        [
+            # track 4 is at t=1, track 5 and 6 are at t=20 and t=30
+            [5, 20, 50, 50, 50, -1],  # track 5 is orphaned
+            [6, 30, 60, 60, 60, -1],  # track 6 is orphaned
+        ],
+        columns=["track_id", "t", "z", "y", "x", "parent_track_id"],
+    )
+
+    df = pd.concat([df, new_rows], ignore_index=True)
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+    convert_dataframe_to_zarr(
+        df=df,
+        zarr_path=new_path,
+    )
+
+
+def test_convert_dataframe_to_zarr_with_mixed_inf_nan_values(tmp_path):
+    """Test that convert_dataframe_to_zarr handles mixed infinite and NaN values correctly."""
+
+    # Create a simple DataFrame with mixed infinite and NaN values to test the normalization logic directly
+    # All points at the same time to ensure all data is preserved
+    test_df = pd.DataFrame(
+        {
+            "track_id": [1, 2, 3, 4, 5, 6, 7],
+            "t": [0, 0, 0, 0, 0, 0, 0],  # All at same time point
+            "z": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            "y": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0],
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            "parent_track_id": [-1, -1, -1, -1, -1, -1, -1],
+            "intensity": [1.0, np.inf, np.nan, 4.0, -np.inf, np.nan, 7.0],
+        }
+    )
+
+    # Convert to Zarr using convert_dataframe_to_zarr
+    zarr_path = tmp_path / "test_mixed_inf_nan_values.zarr"
+    convert_dataframe_to_zarr(
+        df=test_df,
+        zarr_path=zarr_path,
+        extra_cols=["intensity"],
+        attribute_types=["continuous"],
+    )
+
+    # Load the Zarr data and check the normalization
+    zarr_group = zarr.open(zarr_path)
+    assert "attributes" in zarr_group
+
+    # Check that the attribute was normalized correctly
+    attributes = zarr_group["attributes"][:]
+    attribute_names = zarr_group["attributes"].attrs["attribute_names"]
+    attribute_types = zarr_group["attributes"].attrs["attribute_types"]
+
+    assert "intensity" in attribute_names
+    assert "continuous" in attribute_types
+
+    # Get the intensity values from the attributes array
+    intensity_idx = attribute_names.index("intensity")
+    intensity_values = attributes[intensity_idx, :]
+
+    # With the new normalization logic:
+    # - -inf values are set to 0.0 before normalization
+    # - +inf values are set to 1.0 before normalization
+    # - NaN values are set to 0.0 before normalization
+    # - Then all values are normalized together
+    # - Original: [1.0, inf, nan, 4.0, -inf, nan, 7.0]
+    # - After replacement: [1.0, 1.0, 0.0, 4.0, 0.0, 0.0, 7.0]
+    # - Normalized: (value - 0.0) / (7.0 - 0.0) = value / 7.0
+    expected_normalized = np.array([1 / 7, 1 / 7, 0 / 7, 4 / 7, 0 / 7, 0 / 7, 7 / 7])
+    np.testing.assert_allclose(intensity_values, expected_normalized, rtol=1e-5)
+
+    # Check that all values are in [0, 1] range
+    assert np.all(intensity_values >= 0)
+    assert np.all(intensity_values <= 1)
+
+    print(
+        "✅ convert_dataframe_to_zarr handles mixed infinite and NaN values correctly!"
     )

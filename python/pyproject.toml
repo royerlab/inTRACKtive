@@ -27,7 +27,8 @@ dependencies = [
   "scipy",
   "scikit-image",
   "pandas",
-  "zarr<3",
+  "zarr>=3",
+  "geff>=1",
   "pyarrow",
 ]
 
@@ -45,10 +46,13 @@ intracktive = "intracktive:napari.yaml"
 [tool.hatch.version]
 path = "src/intracktive/__about__.py"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.coverage.run]
 source_pkgs = ["intracktive"]
 branch = true
-parallel = true
+parallel = false
 omit = [
   "src/intracktive/__about__.py",
 ]
