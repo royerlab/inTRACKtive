@@ -13,7 +13,7 @@ const showDefaultAttributes = config.settings.showDefaultAttributes;
 export type Option = {
     name: string;
     label: number;
-    type: "default" | "categorical" | "continuous" | "hex";
+    type: "default" | "categorical" | "continuous" | "hex" | "hex-binary";
     action: "default" | "calculate" | "provided" | "provided-normalized";
     numCategorical: number | undefined;
 };
@@ -177,6 +177,7 @@ export class TrackManager {
     scaleSettings: ScaleSettings;
     defaultExtent: number;
     ndim: number;
+    annotTime: number;
 
     constructor(
         store: string,
@@ -187,6 +188,7 @@ export class TrackManager {
         attributes: ZarrArray,
         attributeOptions: Option[],
         scaleSettings: ScaleSettings,
+        annotTime: number,
     ) {
         this.store = store;
         this.points = points;
@@ -196,10 +198,11 @@ export class TrackManager {
         this.attributes = attributes;
         this.attributeOptions = attributeOptions;
         this.numTimes = points.shape[0];
-        this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
+        this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint;
         this.scaleSettings = scaleSettings;
         this.defaultExtent = 1; // pointcloud is centered around (0,0,0) with an extent of 1
         this.ndim = 3;
+        this.annotTime = annotTime;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -353,6 +356,7 @@ export async function loadTrackManager(url: string) {
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
         let attributes = null;
+        let annotTime = 0;
         let attributeOptions: Option[] = resetDropDownOptions();
         try {
             attributes = await openArray({
@@ -364,6 +368,8 @@ export async function loadTrackManager(url: string) {
             console.debug("attribute names found: %s", zattrs["attribute_names"]);
             console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
+            annotTime = zattrs["annot_time"] ?? 0;
+            console.debug("annotTime:", annotTime);
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {
                     name: zattrs["attribute_names"][column],
@@ -389,6 +395,7 @@ export async function loadTrackManager(url: string) {
             attributes,
             attributeOptions,
             scaleSettings,
+            annotTime,
         );
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
