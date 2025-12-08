@@ -244,7 +244,7 @@ Of course, any other setting can be personalized by cloning the repo and changin
 
 
 # Collaborators
-This tool has been developed by the [Loïc A. Royer Group](https://www.czbiohub.org/royer/) from the [Chan Zuckerberg Biohub San Francisco](https://www.czbiohub.org/sf/) and the [Chan Zuckerberg Initiative](https://chanzuckerberg.com).
+This tool has been developed by the [Loïc A. Royer Group](https://www.czbiohub.org/royer/) from the [Biohub (San Francisco)](https://biohub.org) and the [Chan Zuckerberg Initiative](https://chanzuckerberg.com).
 
 Team: 
 - [Teun A.P.M. Huijben](https://github.com/TeunHuijben)
@@ -263,9 +263,9 @@ Team:
 # Contact us
 If you have any questions, requests, or awesome ideas, please contact us:
 
-Teun Huijben (teun.huijben@czbiohub.org / [Twitter/X](https://x.com/TeunHuijben) / [Bluesky](https://bsky.app/profile/teunhuijben.bsky.social))
+Teun Huijben (teun.huijben@biohub.org / [Twitter/X](https://x.com/TeunHuijben) / [Bluesky](https://bsky.app/profile/teunhuijben.bsky.social))
 
-Loïc A. Royer (loic.royer@czbiohub.org / [Twitter/X](https://x.com/loicaroyer/) / [Bluesky](https://bsky.app/profile/loicaroyer.bsky.social))
+Loïc A. Royer (loic.royer@biohub.org / [Twitter/X](https://x.com/loicaroyer/) / [Bluesky](https://bsky.app/profile/loicaroyer.bsky.social))
 
 <br/>
 
