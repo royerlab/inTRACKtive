@@ -11,8 +11,8 @@ requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "Teun Huijben", email = "teun.huijben@czbiohub.org"},
-  { name = "Jordao Bragantini", email = "jordao.bragantini@czbiohub.org" },
+  { name = "Teun Huijben", email = "teun.huijben@biohub.org"},
+  { name = "Jordao Bragantini", email = "jordao.bragantini@biohub.org" },
 ]
 classifiers = [
   "Programming Language :: Python",
