@@ -18,6 +18,7 @@ from skimage.util._map_array import ArrayMap
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
+VALID_ATTRIBUTE_TYPES = ["continuous", "categorical", "hex"]
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -304,6 +305,14 @@ def convert_dataframe_to_zarr(
         attribute_types = [get_col_type(df[c]) for c in extra_cols]
     LOG.info("column types: %s", attribute_types)
 
+    # Validate attribute types
+    invalid_types = [t for t in attribute_types if t not in VALID_ATTRIBUTE_TYPES]
+    if invalid_types:
+        raise ValueError(
+            f"Invalid attribute type(s): {invalid_types}. "
+            f"Valid types are: {VALID_ATTRIBUTE_TYPES}"
+        )
+
     start = time.monotonic()
 
     n_time_points = len(df["t"].unique())
@@ -362,6 +371,22 @@ def convert_dataframe_to_zarr(
         points_ids = t_idx * max_values_per_time_point + np.arange(group_size)
 
         points_to_tracks[points_ids, group["track_id"] - 1] = 1
+
+    # Encode string categorical columns to integers
+    string_mappings = {}
+    for col in extra_cols:
+        if pd.api.types.is_string_dtype(df[col]) or pd.api.types.is_object_dtype(
+            df[col]
+        ):
+            # Check if actually contains strings
+            if df[col].dropna().apply(lambda x: isinstance(x, str)).any():
+                LOG.info(f"Encoding string column '{col}' to integers")
+                # Convert to categorical and get codes
+                df[col] = df[col].astype("category")
+                string_mappings[col] = {
+                    i: cat for i, cat in enumerate(df[col].cat.categories)
+                }
+                df[col] = df[col].cat.codes.astype(float)
 
     for col in extra_cols:
         attribute_array = attribute_array_empty.copy()
@@ -503,6 +528,8 @@ def convert_dataframe_to_zarr(
         attributes.attrs["pre_normalized"] = (
             True  # Always True since normalization is handled here
         )
+        if string_mappings:
+            attributes.attrs["string_mappings"] = string_mappings
 
     mean = df[["z", "y", "x"]].mean()
     extent = (df[["z", "y", "x"]] - mean).abs().max()

@@ -149,6 +149,26 @@ def test_convert_file_with_overwrite_zarr_true(
     )
 
 
+def test_datframe_to_browser_categorical_strings(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    df = make_sample_data
+    df["string_col"] = ["A", "B", "A", "C", "B"]
+
+    with patch.object(webbrowser, "open", return_value=True) as mock_browser:
+        try:
+            dataframe_to_browser(
+                df,
+                tmp_path,
+                extra_cols=["string_col"],
+                attribute_types=["categorical"],
+            )
+            mock_browser.assert_called_once()
+        except Exception as e:
+            pytest.fail(f"Button click failed with error: {e}")
+
+
 def test_dataframe_to_browser_with_attributes(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,
@@ -524,3 +544,50 @@ def test_convert_dataframe_to_zarr_with_mixed_inf_nan_values(tmp_path):
     print(
         "✅ convert_dataframe_to_zarr handles mixed infinite and NaN values correctly!"
     )
+
+
+def test_convert_with_invalid_attribute_type(
+    tmp_path: Path,
+    make_sample_data: pd.DataFrame,
+) -> None:
+    """Test that convert_dataframe_to_zarr raises ValueError for invalid attribute types."""
+    df = make_sample_data
+    df["intensity"] = [100.0, 105.0, 110.0, 95.0, 98.0]
+
+    new_path = tmp_path / "sample_data_bundle.zarr"
+
+    # Test with invalid attribute type
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid attribute type\(s\):.*Valid types are:",
+    ):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            extra_cols=["intensity"],
+            attribute_types=["invalid_type"],
+        )
+
+    # Test with multiple invalid types
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid attribute type\(s\):.*Valid types are:",
+    ):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            extra_cols=["x", "y"],
+            attribute_types=["foo", "bar"],
+        )
+
+    # Test with mixed valid and invalid types
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid attribute type\(s\):.*Valid types are:",
+    ):
+        convert_dataframe_to_zarr(
+            df=df,
+            zarr_path=new_path,
+            extra_cols=["x", "y"],
+            attribute_types=["continuous", "invalid"],
+        )
