@@ -150,7 +150,7 @@ export class PointCanvas {
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
         // if (deviceState.current.isPhone) {
-        this.toggleAxesHelper(); // axishelper always off by default
+        this.toggleAxesHelper(); // axishelper always off by default in screenshots
         // }
 
         this.scene.add(this.points);
