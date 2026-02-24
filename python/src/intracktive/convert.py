@@ -611,7 +611,9 @@ def zarr_to_browser(
     # block that Safari (and strict HTTPS contexts) enforce when an HTTPS page tries
     # to fetch resources from an HTTP localhost server.
     frontend_path = Path(__file__).parent / "frontend"
-    use_local_frontend = frontend_path.exists() and (frontend_path / "index.html").exists()
+    use_local_frontend = (
+        frontend_path.exists() and (frontend_path / "index.html").exists()
+    )
 
     # Calculate URLs before starting servers
     host = DEFAULT_HOST
@@ -639,7 +641,9 @@ def zarr_to_browser(
         if flag_open_browser and not threaded:
             webbrowser.open(fullUrl)
 
-        serve_directory(path=frontend_path, host=host, port=frontend_port, threaded=threaded)
+        serve_directory(
+            path=frontend_path, host=host, port=frontend_port, threaded=threaded
+        )
 
         # Open browser after frontend server starts (when threaded)
         if flag_open_browser and threaded:
