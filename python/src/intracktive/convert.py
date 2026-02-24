@@ -327,9 +327,9 @@ def convert_dataframe_to_zarr(
     )
 
     # relabeling from 0 to N-1
-    df.loc[:, "track_id"] = fwd_map[df["track_id"].to_numpy()]
+    df.loc[:, "track_id"] = fwd_map[df["track_id"].to_numpy(copy=True)]
     # orphaned are set to 0 according to skimage convention
-    df.loc[:, "parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy()]
+    df.loc[:, "parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy(copy=True)]
 
     n_tracklets = df["track_id"].nunique()
     # (z, y, x) + extra_cols
