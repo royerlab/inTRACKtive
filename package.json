@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:python": "tsc && vite build && mkdir -p python/src/intracktive/frontend && cp -r dist/. python/src/intracktive/frontend/",
     "preview": "vite preview",
     "lint": "eslint src",
     "format": "prettier --write src",

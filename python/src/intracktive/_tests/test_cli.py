@@ -570,9 +570,11 @@ def test_zarr_to_browser_not_threaded_with_browser(tmp_path: Path) -> None:
     ):
         zarr_to_browser(zarr_path, flag_open_browser=True, threaded=False)
 
-        # Should open browser before starting server when not threaded
+        # Browser should be opened exactly once
         mock_webbrowser.assert_called_once()
-        mock_serve_directory.assert_called_once()
+        # Data server + frontend server (when bundled frontend is available) = 2 calls,
+        # or just 1 call when falling back to the external URL.
+        assert mock_serve_directory.call_count in (1, 2)
 
 
 def test_zarr_to_browser_no_browser_flag(tmp_path: Path) -> None:
@@ -599,4 +601,6 @@ def test_zarr_to_browser_no_browser_flag(tmp_path: Path) -> None:
         dataUrl, fullUrl = result
         assert isinstance(dataUrl, str)
         assert isinstance(fullUrl, str)
-        mock_serve_directory.assert_called_once()
+        # Data server + frontend server (when bundled frontend is available) = 2 calls,
+        # or just 1 call when falling back to the external URL.
+        assert mock_serve_directory.call_count in (1, 2)

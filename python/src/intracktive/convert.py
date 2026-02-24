@@ -605,36 +605,55 @@ def zarr_to_browser(
     """
     zarr_dir = zarr_path.parent
 
-    # Calculate URLs before starting server
-    host = DEFAULT_HOST
-    port = find_available_port(8000)
-    hostURL = f"http://{host}:{port}"
-    baseUrl = "https://intracktive.sf.czbiohub.org"  # inTRACKtive application
-    dataUrl = (
-        hostURL + "/" + zarr_path.name + "/"
-    )  # exact path of the data (on localhost)
-    fullUrl = baseUrl + generate_viewer_state_hash(
-        data_url=str(dataUrl)
-    )  # full hash that encodes viewerState
+    # Check if a bundled frontend is available (packaged alongside the Python code).
+    # When available, we serve it from a local HTTP server so that the browser can
+    # load both the app and the Zarr data over HTTP.  This avoids the mixed-content
+    # block that Safari (and strict HTTPS contexts) enforce when an HTTPS page tries
+    # to fetch resources from an HTTP localhost server.
+    frontend_path = Path(__file__).parent / "frontend"
+    use_local_frontend = frontend_path.exists() and (frontend_path / "index.html").exists()
 
-    LOG.info("Copy the following URL into the Google Chrome browser:")
+    # Calculate URLs before starting servers
+    host = DEFAULT_HOST
+    data_port = find_available_port(8000)
+    dataUrl = f"http://{host}:{data_port}/{zarr_path.name}/"
+
+    if use_local_frontend:
+        frontend_port = find_available_port(data_port + 1)
+        baseUrl = f"http://{host}:{frontend_port}"
+    else:
+        # Fall back to the externally-hosted HTTPS app.
+        # NOTE: this does not work in Safari due to mixed-content restrictions.
+        baseUrl = "https://intracktive.sf.czbiohub.org"
+
+    fullUrl = baseUrl + generate_viewer_state_hash(data_url=str(dataUrl))
+
+    LOG.info("Copy the following URL into your browser:")
     LOG.info("full URL: %s", fullUrl)
 
-    # Open browser before starting server if not threaded
-    if flag_open_browser and not threaded:
-        webbrowser.open(fullUrl)
+    if use_local_frontend:
+        # Data server always runs in the background; the frontend server controls blocking.
+        serve_directory(path=zarr_dir, host=host, port=data_port, threaded=True)
 
-    # Start server
-    serve_directory(
-        path=zarr_dir,
-        host=host,
-        port=port,
-        threaded=threaded,
-    )
+        # Open browser before blocking frontend server (when not threaded)
+        if flag_open_browser and not threaded:
+            webbrowser.open(fullUrl)
 
-    # Open browser after starting server if threaded
-    if flag_open_browser and threaded:
-        webbrowser.open(fullUrl)
+        serve_directory(path=frontend_path, host=host, port=frontend_port, threaded=threaded)
+
+        # Open browser after frontend server starts (when threaded)
+        if flag_open_browser and threaded:
+            webbrowser.open(fullUrl)
+    else:
+        # Open browser before starting the (blocking) server
+        if flag_open_browser and not threaded:
+            webbrowser.open(fullUrl)
+
+        serve_directory(path=zarr_dir, host=host, port=data_port, threaded=threaded)
+
+        # Open browser after server starts (when threaded)
+        if flag_open_browser and threaded:
+            webbrowser.open(fullUrl)
 
     if not flag_open_browser:
         return dataUrl, fullUrl

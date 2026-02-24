@@ -59,6 +59,18 @@ jobs:
     if: contains(github.ref, 'tags')
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 21
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+          # Bundle the built frontend into the Python package so it can be
+          # served locally (avoids mixed-content issues in Safari).
+          mkdir -p python/src/intracktive/frontend
+          cp -r dist/. python/src/intracktive/frontend/
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

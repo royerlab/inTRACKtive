@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Built frontend bundled into the Python package (generated; see `npm run build:python`)
+python/src/intracktive/frontend/
+
 # Editor directories and files
 .vscode/*
 CLAUDE.md
