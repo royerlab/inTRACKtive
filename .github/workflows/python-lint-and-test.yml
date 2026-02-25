@@ -14,14 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 21
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build:python
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - uses: tlambert03/setup-qt-libs@v1
-      
+
       - name: Install dependencies
         run: |
           cd python # NOTE: move to python directory
@@ -66,11 +76,7 @@ jobs:
       - name: Build frontend
         run: |
           npm ci
-          npm run build
-          # Bundle the built frontend into the Python package so it can be
-          # served locally (avoids mixed-content issues in Safari).
-          mkdir -p python/src/intracktive/frontend
-          cp -r dist/. python/src/intracktive/frontend/
+          npm run build:python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
