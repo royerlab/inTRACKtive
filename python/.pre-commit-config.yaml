@@ -1,6 +1,6 @@
 ---
 files: ^python/
-exclude: '.*_OLD\.py$'
+exclude: '(.*_OLD\.py$|python/src/intracktive/frontend/.*)'
 repos:
 # basic pre-commit
   - repo: https://github.com/pre-commit/pre-commit-hooks
