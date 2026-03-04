@@ -168,7 +168,6 @@ dataframe_to_browser(data, zarr_dir)
 ```
 where `data` is a `pandas.DataFrame` containing the tracking data, and `zarr_dir` is a directory on your computer to save the Zarr file. The `dataframe_to_browser` function, under the hood, sequentially: 1) converts pd.dataFrame to Zarr,  2) saves the Zarr in the specified location, 3) spins up a localhost at that location, and 4) launches a browser window of `inTRACKtive` with as dataUrl the zarr in the localhost. All in a function call. 
 
-> ⚠️ Currently `dataframe_to_browser` only works for Google Chrome and Firefox (not Safari)
 
 ### iii) Open `inTRACKtive` using the _napari_ widget
 
@@ -214,6 +213,12 @@ npm run dev
 ```
 
 For testing, use `npm run test` or `npm run coverage`
+
+To bundle the frontend into the Python package (needed when testing `dataframe_to_browser` locally after frontend changes):
+
+```
+npm run build:python
+```
 
 
 To customize the viewer, personalize the settings by simply changing elements in `CONFIG.json`. The following settings can be changed: 
