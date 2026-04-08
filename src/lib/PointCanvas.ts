@@ -27,6 +27,7 @@ import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
+import { buildHighlightLUTTexture } from "@/lib/three/TrackMaterial";
 
 import deviceState from "./DeviceState.ts";
 import config from "../../CONFIG.ts";
@@ -34,8 +35,9 @@ const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
 const previewHighlightPointColor = config.settings.preview_hightlight_point_color;
-const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
-const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
+const defaultColormapColorbyCategorical = config.settings.colormap_colorby_categorical;
+const defaultColormapColorbyContinuous = config.settings.colormap_colorby_continuous;
+const defaultColormapTracks = config.settings.colormap_tracks || "coolwarm";
 
 const trackWidthRatio = 0.07; // DONT CHANGE: factor of 0.07 is needed to make tracks equally wide as the points
 const factorPointSizeVsCellSize = 0.1; // DONT CHANGE: this value relates the actual size of the points to the size of the points in the viewer
@@ -92,6 +94,9 @@ export class PointCanvas {
     private pointIndicesCache: Map<number, number[]> = new Map();
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    colormapTracks: string = defaultColormapTracks;
+    colormapCellsCategorical: string = defaultColormapColorbyCategorical;
+    colormapCellsContinuous: string = defaultColormapColorbyContinuous;
     currentAttributes: number[] | Float32Array = new Float32Array();
     private previousNumValues: number | undefined = undefined;
 
@@ -206,6 +211,9 @@ export class PointCanvas {
         state.trackWidthFactor = this.trackWidthFactor;
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
+        state.colormapTracks = this.colormapTracks;
+        state.colormapCellsCategorical = this.colormapCellsCategorical;
+        state.colormapCellsContinuous = this.colormapCellsContinuous;
         state.selectionMode = this.selector.selectionMode;
 
         // Add sphere selector state
@@ -238,6 +246,9 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
+        this.colormapTracks = state.colormapTracks ?? defaultState.colormapTracks;
+        this.colormapCellsCategorical = state.colormapCellsCategorical ?? defaultState.colormapCellsCategorical;
+        this.colormapCellsContinuous = state.colormapCellsContinuous ?? defaultState.colormapCellsContinuous;
 
         // Respect device constraints when setting selection mode
         let newSelectionMode = state.selectionMode ?? defaultState.selectionMode;
@@ -458,9 +469,9 @@ export class PointCanvas {
         } else {
             const color = new Color();
             if (this.colorByEvent.type === "categorical") {
-                colormaps.setColorMap(colormapColorbyCategorical, 50);
+                colormaps.setColorMap(this.colormapCellsCategorical, 50);
             } else if (this.colorByEvent.type === "continuous") {
-                colormaps.setColorMap(colormapColorbyContinuous, 50);
+                colormaps.setColorMap(this.colormapCellsContinuous, 50);
             }
             for (let i = 0; i < numPoints; i++) {
                 const scalar = attributes[i]; // must be [0 1]
@@ -628,6 +639,7 @@ export class PointCanvas {
             return null;
         }
         const threeTrack = Track.new(positions, ids, this.maxPointsPerTimepoint);
+        threeTrack.material.highlightLUT = buildHighlightLUTTexture(this.colormapTracks);
         threeTrack.updateAppearance(
             this.showTracks,
             this.showTrackHighlights,
@@ -639,6 +651,14 @@ export class PointCanvas {
         this.tracks.set(trackID, { threeTrack, parentTrackID });
         this.scene.add(threeTrack);
         return threeTrack;
+    }
+
+    updateTrackColormap(name: string) {
+        this.colormapTracks = name;
+        const texture = buildHighlightLUTTexture(name);
+        this.tracks.forEach((track) => {
+            track.threeTrack.material.highlightLUT = texture;
+        });
     }
 
     updateAllTrackHighlights() {

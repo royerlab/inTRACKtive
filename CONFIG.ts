@@ -20,11 +20,12 @@ const config = {
         max_num_selected_cells: 100,
         
         // Choose colormap for the tracks
-        // options: viridis-inferno, magma-inferno, inferno-inferno, plasma-inferno, cividis-inferno [default]
-        colormap_tracks: "cividis-inferno",
+        // divergent: viridis-inferno, inferno-inferno, cividis-inferno, coolwarm [default], RedBlue, RedYelBlue, Spectral
+        // linear:    YellowRed, GreenBlue, PurpleGold, CyanRed, BlueRed
+        colormap_tracks: "coolwarm",
 
         // Choose colormap for coloring the cells, when the attribute is continuous or categorical
-        // options: HSL, viridis, plasma, inferno, magma, cividis
+        // options: HSL, viridis, plasma, inferno, magma, cividis, YellowRed, GreenBlue, PurpleGold, CyanRed, BlueRed
         colormap_colorby_categorical: "HSL",
         colormap_colorby_continuous: "plasma",
 

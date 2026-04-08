@@ -1,8 +1,52 @@
 import { TrackManager, Option, numberOfValuesPerPoint } from "@/lib/TrackManager";
+import { TRACK_COLORMAP_NAMES, CELL_COLORMAP_NAMES, colormaps } from "@/lib/Colormaps";
 import { Dropdown, InputSlider, InputToggle } from "@czi-sds/components";
-import { Box, Stack } from "@mui/material";
+import { Box, MenuItem, Select, SelectChangeEvent, Stack } from "@mui/material";
 import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
+
+function buildGradient(colormapName: string): string {
+    colormaps.setColorMap(colormapName);
+    const colors = Array.from({ length: 32 }, (_, i) => `#${colormaps.getColor(i / 31).getHexString()}`);
+    return `linear-gradient(to right, ${colors.join(", ")})`;
+}
+
+interface ColormapSelectProps {
+    value: string;
+    options: string[];
+    onChange: (name: string) => void;
+}
+
+function ColormapSelect({ value, options, onChange }: ColormapSelectProps) {
+    return (
+        <Select
+            value={value}
+            size="small"
+            onChange={(e: SelectChangeEvent) => onChange(e.target.value)}
+            renderValue={(selected) => (
+                <Box sx={{ background: buildGradient(selected), height: "1em", borderRadius: "3px" }} />
+            )}
+            sx={{ width: "100%" }}
+        >
+            {options.map((name) => (
+                <MenuItem key={name} value={name}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: "0.6em", width: "100%" }}>
+                        <Box
+                            sx={{
+                                background: buildGradient(name),
+                                width: "4em",
+                                height: "0.9em",
+                                borderRadius: "3px",
+                                flexShrink: 0,
+                            }}
+                        />
+                        <FontS>{name}</FontS>
+                    </Box>
+                </MenuItem>
+            ))}
+        </Select>
+    );
+}
 
 const allowColorByAttribute = config.permission.allowColorByAttribute;
 
@@ -27,6 +71,10 @@ interface TrackControlsProps {
     toggleColorBy: (colorBy: boolean) => void;
     colorByEvent: Option;
     changeColorBy: (value: Option) => void;
+    colormapTracks: string;
+    setColormapTracks: (name: string) => void;
+    colormapCells: string;
+    setColormapCells: (name: string) => void;
 }
 
 export default function TrackControls(props: TrackControlsProps) {
@@ -69,6 +117,15 @@ export default function TrackControls(props: TrackControlsProps) {
                         />
                     </Box>
                 </Box>
+            )}
+
+            {/* Track highlights colormap dropdown */}
+            {props.hasTracks && props.showTrackHighlights && (
+                <ColormapSelect
+                    value={props.colormapTracks}
+                    options={TRACK_COLORMAP_NAMES}
+                    onChange={props.setColormapTracks}
+                />
             )}
 
             {/* Axes toggle */}
@@ -125,6 +182,16 @@ export default function TrackControls(props: TrackControlsProps) {
                     ></Dropdown>
                 </div>
             )}
+
+            {/* Cell colormap dropdown */}
+            {props.colorBy &&
+                (props.colorByEvent.type === "categorical" || props.colorByEvent.type === "continuous") && (
+                    <ColormapSelect
+                        value={props.colormapCells}
+                        options={CELL_COLORMAP_NAMES}
+                        onChange={props.setColormapCells}
+                    />
+                )}
 
             {/* Cell size slider */}
             {numberOfValuesPerPoint !== 4 && (

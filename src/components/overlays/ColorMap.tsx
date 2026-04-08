@@ -3,13 +3,13 @@ import { Box } from "@mui/material";
 import "@czi-sds/components/dist/variables.css";
 import { highlightLUT } from "@/lib/three/TrackMaterial";
 import { Option } from "@/lib/TrackManager";
-import config from "../../../CONFIG.ts";
-const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
-const colormapColorbyCategorical = config.settings.colormap_colorby_categorical;
-const colormapColorbyContinuous = config.settings.colormap_colorby_continuous;
 
-export const ColorMapTracks = () => {
-    highlightLUT.setColorMap(colormapTracks);
+interface ColorMapTracksProps {
+    colormapName: string;
+}
+
+export const ColorMapTracks = ({ colormapName }: ColorMapTracksProps) => {
+    highlightLUT.setColorMap(colormapName);
     const colors = Array.from({ length: 129 }, (_, i) => `#${highlightLUT.getColor(i / 128).getHexString()}`);
     const gradient = `linear-gradient(to top, ${colors.join(", ")})`;
 
@@ -52,21 +52,16 @@ export const ColorMapTracks = () => {
 
 interface ColormapCellsProps {
     colorByEvent: Option;
+    colormapName: string;
 }
 
 export const ColorMapCells = (props: ColormapCellsProps) => {
-    let colormapString;
     let numSteps = 129;
     if (props.colorByEvent.type === "categorical") {
-        colormapString = colormapColorbyCategorical;
         numSteps = props.colorByEvent.numCategorical || 129;
-    } else if (props.colorByEvent.type === "continuous") {
-        colormapString = colormapColorbyContinuous;
-    } else {
-        colormapString = "magma";
     }
 
-    highlightLUT.setColorMap(colormapString);
+    highlightLUT.setColorMap(props.colormapName);
 
     const colors = Array.from(
         { length: numSteps },

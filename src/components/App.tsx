@@ -444,6 +444,22 @@ export default function App() {
                                 changeColorBy={(option: Option) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, option });
                                 }}
+                                colormapTracks={canvas.colormapTracks}
+                                setColormapTracks={(colormapName: string) => {
+                                    dispatchCanvas({ type: ActionType.CHANGE_COLORMAP_TRACKS, colormapName });
+                                }}
+                                colormapCells={
+                                    canvas.colorByEvent.type === "categorical"
+                                        ? canvas.colormapCellsCategorical
+                                        : canvas.colormapCellsContinuous
+                                }
+                                setColormapCells={(colormapName: string) => {
+                                    dispatchCanvas({
+                                        type: ActionType.CHANGE_COLORMAP_CELLS,
+                                        colormapName,
+                                        attributeType: canvas.colorByEvent.type as "categorical" | "continuous",
+                                    });
+                                }}
                             />
                         </Box>
                         <Divider />
@@ -486,9 +502,16 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
-                    {numSelectedCells > 0 && <ColorMapTracks />}
+                    {numSelectedCells > 0 && <ColorMapTracks colormapName={canvas.colormapTracks} />}
                     {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && (
-                        <ColorMapCells colorByEvent={canvas.colorByEvent} />
+                        <ColorMapCells
+                            colorByEvent={canvas.colorByEvent}
+                            colormapName={
+                                canvas.colorByEvent.type === "categorical"
+                                    ? canvas.colormapCellsCategorical
+                                    : canvas.colormapCellsContinuous
+                            }
+                        />
                     )}
                 </Box>
 

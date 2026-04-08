@@ -33,6 +33,8 @@ enum ActionType {
     TOGGLE_AXES = "TOGGLE_AXES",
     TOGGLE_COLOR_BY = "TOGGLE_COLOR_BY",
     CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
+    CHANGE_COLORMAP_TRACKS = "CHANGE_COLORMAP_TRACKS",
+    CHANGE_COLORMAP_CELLS = "CHANGE_COLORMAP_CELLS",
 }
 
 interface AutoRotate {
@@ -166,6 +168,17 @@ interface ChangeColorBy {
     option: Option;
 }
 
+interface ChangeColormapTracks {
+    type: ActionType.CHANGE_COLORMAP_TRACKS;
+    colormapName: string;
+}
+
+interface ChangeColormapCells {
+    type: ActionType.CHANGE_COLORMAP_CELLS;
+    colormapName: string;
+    attributeType: "categorical" | "continuous";
+}
+
 // setting up a tagged union for the actions
 type PointCanvasAction =
     | AutoRotate
@@ -194,7 +207,9 @@ type PointCanvasAction =
     | SelectorScale
     | ToggleAxes
     | ToggleColorBy
-    | ChangeColorBy;
+    | ChangeColorBy
+    | ChangeColormapTracks
+    | ChangeColormapCells;
 
 function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
     console.debug("usePointCanvas.reducer: ", action);
@@ -335,6 +350,17 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.CHANGE_COLOR_BY:
             newCanvas.colorByEvent = action.option;
+            break;
+        case ActionType.CHANGE_COLORMAP_TRACKS:
+            newCanvas.updateTrackColormap(action.colormapName);
+            break;
+        case ActionType.CHANGE_COLORMAP_CELLS:
+            if (action.attributeType === "categorical") {
+                newCanvas.colormapCellsCategorical = action.colormapName;
+            } else {
+                newCanvas.colormapCellsContinuous = action.colormapName;
+            }
+            newCanvas.resetPointColors();
             break;
         default:
             console.warn("usePointCanvas reducer - unknown action type: %s", action);

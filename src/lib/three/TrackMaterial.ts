@@ -11,7 +11,7 @@
 
 import { colormaps } from "../Colormaps.ts";
 import config from "../../../CONFIG.ts";
-const colormapTracks = config.settings.colormap_tracks || "viridis-inferno";
+const colormapTracks = config.settings.colormap_tracks || "coolwarm";
 
 import {
     DataTexture,
@@ -28,17 +28,24 @@ import {
 
 export const highlightLUT = colormaps;
 highlightLUT.setColorMap(colormapTracks);
-const lutArray = new Uint8Array(128 * 4);
-for (let i = 0; i < 128; i++) {
-    const color = highlightLUT.getColor(i / 128);
-    lutArray[i * 4] = color.r * 255;
-    lutArray[i * 4 + 1] = color.g * 255;
-    lutArray[i * 4 + 2] = color.b * 255;
-    lutArray[i * 4 + 3] = 255;
+
+export function buildHighlightLUTTexture(colormapName: string): DataTexture {
+    highlightLUT.setColorMap(colormapName);
+    const array = new Uint8Array(128 * 4);
+    for (let i = 0; i < 128; i++) {
+        const color = highlightLUT.getColor(i / 128);
+        array[i * 4] = color.r * 255;
+        array[i * 4 + 1] = color.g * 255;
+        array[i * 4 + 2] = color.b * 255;
+        array[i * 4 + 3] = 255;
+    }
+    const texture = new DataTexture(array, 128, 1, RGBAFormat, UnsignedByteType);
+    texture.colorSpace = SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
 }
-const highlightLUTTexture = new DataTexture(lutArray, 128, 1, RGBAFormat, UnsignedByteType);
-highlightLUTTexture.colorSpace = SRGBColorSpace;
-highlightLUTTexture.needsUpdate = true;
+
+const highlightLUTTexture = buildHighlightLUTTexture(colormapTracks);
 
 const trackUniforms = {
     trackwidth: { value: 0.5 }, // this is just linewidth renamed
