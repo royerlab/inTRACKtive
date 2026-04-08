@@ -26,6 +26,10 @@ interface LeftSidebarWrapperProps {
     colorByEvent: Option;
     toggleColorBy: (colorBy: boolean) => void;
     changeColorBy: (value: Option) => void;
+    colormapTracks: string;
+    setColormapTracks: (name: string) => void;
+    colormapCells: string;
+    setColormapCells: (name: string) => void;
 }
 
 export default function LeftSidebarWrapper({
@@ -49,6 +53,10 @@ export default function LeftSidebarWrapper({
     toggleColorBy,
     colorByEvent,
     changeColorBy,
+    colormapTracks,
+    setColormapTracks,
+    colormapCells,
+    setColormapCells,
 }: LeftSidebarWrapperProps) {
     return (
         <>
@@ -73,6 +81,10 @@ export default function LeftSidebarWrapper({
                 toggleColorBy={toggleColorBy}
                 colorByEvent={colorByEvent}
                 changeColorBy={changeColorBy}
+                colormapTracks={colormapTracks}
+                setColormapTracks={setColormapTracks}
+                colormapCells={colormapCells}
+                setColormapCells={setColormapCells}
             />
             <Divider />
             {selectionMode !== null && <ControlInstructions selectionMode={selectionMode} isTablet={isTablet} />}
