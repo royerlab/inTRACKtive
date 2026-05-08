@@ -113,32 +113,68 @@ export default function App() {
         dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy: false });
     };
 
-    // this function fetches the entire lineage for each track
+    // this function fetches the entire lineage for each track, using Promise.allSettled
+    // to keep the loading indicator visible until all tracks have been rendered
     const updateTracks = async () => {
         if (!trackManager) return;
         console.debug("updateTracks: ", canvas.selectedPointIds);
-        canvas.selectedPointIds.forEach(async (pointId) => {
+
+        const allTrackPromises: Promise<void>[] = [];
+
+        canvas.selectedPointIds.forEach((pointId) => {
             if (canvas.fetchedPointIds.has(pointId)) return;
+
             setNumLoadingTracks((n) => n + 1);
             canvas.fetchedPointIds.add(pointId);
-            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
-            trackIds.forEach(async (trackId) => {
-                if (canvas.fetchedRootTrackIds.has(trackId)) return;
-                canvas.fetchedRootTrackIds.add(trackId);
-                const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                lineage.forEach(async (relatedTrackId: number, index) => {
-                    if (canvas.tracks.has(relatedTrackId)) return;
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                    dispatchCanvas({ type: ActionType.REFRESH });
-                });
+
+            const trackPromise = trackManager.fetchTrackIDsForPoint(pointId).then(async (trackIds) => {
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                const lineagePromises: Promise<void>[] = [];
+
+                for (const trackId of trackIds) {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+
+                    canvas.fetchedRootTrackIds.add(trackId);
+
+                    const lineagePromise = trackManager
+                        .fetchLineageForTrack(trackId)
+                        .then(async ([lineage, trackData]) => {
+                            const relatedTrackPromises: Promise<void>[] = [];
+
+                            for (const [index, relatedTrackId] of lineage.entries()) {
+                                if (canvas.tracks.has(relatedTrackId)) continue;
+
+                                const pointsPromise = trackManager
+                                    .fetchPointsForTrack(relatedTrackId)
+                                    .then(([pos, ids]) => {
+                                        // adding the track *in* the dispatcher creates issues with duplicate fetching
+                                        // but we refresh so the selected/loaded count is updated
+                                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                                        dispatchCanvas({ type: ActionType.REFRESH });
+                                    });
+
+                                relatedTrackPromises.push(pointsPromise);
+                            }
+
+                            await Promise.allSettled(relatedTrackPromises);
+                        });
+
+                    lineagePromises.push(lineagePromise);
+                }
+
+                await Promise.allSettled(lineagePromises);
             });
-            setNumLoadingTracks((n) => n - 1);
+
+            allTrackPromises.push(trackPromise);
+
+            trackPromise.finally(() => {
+                setNumLoadingTracks((n) => n - 1);
+            });
         });
-    }; // TODO: add missing dependencies
+
+        await Promise.allSettled(allTrackPromises);
+        console.log("All tracks have been rendered on the canvas");
+    };
 
     // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
     const removeLastSelectedPoints = async () => {
