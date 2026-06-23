@@ -32,6 +32,7 @@ export class SpherePointSelector {
     readonly selectionChanged: SelectionChanged;
     readonly selectionPreviewChanged: SelectionPreviewChanged;
     readonly pointer = new Vector2(0, 0);
+    private readonly _scratchVec = new Vector3();
 
     // True if this should not respond to pointer movements, false otherwise.
     cursorLock = true;
@@ -189,18 +190,8 @@ export class SpherePointSelector {
         const startPoint = drawRange.start;
         const endPoint = Math.min(drawRange.start + drawRange.count, positions.count);
 
-        const selected = [];
         // Only check points within the draw range
-        for (let i = startPoint; i < endPoint; i++) {
-            const x = positions.getX(i);
-            const y = positions.getY(i);
-            const z = positions.getZ(i);
-            const vecToCenter = new Vector3(x, y, z).sub(center);
-            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
-            if (scaledVecToCenter.length() < radius) {
-                selected.push(i);
-            }
-        }
+        const selected = this._findPointsInSphere(positions, startPoint, endPoint, center, normalMatrix, radius);
         this.selectionPreviewChanged(selected);
         return selected;
     }
@@ -220,23 +211,30 @@ export class SpherePointSelector {
         }
 
         const positions = geometry.getAttribute("position");
-        // Get the draw range which indicates which points are actually active
         const drawRange = geometry.drawRange;
         const startPoint = drawRange.start;
         const endPoint = Math.min(drawRange.start + drawRange.count, positions.count);
 
-        const selected = [];
-        // Only check points within the draw range
+        const selected = this._findPointsInSphere(positions, startPoint, endPoint, center, normalMatrix, radius);
+        this.selectionChanged(selected);
+    }
+
+    private _findPointsInSphere(
+        positions: ReturnType<typeof this.points.geometry.getAttribute>,
+        startPoint: number,
+        endPoint: number,
+        center: Vector3,
+        normalMatrix: Matrix3,
+        radius: number,
+    ): number[] {
+        const selected: number[] = [];
         for (let i = startPoint; i < endPoint; i++) {
-            const x = positions.getX(i);
-            const y = positions.getY(i);
-            const z = positions.getZ(i);
-            const vecToCenter = new Vector3(x, y, z).sub(center);
-            const scaledVecToCenter = vecToCenter.applyMatrix3(normalMatrix);
-            if (scaledVecToCenter.length() < radius) {
+            this._scratchVec.set(positions.getX(i), positions.getY(i), positions.getZ(i)).sub(center);
+            this._scratchVec.applyMatrix3(normalMatrix);
+            if (this._scratchVec.length() < radius) {
                 selected.push(i);
             }
         }
-        this.selectionChanged(selected);
+        return selected;
     }
 }

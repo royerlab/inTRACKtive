@@ -28,7 +28,7 @@ export const DownloadButton = (props: DownloadButtonProps) => {
     };
 
     return (
-        <Tooltip title="Play/Pause">
+        <Tooltip title="Export cell tracks as CSV">
             <Button sdsStyle="square" sdsType="primary" onClick={downloadCSV}>
                 Export Cell Tracks
             </Button>

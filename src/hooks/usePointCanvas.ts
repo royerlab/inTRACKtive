@@ -33,6 +33,7 @@ enum ActionType {
     TOGGLE_AXES = "TOGGLE_AXES",
     TOGGLE_COLOR_BY = "TOGGLE_COLOR_BY",
     CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
+    CHANGE_SECOND_COLOR_BY = "CHANGE_SECOND_COLOR_BY",
     CHANGE_COLORMAP_TRACKS = "CHANGE_COLORMAP_TRACKS",
     CHANGE_COLORMAP_CELLS = "CHANGE_COLORMAP_CELLS",
 }
@@ -84,10 +85,13 @@ interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
     attributes: Float32Array | undefined;
+    fatemapAttributes?: Float32Array;
+    secondaryAttributes?: Float32Array;
 }
 
 interface ResetPointColors {
     type: ActionType.RESET_POINTS_COLORS;
+    fatemapAttributes?: Float32Array;
 }
 
 interface RemoveLastSelection {
@@ -169,6 +173,11 @@ interface ChangeColorBy {
     option: Option;
 }
 
+interface ChangeSecondColorBy {
+    type: ActionType.CHANGE_SECOND_COLOR_BY;
+    option: Option | null;
+}
+
 interface ChangeColormapTracks {
     type: ActionType.CHANGE_COLORMAP_TRACKS;
     colormapName: string;
@@ -209,6 +218,7 @@ type PointCanvasAction =
     | ToggleAxes
     | ToggleColorBy
     | ChangeColorBy
+    | ChangeSecondColorBy
     | ChangeColormapTracks
     | ChangeColormapCells;
 
@@ -229,12 +239,10 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.CUR_TIME: {
             // if curTime is a function, call it with the current time
-            if (typeof action.curTime === "function") {
-                action.curTime = action.curTime(canvas.curTime);
-            }
-            newCanvas.curTime = action.curTime;
-            newCanvas.minTime += action.curTime - canvas.curTime;
-            newCanvas.maxTime += action.curTime - canvas.curTime;
+            const newCurTime = typeof action.curTime === "function" ? action.curTime(canvas.curTime) : action.curTime;
+            newCanvas.curTime = newCurTime;
+            newCanvas.minTime += newCurTime - canvas.curTime;
+            newCanvas.maxTime += newCurTime - canvas.curTime;
             newCanvas.updateAllTrackHighlights();
             break;
         }
@@ -260,12 +268,18 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
+            newCanvas.currentFatemapAttributes = action.fatemapAttributes ?? null;
+            newCanvas.currentSecondaryAttributes = action.secondaryAttributes ?? null;
             newCanvas.resetPointColors(action.attributes);
             newCanvas.updateSelectedPointIndices();
             newCanvas.updatePreviewPoints();
             break;
         case ActionType.RESET_POINTS_COLORS:
+            if (action.fatemapAttributes !== undefined) {
+                newCanvas.currentFatemapAttributes = action.fatemapAttributes;
+            }
             newCanvas.resetPointColors();
+            newCanvas.updateSelectedPointIndices();
             break;
         case ActionType.REMOVE_LAST_SELECTION:
             newCanvas.removeLastSelection();
@@ -273,8 +287,6 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.REMOVE_ALL_TRACKS:
             newCanvas.removeAllTracks();
             newCanvas.clearPointIndicesCache();
-            newCanvas.pointBrightness = 1.0;
-            newCanvas.resetPointColors();
             newCanvas.updatePreviewPoints();
             break;
         case ActionType.SELECTION_MODE: {
@@ -348,9 +360,27 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.TOGGLE_COLOR_BY:
             newCanvas.colorBy = action.colorBy;
             newCanvas.colorByEvent = DEFAULT_DROPDOWN_OPTION;
+            newCanvas.colorBySecondEvent = null;
+            newCanvas.currentSecondaryAttributes = null;
             break;
         case ActionType.CHANGE_COLOR_BY:
             newCanvas.colorByEvent = action.option;
+            // The second-tissue overlay only applies when the primary attribute is hex-binary.
+            if (action.option.type !== "hex-binary") {
+                newCanvas.colorBySecondEvent = null;
+                newCanvas.currentSecondaryAttributes = null;
+            }
+            break;
+        case ActionType.CHANGE_SECOND_COLOR_BY:
+            newCanvas.colorBySecondEvent = action.option;
+            if (action.option !== null) {
+                // Overlay mode shows tissues without tracks: clear any loaded tracks.
+                newCanvas.removeAllTracks();
+                newCanvas.clearPointIndicesCache();
+                newCanvas.updatePreviewPoints();
+            } else {
+                newCanvas.currentSecondaryAttributes = null;
+            }
             break;
         case ActionType.CHANGE_COLORMAP_TRACKS:
             newCanvas.updateTrackColormap(action.colormapName);

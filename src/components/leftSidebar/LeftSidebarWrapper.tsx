@@ -26,6 +26,8 @@ interface LeftSidebarWrapperProps {
     colorByEvent: Option;
     toggleColorBy: (colorBy: boolean) => void;
     changeColorBy: (value: Option) => void;
+    colorBySecondEvent: Option | null;
+    changeSecondColorBy: (value: Option | null) => void;
     colormapTracks: string;
     setColormapTracks: (name: string) => void;
     colormapCells: string;
@@ -53,6 +55,8 @@ export default function LeftSidebarWrapper({
     toggleColorBy,
     colorByEvent,
     changeColorBy,
+    colorBySecondEvent,
+    changeSecondColorBy,
     colormapTracks,
     setColormapTracks,
     colormapCells,
@@ -81,6 +85,8 @@ export default function LeftSidebarWrapper({
                 toggleColorBy={toggleColorBy}
                 colorByEvent={colorByEvent}
                 changeColorBy={changeColorBy}
+                colorBySecondEvent={colorBySecondEvent}
+                changeSecondColorBy={changeSecondColorBy}
                 colormapTracks={colormapTracks}
                 setColormapTracks={setColormapTracks}
                 colormapCells={colormapCells}

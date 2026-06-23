@@ -95,7 +95,11 @@ export const ColorMapCells = (props: ColormapCellsProps) => {
             }}
         >
             <Box sx={{ fontWeight: "bold" }}>Cells</Box> {/* First line bold */}
-            <Box sx={{ fontWeight: 300 }}>{props.colorByEvent.name.substring(0, 8) + "."}</Box>{" "}
+            <Box sx={{ fontWeight: 300 }}>
+                {props.colorByEvent.name.length > 8
+                    ? props.colorByEvent.name.substring(0, 8) + "…"
+                    : props.colorByEvent.name}
+            </Box>{" "}
             {/* Second line lighter */}
             <Box
                 sx={{
