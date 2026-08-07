@@ -71,6 +71,10 @@ interface TrackControlsProps {
     toggleColorBy: (colorBy: boolean) => void;
     colorByEvent: Option;
     changeColorBy: (value: Option) => void;
+    multiColorBy: boolean;
+    toggleMultiColorBy: (enabled: boolean) => void;
+    colorByEvents: Option[];
+    changeMultiColorBy: (values: Option[]) => void;
     colormapTracks: string;
     setColormapTracks: (name: string) => void;
     colormapCells: string;
@@ -80,6 +84,9 @@ interface TrackControlsProps {
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
     const dropDownOptions = props.trackManager?.attributeOptions ?? [];
+    const continuousOptions = dropDownOptions.filter((option) => option.type === "continuous");
+    const selectedContinuousLabels = props.colorByEvents.map((option) => option.label);
+    const channelNames = ["Red", "Green", "Blue"];
 
     return (
         <Stack spacing={"1.1em"}>
@@ -162,8 +169,65 @@ export default function TrackControls(props: TrackControlsProps) {
                 </Box>
             )}
 
+            {/* RGB multi-feature mode */}
+            {props.colorBy && continuousOptions.length > 1 && (
+                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                    <label htmlFor="multi-color-cells">
+                        <FontS>RGB features</FontS>
+                    </label>
+                    <InputToggle
+                        id="multi-color-cells"
+                        checked={props.multiColorBy}
+                        onChange={(e) => props.toggleMultiColorBy((e.target as HTMLInputElement).checked)}
+                    />
+                </Box>
+            )}
+
+            {props.colorBy && props.multiColorBy && (
+                <Select
+                    multiple
+                    size="small"
+                    value={selectedContinuousLabels}
+                    displayEmpty
+                    onChange={(event: SelectChangeEvent<number[]>) => {
+                        const labels = event.target.value as number[];
+                        const selected = labels
+                            .slice(0, 3)
+                            .map((label) => continuousOptions.find((option) => option.label === label))
+                            .filter((option): option is Option => option !== undefined);
+                        props.changeMultiColorBy(selected);
+                    }}
+                    renderValue={(labels) =>
+                        labels.length === 0 ? (
+                            <FontS>Select up to 3 features</FontS>
+                        ) : (
+                            <Box sx={{ display: "flex", flexDirection: "column" }}>
+                                {labels.map((label, index) => (
+                                    <FontS key={label}>{`${channelNames[index]}: ${
+                                        continuousOptions.find((option) => option.label === label)?.name
+                                    }`}</FontS>
+                                ))}
+                            </Box>
+                        )
+                    }
+                    sx={{ width: "100%" }}
+                >
+                    {continuousOptions.map((option) => (
+                        <MenuItem
+                            key={option.label}
+                            value={option.label}
+                            disabled={
+                                selectedContinuousLabels.length >= 3 && !selectedContinuousLabels.includes(option.label)
+                            }
+                        >
+                            {option.name}
+                        </MenuItem>
+                    ))}
+                </Select>
+            )}
+
             {/* Color cells by dropdown */}
-            {props.colorBy == true && (
+            {props.colorBy && !props.multiColorBy && (
                 <div>
                     <Dropdown
                         label={`Color: ${props.colorByEvent.name}`}
@@ -185,6 +249,7 @@ export default function TrackControls(props: TrackControlsProps) {
 
             {/* Cell colormap dropdown */}
             {props.colorBy &&
+                !props.multiColorBy &&
                 (props.colorByEvent.type === "categorical" || props.colorByEvent.type === "continuous") && (
                     <ColormapSelect
                         value={props.colormapCells}

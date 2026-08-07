@@ -213,18 +213,40 @@ export default function App() {
                     return;
                 }
 
-                let attributes;
-                if (canvas.colorByEvent.action === "provided" || canvas.colorByEvent.action === "provided-normalized") {
+                let attributes: Float32Array | undefined;
+                let multiAttributes: Array<Float32Array | undefined> | undefined;
+                if (canvas.multiColorBy) {
+                    multiAttributes = await Promise.all(
+                        canvas.colorByEvents.map((option) =>
+                            option.action === "provided" || option.action === "provided-normalized"
+                                ? trackManager.fetchAttributesAtTime(time, option.label - numberOfDefaultColorByOptions)
+                                : Promise.resolve(undefined),
+                        ),
+                    );
+                } else if (
+                    canvas.colorByEvent.action === "provided" ||
+                    canvas.colorByEvent.action === "provided-normalized"
+                ) {
                     attributes = await trackManager.fetchAttributesAtTime(
                         time,
                         canvas.colorByEvent.label - numberOfDefaultColorByOptions,
                     );
                 }
 
+                if (ignore) {
+                    console.debug("IGNORE SET points at time %d after fetching attributes", time);
+                    return;
+                }
+
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes });
+                dispatchCanvas({
+                    type: ActionType.POINTS_POSITIONS,
+                    positions: data,
+                    attributes,
+                    multiAttributes,
+                });
             };
             getPoints(canvas.curTime);
         } else {
@@ -242,7 +264,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [canvas.curTime, canvas.colorByEvent, dispatchCanvas, trackManager]);
+    }, [canvas.curTime, canvas.colorByEvent, canvas.multiColorBy, canvas.colorByEvents, dispatchCanvas, trackManager]);
 
     // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
@@ -560,6 +582,14 @@ export default function App() {
                                 changeColorBy={(option: Option) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, option });
                                 }}
+                                multiColorBy={canvas.multiColorBy}
+                                toggleMultiColorBy={(enabled: boolean) => {
+                                    dispatchCanvas({ type: ActionType.TOGGLE_MULTI_COLOR_BY, enabled });
+                                }}
+                                colorByEvents={canvas.colorByEvents}
+                                changeMultiColorBy={(options: Option[]) => {
+                                    dispatchCanvas({ type: ActionType.CHANGE_MULTI_COLOR_BY, options });
+                                }}
                                 colormapTracks={canvas.colormapTracks}
                                 setColormapTracks={(colormapName: string) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLORMAP_TRACKS, colormapName });
@@ -619,16 +649,18 @@ export default function App() {
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
                     {numSelectedCells > 0 && <ColorMapTracks colormapName={canvas.colormapTracks} />}
-                    {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && (
-                        <ColorMapCells
-                            colorByEvent={canvas.colorByEvent}
-                            colormapName={
-                                canvas.colorByEvent.type === "categorical"
-                                    ? canvas.colormapCellsCategorical
-                                    : canvas.colormapCellsContinuous
-                            }
-                        />
-                    )}
+                    {!canvas.multiColorBy &&
+                        canvas.colorByEvent.type !== "default" &&
+                        canvas.colorByEvent.type !== "hex" && (
+                            <ColorMapCells
+                                colorByEvent={canvas.colorByEvent}
+                                colormapName={
+                                    canvas.colorByEvent.type === "categorical"
+                                        ? canvas.colormapCellsCategorical
+                                        : canvas.colormapCellsContinuous
+                                }
+                            />
+                        )}
                 </Box>
 
                 {/* The playback controls */}
