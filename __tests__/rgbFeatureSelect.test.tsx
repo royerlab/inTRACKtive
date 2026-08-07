@@ -26,11 +26,23 @@ describe("RgbFeatureSelect", () => {
             </>,
         );
 
-        expect(screen.getByLabelText("Red feature")).toBeTruthy();
-        expect(screen.getByLabelText("Green feature")).toBeTruthy();
-        expect(screen.getByLabelText("Blue feature")).toBeTruthy();
+        const redInput = screen.getByLabelText("Red feature");
+        const greenInput = screen.getByLabelText("Green feature");
+        const blueInput = screen.getByLabelText("Blue feature");
+        expect(redInput).toBeTruthy();
+        expect(greenInput).toBeTruthy();
+        expect(blueInput).toBeTruthy();
+        expect(getComputedStyle(redInput.closest(".MuiAutocomplete-root")!).backgroundColor).toBe(
+            "rgba(255, 80, 80, 0.12)",
+        );
+        expect(getComputedStyle(greenInput.closest(".MuiAutocomplete-root")!).backgroundColor).toBe(
+            "rgba(60, 180, 90, 0.12)",
+        );
+        expect(getComputedStyle(blueInput.closest(".MuiAutocomplete-root")!).backgroundColor).toBe(
+            "rgba(70, 130, 255, 0.12)",
+        );
 
-        fireEvent.change(screen.getByLabelText("Red feature"), { target: { value: "gata" } });
+        fireEvent.change(redInput, { target: { value: "gata" } });
         fireEvent.click(screen.getByRole("option", { name: "gata1a" }));
 
         expect(onRedChange).toHaveBeenCalledWith(options[0]);

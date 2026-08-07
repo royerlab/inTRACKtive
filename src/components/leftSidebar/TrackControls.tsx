@@ -59,6 +59,11 @@ function ColormapSelect({ value, options, onChange }: ColormapSelectProps) {
 
 const allowColorByAttribute = config.permission.allowColorByAttribute;
 const rgbFilterOptions = createFilterOptions<Option>({ limit: 100 });
+const channelHues: Record<string, { background: string; border: string }> = {
+    Red: { background: "rgba(255, 80, 80, 0.12)", border: "rgba(210, 45, 45, 0.55)" },
+    Green: { background: "rgba(60, 180, 90, 0.12)", border: "rgba(35, 135, 65, 0.55)" },
+    Blue: { background: "rgba(70, 130, 255, 0.12)", border: "rgba(40, 95, 210, 0.55)" },
+};
 
 interface RgbFeatureSelectProps {
     channel: string;
@@ -68,9 +73,16 @@ interface RgbFeatureSelectProps {
 }
 
 export function RgbFeatureSelect({ channel, options, value, onChange }: RgbFeatureSelectProps) {
+    const hue = channelHues[channel];
     return (
         <Autocomplete
             size="small"
+            sx={{
+                "backgroundColor": hue?.background,
+                "borderRadius": "4px",
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: hue?.border },
+                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: hue?.border },
+            }}
             options={options}
             value={value}
             filterOptions={rgbFilterOptions}
