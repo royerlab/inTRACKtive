@@ -15,13 +15,13 @@ describe("ViewerState RGB features", () => {
     test("round-trips the ordered feature selection", () => {
         const state = new ViewerState();
         state.multiColorBy = true;
-        state.colorByEvents = [continuousOption("first", 6), continuousOption("second", 7)];
+        state.colorByEvents = [continuousOption("first", 6), null, continuousOption("third", 7)];
 
         const restored = ViewerState.fromUrlHash(state.toUrlHash());
 
         expect(restored).toBeInstanceOf(ViewerState);
         expect(restored.multiColorBy).toBe(true);
-        expect(restored.colorByEvents.map((option) => option.name)).toEqual(["first", "second"]);
+        expect(restored.colorByEvents.map((option) => option?.name ?? null)).toEqual(["first", null, "third"]);
     });
 
     test("supplies RGB defaults for links created before multi-color mode", () => {

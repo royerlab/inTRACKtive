@@ -34,7 +34,7 @@ export class ViewerState {
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     multiColorBy: boolean = false;
-    colorByEvents: Option[] = [];
+    colorByEvents: Array<Option | null> = [];
     colormapTracks: string = config.settings.colormap_tracks || "coolwarm";
     colormapCellsCategorical: string = config.settings.colormap_colorby_categorical;
     colormapCellsContinuous: string = config.settings.colormap_colorby_continuous;

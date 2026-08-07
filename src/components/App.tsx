@@ -218,7 +218,7 @@ export default function App() {
                 if (canvas.multiColorBy) {
                     multiAttributes = await Promise.all(
                         canvas.colorByEvents.map((option) =>
-                            option.action === "provided" || option.action === "provided-normalized"
+                            option?.action === "provided" || option?.action === "provided-normalized"
                                 ? trackManager.fetchAttributesAtTime(time, option.label - numberOfDefaultColorByOptions)
                                 : Promise.resolve(undefined),
                         ),
@@ -587,7 +587,7 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.TOGGLE_MULTI_COLOR_BY, enabled });
                                 }}
                                 colorByEvents={canvas.colorByEvents}
-                                changeMultiColorBy={(options: Option[]) => {
+                                changeMultiColorBy={(options: Array<Option | null>) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_MULTI_COLOR_BY, options });
                                 }}
                                 colormapTracks={canvas.colormapTracks}

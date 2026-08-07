@@ -28,8 +28,8 @@ interface LeftSidebarWrapperProps {
     changeColorBy: (value: Option) => void;
     multiColorBy: boolean;
     toggleMultiColorBy: (enabled: boolean) => void;
-    colorByEvents: Option[];
-    changeMultiColorBy: (values: Option[]) => void;
+    colorByEvents: Array<Option | null>;
+    changeMultiColorBy: (values: Array<Option | null>) => void;
     colormapTracks: string;
     setColormapTracks: (name: string) => void;
     colormapCells: string;

@@ -96,7 +96,7 @@ export class PointCanvas {
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
     multiColorBy: boolean = false;
-    colorByEvents: Option[] = [];
+    colorByEvents: Array<Option | null> = [];
     colormapTracks: string = defaultColormapTracks;
     colormapCellsCategorical: string = defaultColormapColorbyCategorical;
     colormapCellsContinuous: string = defaultColormapColorbyContinuous;
@@ -426,14 +426,14 @@ export class PointCanvas {
                 this.currentMultiAttributes = multiAttributesInput;
             }
             const multiAttributes = this.colorByEvents.map((option, index): NumericAttribute => {
-                if (option.action === "calculate") {
+                if (option?.action === "calculate") {
                     return this.calculateAttributeVector(positions, option, numPoints);
                 }
-                return this.currentMultiAttributes[index] ?? [];
+                return option === null ? [] : this.currentMultiAttributes[index] ?? [];
             });
             const colors = composeRgbAttributes(
                 multiAttributes,
-                this.colorByEvents.map((option) => option.action === "provided-normalized"),
+                this.colorByEvents.map((option) => option?.action === "provided-normalized"),
                 numPoints,
                 this.pointBrightness,
             );

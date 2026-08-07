@@ -2,11 +2,15 @@ export type NumericAttribute = number[] | Float32Array;
 
 type AttributeSelection = { label: number; type: string };
 
-export function selectRgbAttributes<T extends AttributeSelection>(options: T[]): T[] {
+export const RGB_BACKGROUND = 0.08;
+
+export function selectRgbAttributes<T extends AttributeSelection>(options: Array<T | null>): Array<T | null> {
     const labels = new Set<number>();
-    return options
-        .filter((option) => option.type === "continuous" && !labels.has(option.label) && labels.add(option.label))
-        .slice(0, 3);
+    return options.slice(0, 3).map((option) => {
+        if (option === null || option.type !== "continuous" || labels.has(option.label)) return null;
+        labels.add(option.label);
+        return option;
+    });
 }
 
 function normalizeValue(value: number, min: number, range: number, preNormalized: boolean): number {
@@ -20,7 +24,7 @@ export function composeRgbAttributes(
     numPoints: number,
     brightness: number,
 ): Float32Array {
-    const colors = new Float32Array(numPoints * 3);
+    const colors = new Float32Array(numPoints * 3).fill(RGB_BACKGROUND * brightness);
 
     attributes.slice(0, 3).forEach((attribute, channel) => {
         let min = Infinity;
@@ -35,8 +39,10 @@ export function composeRgbAttributes(
         const range = max - min;
 
         for (let point = 0; point < Math.min(numPoints, attribute.length); point++) {
-            colors[point * 3 + channel] =
-                normalizeValue(attribute[point], min, range, preNormalized[channel]) * brightness;
+            colors[point * 3 + channel] = Math.max(
+                RGB_BACKGROUND * brightness,
+                normalizeValue(attribute[point], min, range, preNormalized[channel]) * brightness,
+            );
         }
     });
 

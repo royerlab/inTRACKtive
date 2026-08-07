@@ -180,7 +180,7 @@ interface ToggleMultiColorBy {
 
 interface ChangeMultiColorBy {
     type: ActionType.CHANGE_MULTI_COLOR_BY;
-    options: Option[];
+    options: Array<Option | null>;
 }
 
 interface ChangeColormapTracks {
@@ -373,8 +373,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.TOGGLE_MULTI_COLOR_BY:
             newCanvas.multiColorBy = action.enabled;
-            newCanvas.colorByEvents =
-                action.enabled && newCanvas.colorByEvent.type === "continuous" ? [newCanvas.colorByEvent] : [];
+            newCanvas.colorByEvents = action.enabled
+                ? [newCanvas.colorByEvent.type === "continuous" ? newCanvas.colorByEvent : null, null, null]
+                : [];
             newCanvas.currentMultiAttributes = [];
             break;
         case ActionType.CHANGE_MULTI_COLOR_BY:
