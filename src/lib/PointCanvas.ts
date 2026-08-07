@@ -28,6 +28,7 @@ import { ViewerState } from "./ViewerState";
 import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 import { buildHighlightLUTTexture } from "@/lib/three/TrackMaterial";
+import { composeRgbAttributes, NumericAttribute, selectRgbAttributes } from "@/lib/AttributeColors";
 
 import deviceState from "./DeviceState.ts";
 import config from "../../CONFIG.ts";
@@ -94,10 +95,13 @@ export class PointCanvas {
     private pointIndicesCache: Map<number, number[]> = new Map();
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    multiColorBy: boolean = false;
+    colorByEvents: Array<Option | null> = [];
     colormapTracks: string = defaultColormapTracks;
     colormapCellsCategorical: string = defaultColormapColorbyCategorical;
     colormapCellsContinuous: string = defaultColormapColorbyContinuous;
     currentAttributes: number[] | Float32Array = new Float32Array();
+    currentMultiAttributes: Array<Float32Array | undefined> = [];
     private previousNumValues: number | undefined = undefined;
 
     constructor(width: number, height: number) {
@@ -211,6 +215,8 @@ export class PointCanvas {
         state.trackWidthFactor = this.trackWidthFactor;
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
+        state.multiColorBy = this.multiColorBy;
+        state.colorByEvents = this.colorByEvents;
         state.colormapTracks = this.colormapTracks;
         state.colormapCellsCategorical = this.colormapCellsCategorical;
         state.colormapCellsContinuous = this.colormapCellsContinuous;
@@ -246,6 +252,8 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
+        this.multiColorBy = state.multiColorBy ?? defaultState.multiColorBy;
+        this.colorByEvents = selectRgbAttributes(state.colorByEvents ?? defaultState.colorByEvents);
         this.colormapTracks = state.colormapTracks ?? defaultState.colormapTracks;
         this.colormapCellsCategorical = state.colormapCellsCategorical ?? defaultState.colormapCellsCategorical;
         this.colormapCellsContinuous = state.colormapCellsContinuous ?? defaultState.colormapCellsContinuous;
@@ -403,7 +411,7 @@ export class PointCanvas {
         colorAttribute.needsUpdate = true;
     }
 
-    resetPointColors(attributesInput?: Float32Array) {
+    resetPointColors(attributesInput?: Float32Array, multiAttributesInput?: Array<Float32Array | undefined>) {
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
@@ -412,6 +420,29 @@ export class PointCanvas {
         const geometry = this.points.geometry;
         const numPoints = geometry.drawRange.count;
         const positions = geometry.getAttribute("position");
+
+        if (this.multiColorBy) {
+            if (multiAttributesInput) {
+                this.currentMultiAttributes = multiAttributesInput;
+            }
+            const multiAttributes = this.colorByEvents.map((option, index): NumericAttribute => {
+                if (option?.action === "calculate") {
+                    return this.calculateAttributeVector(positions, option, numPoints);
+                }
+                return option === null ? [] : this.currentMultiAttributes[index] ?? [];
+            });
+            const colors = composeRgbAttributes(
+                multiAttributes,
+                this.colorByEvents.map((option) => option?.action === "provided-normalized"),
+                numPoints,
+                this.pointBrightness,
+            );
+            for (let i = 0; i < numPoints; i++) {
+                colorAttribute.setXYZ(i, colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+            }
+            colorAttribute.needsUpdate = true;
+            return;
+        }
 
         let attributes;
         if (this.colorByEvent.action === "default") {
