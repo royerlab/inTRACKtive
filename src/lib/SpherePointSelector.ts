@@ -12,7 +12,9 @@ import {
     WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { TransformControls } from "three/examples/jsm/Addons.js";
+// Import the module directly, not via the `three/addons` barrel: since r185 the
+// barrel pulls in the draco/basis loaders, adding ~1.9 MB of assets to the build.
+import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { SelectionChanged, SelectionPreviewChanged } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState.ts";
 
@@ -29,6 +31,11 @@ export class SpherePointSelector {
     readonly controls: OrbitControls;
     readonly points: Points;
     readonly cursorControl: TransformControls;
+    // Since three r169 TransformControls is a Controls, not an Object3D: the
+    // gizmo lives in a separate root object that is what gets added to the
+    // scene and carries the `visible` flag. TransformControlsRoot is declared
+    // but not exported by @types/three, hence the ReturnType.
+    readonly cursorControlHelper: ReturnType<TransformControls["getHelper"]>;
     readonly selectionChanged: SelectionChanged;
     readonly selectionPreviewChanged: SelectionPreviewChanged;
     readonly pointer = new Vector2(0, 0);
@@ -56,11 +63,12 @@ export class SpherePointSelector {
         this.raycaster.params.Points.threshold = 0.05;
 
         this.cursorControl = new TransformControls(camera, renderer.domElement);
+        this.cursorControlHelper = this.cursorControl.getHelper();
         this.cursorControl.size = 0.5;
         this.setVisible(false, false);
 
         this.scene.add(this.cursor);
-        this.scene.add(this.cursorControl);
+        this.scene.add(this.cursorControlHelper);
 
         this.draggingChanged = this.draggingChanged.bind(this);
         this.cursorControl.addEventListener("change", this.findPointsWithinSelector.bind(this));
@@ -74,13 +82,13 @@ export class SpherePointSelector {
         this.cursorControl.removeEventListener("dragging-changed", this.draggingChanged);
         this.cursorControl.dispose();
         this.scene.remove(this.cursor);
-        this.scene.remove(this.cursorControl);
+        this.scene.remove(this.cursorControlHelper);
     }
 
     setVisible(visible: boolean, controlsVisible: boolean) {
         this.cursorLock = true;
         this.cursor.visible = visible;
-        this.cursorControl.visible = visible;
+        this.cursorControlHelper.visible = visible;
         if (controlsVisible) {
             this.cursorControl.attach(this.cursor);
         } else {
@@ -118,7 +126,7 @@ export class SpherePointSelector {
                 break;
             case "s":
                 this.cursor.visible = !this.cursor.visible;
-                this.cursorControl.visible = !!this.cursorControl.object && this.cursor.visible;
+                this.cursorControlHelper.visible = !!this.cursorControl.object && this.cursor.visible;
                 break;
             case "w":
                 this.cursorControl.setMode("translate");

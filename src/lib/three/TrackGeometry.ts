@@ -4,7 +4,7 @@
  *  https://github.com/mrdoob/three.js/blob/dev/examples/jsm/lines/LineGeometry.js
  */
 import { InstancedInterleavedBuffer, InterleavedBufferAttribute } from "three";
-import { LineSegmentsGeometry } from "three/examples/jsm/Addons.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 
 class TrackGeometry extends LineSegmentsGeometry {
     isTrackGeometry = true;
