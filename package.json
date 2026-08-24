@@ -26,14 +26,14 @@
     "playwright": "^1.41.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.159.0",
+    "three": "^0.185.1",
     "zarr": "^0.6.2"
   },
   "devDependencies": {
     "@testing-library/react": "^14.2.1",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
-    "@types/three": "^0.159.0",
+    "@types/three": "^0.185.4",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
     "@vitejs/plugin-react": "^4.2.1",
