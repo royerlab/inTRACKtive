@@ -6,6 +6,7 @@ import {
     Float32BufferAttribute,
     FogExp2,
     InterleavedBufferAttribute,
+    Matrix4,
     NormalBlending,
     PerspectiveCamera,
     Points,
@@ -17,6 +18,8 @@ import {
     WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { makeFakeSplats } from "@/lib/FakeSplats"; // THROWAWAY: Luxar-layer spike, Gate 0b
+import { LuxarLayer } from "@royerlab/luxar-viewer";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
@@ -61,6 +64,16 @@ export class PointCanvas {
     readonly selector: PointSelector;
     private axesHelper: AxesHelper | null = null;
     showAxes: boolean = true; // Track the visibility of the axes helper
+    /** Luxar imaging layer sharing this renderer/camera/scene (`?luxar=<url>`). */
+    luxarLayer: LuxarLayer | null = null;
+    /** Apply the tracks' normalization to the layer. `?luxar-align=none` opts out. */
+    private luxarAlign = true;
+    /**
+     * Resolves when the layer's scene is loaded, i.e. when its axis names and
+     * dimensions become readable. Shared by reference through `shallowCopy`, so
+     * whichever copy React is holding can chain onto the one real load.
+     */
+    private luxarLoaded: Promise<void> | null = null;
 
     // Maps from track ID to three.js Track objects.
     // This contains all tracks or tracklets across the lineages of all
@@ -82,6 +95,10 @@ export class PointCanvas {
     selectedPointIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
+    /** Whether the Luxar imaging layer is shown (no-op without `?luxar=`). */
+    showImaging = true;
+    /** Imaging exposure multiplier; 1 = the scene's authored appearance. */
+    imagingBrightness = 1.0;
     curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
@@ -159,6 +176,43 @@ export class PointCanvas {
 
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
+
+        // THROWAWAY (Luxar-layer spike, Gate 0b): `?fakesplats[=N]` adds a
+        // stand-in additive splat cloud. Remove with src/lib/FakeSplats.ts.
+        const spikeParams = new URLSearchParams(window.location.search);
+        const fakeSplatsParam = spikeParams.get("fakesplats");
+        if (fakeSplatsParam !== null) {
+            const count = Number(fakeSplatsParam) || undefined;
+            const gain = Number(spikeParams.get("fakesplatsgain")) || 1;
+            this.scene.add(makeFakeSplats(count, gain));
+        }
+
+        // `?luxar=<zarr-url>` renders a Luxar imaging scene into THIS scene,
+        // sharing this renderer and camera.
+        const luxarSrc = spikeParams.get("luxar");
+        if (luxarSrc !== null) {
+            this.luxarAlign = spikeParams.get("luxar-align") !== "none";
+            this.luxarLayer = new LuxarLayer({
+                renderer: this.renderer,
+                getCamera: () => this.camera,
+                getViewportSize: () => {
+                    const s = this.renderer.getSize(new Vector2());
+                    return { width: s.x, height: s.y };
+                },
+                scene: this.scene,
+            });
+            this.luxarLoaded = this.luxarLayer.load(luxarSrc).then(
+                () => {
+                    // The scene opens on its own first slice, which is only
+                    // `curTime` by coincidence — a shared link restoring t=150
+                    // would otherwise show frame 0 until the slider is touched.
+                    this.syncLuxarTime();
+                },
+                (e: unknown) => {
+                    console.error("[LuxarLayer] load failed", e);
+                },
+            );
+        }
 
         // Effect composition.
         const renderModel = new RenderPass(this.scene, this.camera);
@@ -289,10 +343,178 @@ export class PointCanvas {
         this.selector.setSelectionMode(mode);
     }
 
+    /** Show/hide the imaging layer. Keeps the scene loaded, so it toggles instantly. */
+    setShowImaging(visible: boolean) {
+        this.showImaging = visible;
+        this.luxarLayer?.setVisible(visible);
+    }
+
+    /**
+     * Exposure of the imaging layer, relative to the scene's authored value.
+     *
+     * A scene bakes an exposure tuned against whichever post chain it was
+     * authored in; inTRACKtive adds bloom and an OutputPass on top, so the same
+     * scene can arrive dim or blown out here through no fault of the data. The
+     * range is deliberately asymmetric — 1.0 sits at 40% of the slider — because
+     * a scene authored for a standalone viewer usually needs boosting, and the
+     * useful adjustment above unity is much larger than below it.
+     */
+    setImagingBrightness(value: number) {
+        this.imagingBrightness = value;
+        this.luxarLayer?.setExposure(value);
+    }
+
+    /**
+     * Place the Luxar imaging layer in the same world space as the cells.
+     *
+     * inTRACKtive stores RAW coordinates in its zarr and normalizes them in the
+     * browser (`TrackManager.applyScale`), using attributes written at convert
+     * time:
+     *
+     *     world = (data_zyx - [mean_z, mean_y, mean_x]) / extent_xyz
+     *
+     * where `extent_xyz` is a single isotropic divisor, so aspect ratio is
+     * preserved and the result lands in [-1, 1]. Points are stored `[z, y, x]`,
+     * which is why world X is the data's z.
+     *
+     * The same affine has to be applied to the splats. Scaling the layer root
+     * is enough for BOTH centers and covariances: Luxar's gsplat shader rotates
+     * the Cholesky by `mat3(modelViewMatrix)`, which carries the scale, so the
+     * splats shrink with the group rather than staying voxel-sized.
+     *
+     * `voxelSize` and `cropOffset` bridge the remaining unit gap: a gsplat fit
+     * produces centers in VOXEL INDEX space of the array that was fitted, while
+     * the tracks CSV is in whatever units it was written in. They are identity
+     * only when the CSV is in voxels and the whole volume was fitted.
+     *
+     * The splat column order is read from the scene rather than assumed — see
+     * `luxarSpatialPermutation`.
+     */
+    alignLuxarToTracks(
+        scaleSettings: { meanX?: number; meanY?: number; meanZ?: number; extentXYZ?: number },
+        voxelSize: [number, number, number] = [1, 1, 1],
+        cropOffset: [number, number, number] = [0, 0, 0],
+    ) {
+        const layer = this.luxarLayer;
+        if (!layer) return;
+        // The two inputs arrive independently: scaleSettings from the tracks
+        // fetch, the splat axis names only once the scene has loaded. Defer
+        // until both exist — computing the permutation against an empty name
+        // list would silently fall back to identity and transpose the imaging.
+        if (this.luxarLoaded && layer.getDimensionNames().length === 0) {
+            void this.luxarLoaded.then(() => this.alignLuxarToTracks(scaleSettings, voxelSize, cropOffset));
+            return;
+        }
+        if (!this.luxarAlign) {
+            // `?luxar-align=none`: the splats are already in viewer space (a
+            // synthetic scene, or one exported pre-normalized), so applying the
+            // tracks' normalization a second time would shrink them by
+            // `extent_xyz` — ~1000x on a real dataset, i.e. invisible.
+            console.debug("[LuxarLayer] alignment disabled (?luxar-align=none)");
+            return;
+        }
+        const { meanX, meanY, meanZ, extentXYZ } = scaleSettings;
+        if (meanX === undefined || meanY === undefined || meanZ === undefined || !extentXYZ) {
+            console.warn("[LuxarLayer] no scaleSettings yet; splats left unaligned");
+            return;
+        }
+
+        const s = 1 / extentXYZ;
+        // inTRACKtive's world axes carry the data's (z, y, x), in that order.
+        const mean: [number, number, number] = [meanZ, meanY, meanX];
+        const perm = this.luxarSpatialPermutation();
+
+        // Row i of the matrix produces world axis i, and reads the splat column
+        // `perm[i]` — so a scene stored (X, Y, Z) is transposed into place here
+        // rather than needing a re-export.
+        const m = new Matrix4();
+        const e: number[] = new Array(16).fill(0);
+        for (let row = 0; row < 3; row++) {
+            e[row * 4 + perm[row]] = s * voxelSize[row];
+            e[row * 4 + 3] = s * (cropOffset[row] - mean[row]);
+        }
+        e[15] = 1;
+        m.set(...(e as Parameters<Matrix4["set"]>));
+
+        layer.alignTo(m);
+        console.debug("[LuxarLayer] aligned to tracks", { mean, extentXYZ, voxelSize, cropOffset, perm });
+    }
+
+    /**
+     * Which splat center column feeds each of inTRACKtive's world axes.
+     *
+     * World axis order here is the data's (z, y, x) — see `applyScale`. Luxar
+     * scenes disagree about their own column order for the same specimen: a fit
+     * handed over as (Z, Y, X) may be published as a scene storing (X, Y, Z),
+     * and `luxar gsplat convert` names its axes `dim0…dimN` and declares
+     * nothing. Guessing wrong yields a transposed worm that still looks like a
+     * worm, so read the scene's names and only fall back when they say nothing.
+     */
+    private luxarSpatialPermutation(): [number, number, number] {
+        const identity: [number, number, number] = [0, 1, 2];
+        const names = this.luxarLayer?.getDimensionNames() ?? [];
+        const want = ["z", "y", "x"];
+        const perm = want.map((axis) => names.findIndex((n) => n.trim().toLowerCase() === axis));
+        if (perm.some((i) => i < 0) || new Set(perm).size !== 3) {
+            // Anonymous or unrecognized axes: assume the producer already wrote
+            // (z, y, x), which is the convention the fits are handed over in.
+            return identity;
+        }
+        return perm as [number, number, number];
+    }
+
+    /**
+     * Which layer dimension carries time.
+     *
+     * A name lookup alone is not enough: `luxar gsplat convert` emits anonymous
+     * axes (`dim0`…`dim3`), so a scene built that way has a perfectly good time
+     * axis that no name matches — and the failure is silent, the splats simply
+     * freeze on one frame while the tracks play. So fall back to the sole
+     * non-displayed dimension, which for a 4D imaging scene is time by
+     * construction. With more than one candidate (say time *and* channel) there
+     * is no defensible guess, so give up rather than scrub the wrong axis.
+     */
+    private luxarTimeDim(): number | null {
+        const layer = this.luxarLayer;
+        if (!layer) return null;
+        const byName = layer.findDimension("time");
+        if (byName !== null) return byName;
+
+        const dims = layer.getDimensions();
+        if (!dims) return null;
+        const hidden = [];
+        for (let i = 0; i < dims.ndim; i++) if (!dims.displayed.includes(i)) hidden.push(i);
+        if (hidden.length !== 1) {
+            console.warn("[LuxarLayer] no 'time' dimension and %d candidates; time sync off", hidden.length);
+            return null;
+        }
+        return hidden[0];
+    }
+
+    /**
+     * THROWAWAY (Luxar-layer spike, Gate 0c): push `curTime` onto the Luxar
+     * layer's time dimension, if the layer is loaded and the scene has one.
+     *
+     * Deliberately not awaited: splat slices stream, and blocking playback on
+     * them would make the tracks stutter. The splats lag and catch up instead.
+     */
+    syncLuxarTime() {
+        const layer = this.luxarLayer;
+        if (!layer) return;
+        const t = this.luxarTimeDim();
+        if (t === null) return;
+        layer.prefetchDimensionValue(t, this.curTime + 1);
+        void layer.setDimensionValue(t, this.curTime).catch(() => {
+            /* a superseded slice update is normal while scrubbing */
+        });
+    }
+
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
     animate = () => {
         requestAnimationFrame(this.animate);
+        // THROWAWAY: Luxar-layer spike, Gate 0c. Must run BEFORE the render.
+        this.luxarLayer?.update();
         // Render the scene
         this.composer.render();
         this.controls.update();
@@ -542,6 +764,7 @@ export class PointCanvas {
         this.bloomPass.resolution.set(width, height);
         this.renderer.setSize(width, height, updateStyle);
         this.composer.setSize(width, height);
+        this.luxarLayer?.resize();
     }
 
     initPointsGeometry(maxPointsPerTimepoint: number) {
@@ -697,6 +920,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        void this.luxarLayer?.dispose();
         this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();

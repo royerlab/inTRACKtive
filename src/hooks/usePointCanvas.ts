@@ -21,6 +21,8 @@ enum ActionType {
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
+    IMAGING_BRIGHTNESS = "IMAGING_BRIGHTNESS",
+    SHOW_IMAGING = "SHOW_IMAGING",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
@@ -63,6 +65,12 @@ interface ResetPointSize {
 interface InitPointsGeometry {
     type: ActionType.INIT_POINTS_GEOMETRY;
     maxPointsPerTimepoint: number;
+    /**
+     * The tracks' normalization attrs, so the Luxar imaging layer can be placed
+     * in the same world space. Optional: a dataset whose zattrs omit them has
+     * them computed in the browser from the first frame instead.
+     */
+    scaleSettings?: { meanX?: number; meanY?: number; meanZ?: number; extentXYZ?: number };
 }
 
 interface TrackWidth {
@@ -105,6 +113,16 @@ interface RemoveAllTracks {
 interface SelectionMode {
     type: ActionType.SELECTION_MODE;
     selectionMode: PointSelectionMode;
+}
+
+interface ShowImaging {
+    type: ActionType.SHOW_IMAGING;
+    showImaging: boolean;
+}
+
+interface ImagingBrightness {
+    type: ActionType.IMAGING_BRIGHTNESS;
+    imagingBrightness: number;
 }
 
 interface ShowTracks {
@@ -197,6 +215,8 @@ type PointCanvasAction =
     | Refresh
     | RemoveAllTracks
     | SelectionMode
+    | ShowImaging
+    | ImagingBrightness
     | ShowTracks
     | ShowTrackHighlights
     | Size
@@ -236,6 +256,11 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
             newCanvas.updateAllTrackHighlights();
+            // THROWAWAY (Luxar-layer spike, Gate 0c): drive the Luxar layer's
+            // time dimension from inTRACKtive's timepoint. Fire-and-forget on
+            // purpose — the tracks must not stall waiting on splat streaming,
+            // so the splats show the nearest committed timepoint and catch up.
+            newCanvas.syncLuxarTime();
             break;
         }
         case ActionType.AUTO_ROTATE:
@@ -243,6 +268,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            if (action.scaleSettings) {
+                newCanvas.alignLuxarToTracks(action.scaleSettings);
+            }
             break;
         case ActionType.TRACK_WIDTH:
             newCanvas.trackWidthFactor = action.factor;
@@ -293,6 +321,12 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             }
             break;
         }
+        case ActionType.SHOW_IMAGING:
+            newCanvas.setShowImaging(action.showImaging);
+            break;
+        case ActionType.IMAGING_BRIGHTNESS:
+            newCanvas.setImagingBrightness(action.imagingBrightness);
+            break;
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
             newCanvas.updateAllTrackHighlights();

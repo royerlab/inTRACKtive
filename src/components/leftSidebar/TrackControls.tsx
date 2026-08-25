@@ -5,6 +5,30 @@ import { Box, MenuItem, Select, SelectChangeEvent, Stack } from "@mui/material";
 import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
 
+/**
+ * Imaging-brightness slider scale.
+ *
+ * Piecewise linear with 1.0x — the scene's authored exposure — parked at 40%,
+ * rather than centred. A scene authored against a standalone viewer usually
+ * needs boosting once inTRACKtive's bloom and OutputPass are in the chain, so
+ * the useful range above unity is larger than below it. Below 40% the mapping
+ * reaches 0 (fully dark) so the slider can dim as well as lift.
+ */
+const IMAGING_UNITY_PCT = 40;
+const IMAGING_MAX_EXPOSURE = 5;
+
+function sliderToExposure(pct: number): number {
+    if (pct <= IMAGING_UNITY_PCT) return pct / IMAGING_UNITY_PCT;
+    const t = (pct - IMAGING_UNITY_PCT) / (100 - IMAGING_UNITY_PCT);
+    return 1 + t * (IMAGING_MAX_EXPOSURE - 1);
+}
+
+function exposureToSlider(exposure: number): number {
+    if (exposure <= 1) return exposure * IMAGING_UNITY_PCT;
+    const t = (exposure - 1) / (IMAGING_MAX_EXPOSURE - 1);
+    return IMAGING_UNITY_PCT + t * (100 - IMAGING_UNITY_PCT);
+}
+
 function buildGradient(colormapName: string): string {
     colormaps.setColorMap(colormapName);
     const colors = Array.from({ length: 32 }, (_, i) => `#${colormaps.getColor(i / 31).getHexString()}`);
@@ -55,6 +79,12 @@ interface TrackControlsProps {
     trackHighlightLength: number;
     showTracks: boolean;
     setShowTracks: (showTracks: boolean) => void;
+    /** Only rendered when an imaging layer is actually loaded. */
+    hasImaging: boolean;
+    showImaging: boolean;
+    setShowImaging: (showImaging: boolean) => void;
+    imagingBrightness: number;
+    setImagingBrightness: (imagingBrightness: number) => void;
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
@@ -126,6 +156,24 @@ export default function TrackControls(props: TrackControlsProps) {
                     options={TRACK_COLORMAP_NAMES}
                     onChange={props.setColormapTracks}
                 />
+            )}
+
+            {/* Imaging (Luxar splats) toggle — only when a layer is loaded */}
+            {props.hasImaging && (
+                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                    <label htmlFor="show-imaging">
+                        <FontS>Imaging</FontS>
+                    </label>
+                    <Box>
+                        <InputToggle
+                            id="show-imaging"
+                            checked={props.showImaging}
+                            onChange={() => {
+                                props.setShowImaging(!props.showImaging);
+                            }}
+                        />
+                    </Box>
+                </Box>
             )}
 
             {/* Axes toggle */}
@@ -235,6 +283,28 @@ export default function TrackControls(props: TrackControlsProps) {
                 }}
                 value={props.pointBrightness * 100}
             />
+
+            {/* Imaging brightness — only meaningful while the layer is showing */}
+            {props.hasImaging && props.showImaging && (
+                <>
+                    <label htmlFor="imaging-brightness-slider" style={{ marginTop: "1.0em" }}>
+                        <FontS id="input-slider-imaging-brightness-slider">Imaging Brightness</FontS>
+                    </label>
+                    <InputSlider
+                        style={{ marginTop: "1.5em" }}
+                        id="imaging-brightness-slider"
+                        aria-labelledby="input-slider-imaging-brightness-slider"
+                        min={0}
+                        max={100}
+                        valueLabelDisplay="on"
+                        valueLabelFormat={(value) => `${sliderToExposure(value as number).toFixed(2)}x`}
+                        onChange={(_, value) => {
+                            props.setImagingBrightness(sliderToExposure(value as number));
+                        }}
+                        value={exposureToSlider(props.imagingBrightness)}
+                    />
+                </>
+            )}
 
             {/* Track width slider */}
             {props.hasTracks && (props.showTracks || props.showTrackHighlights) && (

@@ -178,6 +178,9 @@ export default function App() {
         dispatchCanvas({
             type: ActionType.INIT_POINTS_GEOMETRY,
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+            // Same normalization the cells get, handed to the Luxar imaging
+            // layer so the two land in one world space.
+            scaleSettings: trackManager.scaleSettings,
         });
         dispatchCanvas({
             type: ActionType.CHECK_CAMERA_LOCK,
@@ -519,6 +522,15 @@ export default function App() {
                                 showTracks={canvas.showTracks}
                                 setShowTracks={(show: boolean) => {
                                     dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
+                                }}
+                                hasImaging={canvas.luxarLayer !== null}
+                                showImaging={canvas.showImaging}
+                                setShowImaging={(show: boolean) => {
+                                    dispatchCanvas({ type: ActionType.SHOW_IMAGING, showImaging: show });
+                                }}
+                                imagingBrightness={canvas.imagingBrightness}
+                                setImagingBrightness={(value: number) => {
+                                    dispatchCanvas({ type: ActionType.IMAGING_BRIGHTNESS, imagingBrightness: value });
                                 }}
                                 showTrackHighlights={canvas.showTrackHighlights}
                                 setShowTrackHighlights={(show: boolean) => {

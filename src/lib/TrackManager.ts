@@ -105,7 +105,7 @@ class SparseZarrArray {
 }
 
 // class that contains the settings to "scale" the data, i.e., scale and center the dataset to fit nicely in the viewer
-class ScaleSettings {
+export class ScaleSettings {
     meanX?: number;
     meanY?: number;
     meanZ?: number;
