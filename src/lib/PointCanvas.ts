@@ -1,4 +1,5 @@
 import {
+    ACESFilmicToneMapping,
     AxesHelper,
     BufferAttribute,
     BufferGeometry,
@@ -180,6 +181,7 @@ export class PointCanvas {
         // THROWAWAY (Luxar-layer spike, Gate 0b): `?fakesplats[=N]` adds a
         // stand-in additive splat cloud. Remove with src/lib/FakeSplats.ts.
         const spikeParams = new URLSearchParams(window.location.search);
+
         const fakeSplatsParam = spikeParams.get("fakesplats");
         if (fakeSplatsParam !== null) {
             const count = Number(fakeSplatsParam) || undefined;
@@ -192,6 +194,7 @@ export class PointCanvas {
         const luxarSrc = spikeParams.get("luxar");
         if (luxarSrc !== null) {
             this.luxarAlign = spikeParams.get("luxar-align") !== "none";
+            this.enableToneMapping(spikeParams);
             this.luxarLayer = new LuxarLayer({
                 renderer: this.renderer,
                 getCamera: () => this.camera,
@@ -344,6 +347,37 @@ export class PointCanvas {
     }
 
     /** Show/hide the imaging layer. Keeps the scene loaded, so it toggles instantly. */
+    /**
+     * Give the composite a filmic (ACES) rolloff, for imaging sessions only.
+     *
+     * Imaging splats blend additively: contributions are SUMMED into a
+     * framebuffer that clamps at 1.0, so overlapping bright structure clips
+     * flat to white however carefully the amplitudes were normalized. A tone
+     * curve compresses those highlights instead of truncating them, which is
+     * the only fix that does not also dim everything else — measured on the
+     * C. elegans scene, flat-white area drops 6.5x (0.33% -> 0.05% of pixels)
+     * while mean brightness barely moves, where reaching the same result by
+     * lowering exposure cost nearly half the brightness.
+     *
+     * It has to live on the renderer, not on the Luxar layer: Luxar tone-maps
+     * in a post-processing pass that `LuxarLayer` deliberately does not own, so
+     * a scene's own `tone_mapping` attribute is inert in layer mode. Verified —
+     * a scene authored with ACES renders pixel-identical to one authored with
+     * None.
+     *
+     * `OutputPass` reads this, so it applies to the WHOLE composite, cells and
+     * tracks included. That is why it is scoped to sessions that loaded an
+     * imaging layer rather than being set unconditionally: the saturation it
+     * fixes does not exist without splats, so no existing view changes
+     * appearance. `?tonemap=none` opts out; `?exposure=<n>` trims the curve's
+     * input without re-authoring the scene.
+     */
+    private enableToneMapping(params: URLSearchParams) {
+        if (params.get("tonemap") === "none") return;
+        this.renderer.toneMapping = ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = Number(params.get("exposure")) || 1.0;
+    }
+
     setShowImaging(visible: boolean) {
         this.showImaging = visible;
         this.luxarLayer?.setVisible(visible);
