@@ -33,6 +33,7 @@ export class ViewerState {
     trackWidthFactor: number = 1;
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    colorBySecondEvent: Option | null = null;
     colormapTracks: string = config.settings.colormap_tracks || "coolwarm";
     colormapCellsCategorical: string = config.settings.colormap_colorby_categorical;
     colormapCellsContinuous: string = config.settings.colormap_colorby_continuous;
@@ -63,7 +64,7 @@ export class ViewerState {
         // is encoded using URLSearchParams to handle special characters.
         const searchParams = new URLSearchParams(urlHash.slice(1));
         if (searchParams.has(HASH_KEY)) {
-            return JSON.parse(searchParams.get(HASH_KEY)!);
+            return Object.assign(new ViewerState(), JSON.parse(searchParams.get(HASH_KEY)!));
         } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }

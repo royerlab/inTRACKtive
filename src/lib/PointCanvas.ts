@@ -9,6 +9,7 @@ import {
     NormalBlending,
     PerspectiveCamera,
     Points,
+    Raycaster,
     Scene,
     ShaderMaterial,
     SRGBColorSpace,
@@ -31,6 +32,7 @@ import { buildHighlightLUTTexture } from "@/lib/three/TrackMaterial";
 
 import deviceState from "./DeviceState.ts";
 import config from "../../CONFIG.ts";
+const NO_ANNOTATION_VALUE = 4210752; // hex #404040, "no annotation" sentinel for hex-binary attributes
 const initialPointSize = config.settings.point_size;
 const pointColor = config.settings.point_color;
 const highlightPointColor = config.settings.highlight_point_color;
@@ -94,10 +96,14 @@ export class PointCanvas {
     private pointIndicesCache: Map<number, number[]> = new Map();
     colorBy: boolean = false;
     colorByEvent: Option = DEFAULT_DROPDOWN_OPTION;
+    colorBySecondEvent: Option | null = null;
     colormapTracks: string = defaultColormapTracks;
     colormapCellsCategorical: string = defaultColormapColorbyCategorical;
     colormapCellsContinuous: string = defaultColormapColorbyContinuous;
     currentAttributes: number[] | Float32Array = new Float32Array();
+    currentFatemapAttributes: Float32Array | null = null;
+    currentSecondaryAttributes: Float32Array | null = null;
+    private readonly raycaster: Raycaster;
     private previousNumValues: number | undefined = undefined;
 
     constructor(width: number, height: number) {
@@ -153,9 +159,9 @@ export class PointCanvas {
 
         // this.scene.add(new AxesHelper(0.2));
         this.setupAxesHelper();
-        if (deviceState.current.isPhone) {
-            this.toggleAxesHelper();
-        }
+        // if (deviceState.current.isPhone) {
+        this.toggleAxesHelper();
+        // }
 
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
@@ -187,6 +193,9 @@ export class PointCanvas {
         } else {
             this.setSelectionMode(PointSelectionMode.BOX);
         }
+
+        this.raycaster = new Raycaster();
+        this.raycaster.params.Points = { threshold: 0.02 };
     }
 
     shallowCopy(): PointCanvas {
@@ -211,6 +220,7 @@ export class PointCanvas {
         state.trackWidthFactor = this.trackWidthFactor;
         state.colorBy = this.colorBy;
         state.colorByEvent = this.colorByEvent;
+        state.colorBySecondEvent = this.colorBySecondEvent;
         state.colormapTracks = this.colormapTracks;
         state.colormapCellsCategorical = this.colormapCellsCategorical;
         state.colormapCellsContinuous = this.colormapCellsContinuous;
@@ -246,6 +256,7 @@ export class PointCanvas {
         this.trackWidthFactor = state.trackWidthFactor ?? defaultState.trackWidthFactor;
         this.colorBy = state.colorBy ?? defaultState.colorBy;
         this.colorByEvent = state.colorByEvent ?? defaultState.colorByEvent;
+        this.colorBySecondEvent = state.colorBySecondEvent ?? null;
         this.colormapTracks = state.colormapTracks ?? defaultState.colormapTracks;
         this.colormapCellsCategorical = state.colormapCellsCategorical ?? defaultState.colormapCellsCategorical;
         this.colormapCellsContinuous = state.colormapCellsContinuous ?? defaultState.colormapCellsContinuous;
@@ -369,7 +380,17 @@ export class PointCanvas {
         this.pointIndicesCache.clear();
     }
 
+    getHoveredCellIndex(ndcX: number, ndcY: number): number | null {
+        this.raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.camera);
+        const intersects = this.raycaster.intersectObject(this.points);
+        if (intersects.length === 0) return null;
+        return intersects[0].index ?? null;
+    }
+
     highlightPoints(points: number[]) {
+        // When coloring by a hex-binary attribute, cells already carry meaningful
+        // annotation colors — don't override them with the selection highlight.
+        if (this.colorByEvent.type === "hex-binary") return;
         const colorAttribute = this.points.geometry.getAttribute("color");
         const color = new Color();
         color.setRGB(highlightPointColor[0], highlightPointColor[1], highlightPointColor[2], SRGBColorSpace); // pink
@@ -437,7 +458,8 @@ export class PointCanvas {
                 if (
                     this.colorByEvent.action != "provided-normalized" &&
                     attributes.length > 0 &&
-                    this.colorByEvent.type != "hex"
+                    this.colorByEvent.type != "hex" &&
+                    this.colorByEvent.type != "hex-binary"
                 ) {
                     attributes = this.normalizeAttributeVector(attributes);
                 }
@@ -454,17 +476,80 @@ export class PointCanvas {
             for (let i = 0; i < numPoints; i++) {
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
-        } else if (this.colorByEvent.type === "hex") {
-            for (let i = 0; i < numPoints; i++) {
-                const hexInt = attributes[i]; // must be [0 1]
-                if (hexInt === undefined) {
-                    console.warn("Invalid hexInt value:", hexInt);
-                    continue; // skip this iteration
+        } else if (this.colorByEvent.type === "hex" || this.colorByEvent.type === "hex-binary") {
+            // When a second hex-binary tissue is selected, overlay the two tissues per cell.
+            // This mode runs without loaded tracks (selecting a second tissue clears them and
+            // disables track loading), so fatemap substitution and track-brightness logic are skipped.
+            const hasSecondary =
+                this.colorBySecondEvent !== null &&
+                this.currentSecondaryAttributes != null &&
+                this.currentSecondaryAttributes.length > 0;
+
+            if (hasSecondary) {
+                const secondary = this.currentSecondaryAttributes!;
+                for (let i = 0; i < numPoints; i++) {
+                    const a = attributes[i] ?? NO_ANNOTATION_VALUE;
+                    const b = secondary[i] ?? NO_ANNOTATION_VALUE;
+                    const aSpecified = a !== NO_ANNOTATION_VALUE;
+                    const bSpecified = b !== NO_ANNOTATION_VALUE;
+
+                    let hexInt: number;
+                    if (aSpecified && bSpecified) {
+                        hexInt = 0xffffff; // specified in both → white
+                    } else if (aSpecified) {
+                        hexInt = a;
+                    } else if (bSpecified) {
+                        hexInt = b;
+                    } else {
+                        hexInt = NO_ANNOTATION_VALUE; // specified in neither → grey
+                    }
+
+                    const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
+                    const color = new Color(hexStr);
+                    color.multiplyScalar(this.pointBrightness);
+                    colorAttribute.setXYZ(i, color.r, color.g, color.b);
                 }
-                const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
-                const color = new Color(hexStr);
-                color.multiplyScalar(this.pointBrightness);
-                colorAttribute.setXYZ(i, color.r, color.g, color.b);
+            } else {
+                // For hex-binary with fatemap coloring: build a set of cell indices belonging to
+                // loaded tracks at the current timepoint. Computed inline to avoid stale selectedPointIndices
+                // (resetPointColors runs before updateSelectedPointIndices in POINTS_POSITIONS).
+                // Compute which cell indices belong to loaded tracks at this timepoint.
+                // Done whenever tracks exist — independent of fatemap availability —
+                // so that brightness contrast works for both Button 1 and Button 2.
+                let trackCellsAtCurrentTime: Set<number> | null = null;
+                if (this.colorByEvent.type === "hex-binary" && this.tracks.size > 0) {
+                    trackCellsAtCurrentTime = new Set<number>();
+                    const idOffset = this.curTime * this.maxPointsPerTimepoint;
+                    for (const track of this.tracks.values()) {
+                        if (this.curTime < track.threeTrack.startTime || this.curTime > track.threeTrack.endTime)
+                            continue;
+                        const timeIndex = this.curTime - track.threeTrack.startTime;
+                        const pointId = track.threeTrack.pointIds[timeIndex];
+                        trackCellsAtCurrentTime.add(pointId - idOffset);
+                    }
+                }
+
+                for (let i = 0; i < numPoints; i++) {
+                    let hexInt = attributes[i];
+                    if (hexInt === undefined) {
+                        console.warn("Invalid hexInt value:", hexInt);
+                        continue;
+                    }
+                    // Grey cell in a loaded lineage track → substitute with fatemap_hex color (Button 2 only)
+                    if (
+                        hexInt === NO_ANNOTATION_VALUE &&
+                        trackCellsAtCurrentTime?.has(i) &&
+                        this.currentFatemapAttributes !== null
+                    ) {
+                        hexInt = this.currentFatemapAttributes[i] ?? NO_ANNOTATION_VALUE;
+                    }
+                    const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
+                    const color = new Color(hexStr);
+                    // Cells in loaded tracks stay at full brightness; others dim with pointBrightness
+                    const brightness = trackCellsAtCurrentTime?.has(i) ? 1.0 : this.pointBrightness;
+                    color.multiplyScalar(brightness);
+                    colorAttribute.setXYZ(i, color.r, color.g, color.b);
+                }
             }
         } else {
             const color = new Color();
@@ -520,8 +605,12 @@ export class PointCanvas {
     }
 
     normalizeAttributeVector(attributes: number[] | Float32Array): number[] | Float32Array {
-        const min = Math.min(...attributes);
-        const max = Math.max(...attributes);
+        let min = Infinity,
+            max = -Infinity;
+        for (let i = 0; i < attributes.length; i++) {
+            if (attributes[i] < min) min = attributes[i];
+            if (attributes[i] > max) max = attributes[i];
+        }
         const range = max - min;
 
         // Avoid division by zero in case all values are the same
@@ -686,10 +775,12 @@ export class PointCanvas {
     }
 
     removeAllTracks() {
+        this.currentFatemapAttributes = null;
         this.selectedPointIds = new Set();
         this.selectedPointIndices = [];
         this.fetchedRootTrackIds.clear();
         this.fetchedPointIds.clear();
+        this.pointBrightness = 1.0;
         for (const trackID of this.tracks.keys()) {
             this.removeTrack(trackID);
         }
