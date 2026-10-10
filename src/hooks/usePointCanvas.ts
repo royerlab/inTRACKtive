@@ -4,6 +4,7 @@ import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
 import { DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
+import { selectRgbAttributes } from "@/lib/AttributeColors";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
@@ -33,6 +34,8 @@ enum ActionType {
     TOGGLE_AXES = "TOGGLE_AXES",
     TOGGLE_COLOR_BY = "TOGGLE_COLOR_BY",
     CHANGE_COLOR_BY = "CHANGE_COLOR_BY",
+    TOGGLE_MULTI_COLOR_BY = "TOGGLE_MULTI_COLOR_BY",
+    CHANGE_MULTI_COLOR_BY = "CHANGE_MULTI_COLOR_BY",
     CHANGE_COLORMAP_TRACKS = "CHANGE_COLORMAP_TRACKS",
     CHANGE_COLORMAP_CELLS = "CHANGE_COLORMAP_CELLS",
 }
@@ -84,6 +87,7 @@ interface PointsPositions {
     type: ActionType.POINTS_POSITIONS;
     positions: Float32Array;
     attributes: Float32Array | undefined;
+    multiAttributes?: Array<Float32Array | undefined>;
 }
 
 interface ResetPointColors {
@@ -169,6 +173,16 @@ interface ChangeColorBy {
     option: Option;
 }
 
+interface ToggleMultiColorBy {
+    type: ActionType.TOGGLE_MULTI_COLOR_BY;
+    enabled: boolean;
+}
+
+interface ChangeMultiColorBy {
+    type: ActionType.CHANGE_MULTI_COLOR_BY;
+    options: Array<Option | null>;
+}
+
 interface ChangeColormapTracks {
     type: ActionType.CHANGE_COLORMAP_TRACKS;
     colormapName: string;
@@ -209,6 +223,8 @@ type PointCanvasAction =
     | ToggleAxes
     | ToggleColorBy
     | ChangeColorBy
+    | ToggleMultiColorBy
+    | ChangeMultiColorBy
     | ChangeColormapTracks
     | ChangeColormapCells;
 
@@ -260,7 +276,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.POINTS_POSITIONS:
             newCanvas.setPointsPositions(action.positions);
-            newCanvas.resetPointColors(action.attributes);
+            newCanvas.resetPointColors(action.attributes, action.multiAttributes);
             newCanvas.updateSelectedPointIndices();
             newCanvas.updatePreviewPoints();
             break;
@@ -348,9 +364,23 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.TOGGLE_COLOR_BY:
             newCanvas.colorBy = action.colorBy;
             newCanvas.colorByEvent = DEFAULT_DROPDOWN_OPTION;
+            newCanvas.multiColorBy = false;
+            newCanvas.colorByEvents = [];
+            newCanvas.currentMultiAttributes = [];
             break;
         case ActionType.CHANGE_COLOR_BY:
             newCanvas.colorByEvent = action.option;
+            break;
+        case ActionType.TOGGLE_MULTI_COLOR_BY:
+            newCanvas.multiColorBy = action.enabled;
+            newCanvas.colorByEvents = action.enabled
+                ? [newCanvas.colorByEvent.type === "continuous" ? newCanvas.colorByEvent : null, null, null]
+                : [];
+            newCanvas.currentMultiAttributes = [];
+            break;
+        case ActionType.CHANGE_MULTI_COLOR_BY:
+            newCanvas.colorByEvents = selectRgbAttributes(action.options);
+            newCanvas.currentMultiAttributes = [];
             break;
         case ActionType.CHANGE_COLORMAP_TRACKS:
             newCanvas.updateTrackColormap(action.colormapName);

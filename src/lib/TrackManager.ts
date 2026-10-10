@@ -141,25 +141,11 @@ class ScaleSettings {
 
 export async function openSparseZarrArray(store: string, groupPath: string, hasData = true): Promise<SparseZarrArray> {
     // TODO: check for sparse_format in group .zattrs
-    const indptr = await openArray({
-        store: store,
-        path: groupPath + "/indptr",
-        mode: "r",
-    });
-    const indices = await openArray({
-        store: store,
-        path: groupPath + "/indices",
-        mode: "r",
-    });
-
-    let data = null;
-    if (hasData) {
-        data = await openArray({
-            store: store,
-            path: groupPath + "/data",
-            mode: "r",
-        });
-    }
+    const [indptr, indices, data] = await Promise.all([
+        openArray({ store, path: groupPath + "/indptr", mode: "r" }),
+        openArray({ store, path: groupPath + "/indices", mode: "r" }),
+        hasData ? openArray({ store, path: groupPath + "/data", mode: "r" }) : Promise.resolve(null),
+    ]);
 
     return new SparseZarrArray(store, groupPath, indptr, indices, data);
 }
@@ -348,9 +334,11 @@ export async function loadTrackManager(url: string) {
             console.error("Error getting ndim from zattrs: %s", error);
         }
 
-        const pointsToTracks = await openSparseZarrArray(url, "points_to_tracks", false);
-        const tracksToPoints = await openSparseZarrArray(url, "tracks_to_points", true);
-        const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
+        const [pointsToTracks, tracksToPoints, tracksToTracks] = await Promise.all([
+            openSparseZarrArray(url, "points_to_tracks", false),
+            openSparseZarrArray(url, "tracks_to_points", true),
+            openSparseZarrArray(url, "tracks_to_tracks", true),
+        ]);
 
         let attributes = null;
         let attributeOptions: Option[] = resetDropDownOptions();
@@ -361,8 +349,8 @@ export async function loadTrackManager(url: string) {
                 mode: "r",
             });
             const zattrs = await attributes.attrs.asObject();
-            console.debug("attribute names found: %s", zattrs["attribute_names"]);
-            console.debug("attribute types found: %s", zattrs["attribute_types"]);
+            console.debug("Found %d attribute names", zattrs["attribute_names"].length);
+            console.debug("Found %d attribute types", zattrs["attribute_types"].length);
 
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {
@@ -373,7 +361,7 @@ export async function loadTrackManager(url: string) {
                     numCategorical: undefined,
                 });
             }
-            console.debug("attributeOptions:", attributeOptions);
+            console.debug("Loaded %d attribute options", attributeOptions.length);
         } catch (error) {
             attributeOptions = resetDropDownOptions(true);
             console.debug("No attributes found in Zarr");
