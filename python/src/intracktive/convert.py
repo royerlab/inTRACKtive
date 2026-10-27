@@ -18,7 +18,7 @@ from skimage.util._map_array import ArrayMap
 
 REQUIRED_COLUMNS = ["track_id", "t", "z", "y", "x", "parent_track_id"]
 INF_SPACE = -9999.9
-VALID_ATTRIBUTE_TYPES = ["continuous", "categorical", "hex"]
+VALID_ATTRIBUTE_TYPES = ["continuous", "categorical", "hex", "hex-binary"]
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -327,9 +327,11 @@ def convert_dataframe_to_zarr(
     )
 
     # relabeling from 0 to N-1
-    df.loc[:, "track_id"] = fwd_map[df["track_id"].to_numpy(copy=True)]
+    df.loc[:, "track_id"] = fwd_map[df["track_id"].to_numpy(copy=True, dtype=np.int64)]
     # orphaned are set to 0 according to skimage convention
-    df.loc[:, "parent_track_id"] = fwd_map[df["parent_track_id"].to_numpy(copy=True)]
+    df.loc[:, "parent_track_id"] = fwd_map[
+        df["parent_track_id"].to_numpy(copy=True, dtype=np.int64)
+    ]
 
     n_tracklets = df["track_id"].nunique()
     # (z, y, x) + extra_cols
