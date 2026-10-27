@@ -1,8 +1,8 @@
-import { Box, Stack } from "@mui/material";
+import { Box, Stack, Tooltip } from "@mui/material";
 import { InputSlider, SegmentedControl, SingleButtonDefinition, Button } from "@czi-sds/components";
 import { FontS, SmallCapsButton, ControlLabel } from "@/components/Styled";
 import { PointSelectionMode } from "@/lib/PointSelector";
-import { TrackManager } from "@/lib/TrackManager";
+import { TrackManager, Option, numberOfDefaultColorByOptions } from "@/lib/TrackManager";
 import { DownloadButton } from "./DownloadButton";
 import deviceState from "@/lib/DeviceState";
 
@@ -18,6 +18,11 @@ interface CellControlsProps {
     MobileSelectCells: () => void;
     setSelectorScale: (value: number) => void;
     selectorScale: number;
+    colorBy: boolean;
+    colorByEvent: Option;
+    colorBySecondEvent: Option | null;
+    onSelectBinaryValue: (ids: Set<number>) => void;
+    onLoadTissueTracks: () => void;
 }
 
 export default function CellControls(props: CellControlsProps) {
@@ -37,6 +42,15 @@ export default function CellControls(props: CellControlsProps) {
         { icon: "Globe", tooltipText: "Adjustable sphere", value: PointSelectionMode.SPHERE },
     ];
 
+    const attributeIndex = props.colorByEvent.label - numberOfDefaultColorByOptions;
+
+    const handleBinarySelection = () => {
+        if (!props.trackManager) return;
+        const pointIds = props.trackManager.annotPointIds?.[attributeIndex];
+        if (!pointIds || pointIds.length === 0) return;
+        props.onSelectBinaryValue(new Set(pointIds));
+    };
+
     return (
         <Stack spacing="1em">
             <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
@@ -52,6 +66,44 @@ export default function CellControls(props: CellControlsProps) {
                 <strong>{props.numSelectedTracks ?? 0}</strong> tracks loaded
             </FontS>
             {!!props.numSelectedCells && <DownloadButton getDownloadData={props.getTrackDownloadData} />}
+
+            {props.trackManager &&
+                props.colorBy &&
+                props.colorByEvent.type === "hex-binary" &&
+                (props.numSelectedCells ?? 0) == 0 &&
+                (props.numSelectedTracks ?? 0) == 0 && (
+                    <Tooltip
+                        title={
+                            props.colorBySecondEvent
+                                ? "Set the second tissue to None to load tracks (track view shows one tissue at a time)"
+                                : !props.trackManager.annotPointIds
+                                  ? "Run add_annotations.py on this zarr to enable this feature"
+                                  : ""
+                        }
+                    >
+                        <span>
+                            <Stack spacing="0.5em">
+                                <Button
+                                    sdsStyle="square"
+                                    sdsType="primary"
+                                    onClick={props.onLoadTissueTracks}
+                                    disabled={!props.trackManager.annotPointIds || !!props.colorBySecondEvent}
+                                >
+                                    Load tissue tracks
+                                </Button>
+                                <Button
+                                    sdsStyle="square"
+                                    sdsType="secondary"
+                                    onClick={handleBinarySelection}
+                                    disabled={!props.trackManager.annotPointIds || !!props.colorBySecondEvent}
+                                >
+                                    Load full lineage
+                                </Button>
+                            </Stack>
+                        </span>
+                    </Tooltip>
+                )}
+
             {/* Selection mode buttons */}
             <label htmlFor="selection-mode-control">
                 <ControlLabel>Selection Mode</ControlLabel>

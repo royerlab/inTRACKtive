@@ -192,5 +192,5 @@ cython_debug/
 
 .history/
 
-# Claude
+#Claude
 .claude/

@@ -13,7 +13,7 @@ const showDefaultAttributes = config.settings.showDefaultAttributes;
 export type Option = {
     name: string;
     label: number;
-    type: "default" | "categorical" | "continuous" | "hex";
+    type: "default" | "categorical" | "continuous" | "hex" | "hex-binary";
     action: "default" | "calculate" | "provided" | "provided-normalized";
     numCategorical: number | undefined;
 };
@@ -130,12 +130,17 @@ class ScaleSettings {
         this.meanY = yTotal / (array.length / stride);
         this.meanZ = zTotal / (array.length / stride);
 
-        const extentX = Math.max(...array.map((x) => Math.abs(x - this.meanX!)));
-        const extentY = Math.max(...array.map((x) => Math.abs(x - this.meanY!)));
-        const extentZ = Math.max(...array.map((x) => Math.abs(x - this.meanZ!)));
+        let extentX = 0,
+            extentY = 0,
+            extentZ = 0;
+        for (let i = 0; i < array.length; i += stride) {
+            extentX = Math.max(extentX, Math.abs(array[i] - this.meanX!));
+            extentY = Math.max(extentY, Math.abs(array[i + 1] - this.meanY!));
+            extentZ = Math.max(extentZ, Math.abs(array[i + 2] - this.meanZ!));
+        }
 
         this.extentXYZ = Math.max(extentX, extentY, extentZ);
-        console.log("scaleSettings after calculate", this);
+        console.debug("scaleSettings after calculate", this);
     }
 }
 
@@ -177,6 +182,10 @@ export class TrackManager {
     scaleSettings: ScaleSettings;
     defaultExtent: number;
     ndim: number;
+    annotPointIds: number[][] | null;
+    fatemapHexAttributeIndex: number | null;
+    hexColorToTissueName: Map<number, string> = new Map();
+    numberOfValuesPerPoint: number;
 
     constructor(
         store: string,
@@ -187,6 +196,9 @@ export class TrackManager {
         attributes: ZarrArray,
         attributeOptions: Option[],
         scaleSettings: ScaleSettings,
+        annotPointIds: number[][] | null,
+        fatemapHexAttributeIndex: number | null,
+        numberOfValuesPerPoint: number,
     ) {
         this.store = store;
         this.points = points;
@@ -196,10 +208,13 @@ export class TrackManager {
         this.attributes = attributes;
         this.attributeOptions = attributeOptions;
         this.numTimes = points.shape[0];
-        this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint; // default is /3
+        this.numberOfValuesPerPoint = numberOfValuesPerPoint;
+        this.maxPointsPerTimepoint = points.shape[1] / numberOfValuesPerPoint;
         this.scaleSettings = scaleSettings;
         this.defaultExtent = 1; // pointcloud is centered around (0,0,0) with an extent of 1
         this.ndim = 3;
+        this.annotPointIds = annotPointIds;
+        this.fatemapHexAttributeIndex = fatemapHexAttributeIndex;
     }
 
     async fetchPointsAtTime(timeIndex: number): Promise<Float32Array> {
@@ -353,7 +368,11 @@ export async function loadTrackManager(url: string) {
         const tracksToTracks = await openSparseZarrArray(url, "tracks_to_tracks", true);
 
         let attributes = null;
+        let annotPointIds: number[][] | null = null;
+        let fatemapHexAttributeIndex: number | null = null;
         let attributeOptions: Option[] = resetDropDownOptions();
+        let annotColors: (number | null)[] = [];
+        let attributeNames: string[] = [];
         try {
             attributes = await openArray({
                 store: url,
@@ -364,6 +383,29 @@ export async function loadTrackManager(url: string) {
             console.debug("attribute names found: %s", zattrs["attribute_names"]);
             console.debug("attribute types found: %s", zattrs["attribute_types"]);
 
+            annotPointIds = zattrs["annot_point_ids"] ?? null;
+            console.debug(
+                "[TrackManager] annot_point_ids found:",
+                annotPointIds !== null,
+                `(${(annotPointIds ?? []).length} attributes)`,
+            );
+
+            const fatemapIdx = (zattrs["attribute_names"] as string[]).indexOf("fatemap_hex");
+            fatemapHexAttributeIndex = fatemapIdx >= 0 ? fatemapIdx : null;
+            console.debug(
+                "[TrackManager] fatemap_hex found:",
+                fatemapHexAttributeIndex !== null,
+                fatemapHexAttributeIndex !== null ? `at index ${fatemapHexAttributeIndex}` : "(not present)",
+            );
+
+            annotColors = zattrs["annot_colors"] ?? [];
+            console.debug(
+                "[TrackManager] annot_colors found:",
+                annotColors.length > 0,
+                `(${annotColors.filter((c) => c !== null).length} tissue colors)`,
+            );
+
+            attributeNames = zattrs["attribute_names"] as string[];
             for (let column = 0; column < zattrs["attribute_names"].length; column++) {
                 addDropDownOption(attributeOptions, {
                     name: zattrs["attribute_names"][column],
@@ -389,7 +431,20 @@ export async function loadTrackManager(url: string) {
             attributes,
             attributeOptions,
             scaleSettings,
+            annotPointIds,
+            fatemapHexAttributeIndex,
+            numberOfValuesPerPoint,
         );
+
+        // Build hex color → tissue name reverse map from annot_colors
+        for (let i = 0; i < attributeNames.length; i++) {
+            const color = annotColors[i];
+            if (color != null) {
+                const name = attributeNames[i].replace(/_annot$/, "");
+                trackManager.hexColorToTissueName.set(color, name);
+            }
+        }
+        console.debug("[TrackManager] hexColorToTissueName:", trackManager.hexColorToTissueName);
         if (numberOfValuesPerPoint == 4) {
             trackManager.maxPointsPerTimepoint = trackManager.points.shape[1] / numberOfValuesPerPoint;
         }

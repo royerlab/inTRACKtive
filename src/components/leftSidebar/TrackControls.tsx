@@ -1,4 +1,4 @@
-import { TrackManager, Option, numberOfValuesPerPoint } from "@/lib/TrackManager";
+import { TrackManager, Option } from "@/lib/TrackManager";
 import { TRACK_COLORMAP_NAMES, CELL_COLORMAP_NAMES, colormaps } from "@/lib/Colormaps";
 import { Dropdown, InputSlider, InputToggle } from "@czi-sds/components";
 import { Box, MenuItem, Select, SelectChangeEvent, Stack } from "@mui/material";
@@ -50,6 +50,17 @@ function ColormapSelect({ value, options, onChange }: ColormapSelectProps) {
 
 const allowColorByAttribute = config.permission.allowColorByAttribute;
 
+// Sentinel option representing "no second tissue" in the second-tissue dropdown.
+// Module-scoped so its reference identity is stable across renders (the SDS Dropdown
+// compares options by reference).
+const NONE_OPTION: Option = {
+    name: "None",
+    label: -1,
+    type: "default",
+    action: "default",
+    numCategorical: undefined,
+};
+
 interface TrackControlsProps {
     trackManager: TrackManager | null;
     trackHighlightLength: number;
@@ -71,6 +82,8 @@ interface TrackControlsProps {
     toggleColorBy: (colorBy: boolean) => void;
     colorByEvent: Option;
     changeColorBy: (value: Option) => void;
+    colorBySecondEvent: Option | null;
+    changeSecondColorBy: (value: Option | null) => void;
     colormapTracks: string;
     setColormapTracks: (name: string) => void;
     colormapCells: string;
@@ -80,6 +93,11 @@ interface TrackControlsProps {
 export default function TrackControls(props: TrackControlsProps) {
     const numTimes = props.trackManager?.points.shape[0] ?? 0;
     const dropDownOptions = props.trackManager?.attributeOptions ?? [];
+    // Options for the second tissue: only other hex-binary attributes, plus a "None" opt-out.
+    const secondHexOptions = [
+        NONE_OPTION,
+        ...dropDownOptions.filter((o) => o.type === "hex-binary" && o.label !== props.colorByEvent.label),
+    ];
 
     return (
         <Stack spacing={"1.1em"}>
@@ -109,7 +127,7 @@ export default function TrackControls(props: TrackControlsProps) {
                     </label>
                     <Box>
                         <InputToggle
-                            id="show-tracks-highlights"
+                            id="show-track-highlights"
                             checked={props.showTrackHighlights}
                             onChange={(e) => {
                                 props.setShowTrackHighlights((e.target as HTMLInputElement).checked);
@@ -130,12 +148,12 @@ export default function TrackControls(props: TrackControlsProps) {
 
             {/* Axes toggle */}
             <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
-                <label htmlFor="show-track-highlights">
+                <label htmlFor="show-axes">
                     <FontS>Axes</FontS>
                 </label>
                 <Box>
                     <InputToggle
-                        id="show-tracks-highlights"
+                        id="show-axes"
                         checked={props.axesVisible}
                         onChange={() => {
                             props.toggleAxesVisible();
@@ -183,6 +201,24 @@ export default function TrackControls(props: TrackControlsProps) {
                 </div>
             )}
 
+            {/* Second tissue dropdown (only for hex-binary, when another hex-binary attribute exists) */}
+            {props.colorBy && props.colorByEvent.type === "hex-binary" && secondHexOptions.length > 1 && (
+                <div>
+                    <Dropdown
+                        label={`Second tissue: ${props.colorBySecondEvent?.name ?? "None"}`}
+                        options={secondHexOptions}
+                        value={props.colorBySecondEvent ?? NONE_OPTION}
+                        onChange={(_, value) => {
+                            console.debug("Second tissue Dropdown::onChange", value);
+                            if (value === null) return;
+                            if (typeof value === "string") return;
+                            if (value instanceof Array) return;
+                            props.changeSecondColorBy(value === NONE_OPTION ? null : value);
+                        }}
+                    ></Dropdown>
+                </div>
+            )}
+
             {/* Cell colormap dropdown */}
             {props.colorBy &&
                 (props.colorByEvent.type === "categorical" || props.colorByEvent.type === "continuous") && (
@@ -194,7 +230,7 @@ export default function TrackControls(props: TrackControlsProps) {
                 )}
 
             {/* Cell size slider */}
-            {numberOfValuesPerPoint !== 4 && (
+            {props.trackManager?.numberOfValuesPerPoint !== 4 && (
                 <>
                     <label htmlFor="points-sizes-slider">
                         <FontS id="input-slider-points-sizes-slider">Cell Size</FontS>
@@ -203,7 +239,7 @@ export default function TrackControls(props: TrackControlsProps) {
                         style={{ marginTop: "-0.3em" }}
                         id="points-sizes-slider"
                         aria-labelledby="input-slider-points-sizes-slider"
-                        disabled={numberOfValuesPerPoint === 4}
+                        disabled={props.trackManager?.numberOfValuesPerPoint === 4}
                         min={0.05}
                         max={1}
                         step={0.01}

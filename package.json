@@ -3,10 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:python": "tsc && vite build && mkdir -p python/src/intracktive/frontend/assets && cp dist/index.html dist/spark1.png dist/Biohub_logo_60x60.png dist/icon_zebrafish.png python/src/intracktive/frontend/ && cp dist/assets/* python/src/intracktive/frontend/assets/",
+    "build:python": "tsc && vite build && rm -rf python/src/intracktive/frontend && mkdir -p python/src/intracktive/frontend/assets && cp dist/index.html dist/spark1.png dist/Biohub_logo_60x60.png dist/icon_zebrafish.png python/src/intracktive/frontend/ && cp dist/assets/* python/src/intracktive/frontend/assets/",
     "preview": "vite preview",
     "lint": "eslint src",
     "format": "prettier --write src",

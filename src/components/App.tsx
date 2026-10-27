@@ -17,6 +17,7 @@ import { PointSelectionMode } from "@/lib/PointSelector";
 import LeftSidebarWrapper from "./leftSidebar/LeftSidebarWrapper";
 // import { TimestampOverlay } from "./overlays/TimestampOverlay";
 import { ColorMapTracks, ColorMapCells } from "./overlays/ColorMap.tsx";
+import { TissueHoverOverlay } from "./overlays/TissueHoverOverlay";
 import { TrackDownloadData } from "./DownloadButton";
 import SaveVideoButton, { RecordingConfig, RecordingState } from "./SaveVideoButton";
 
@@ -87,6 +88,67 @@ export default function App() {
     // show a warning dialog before fetching lots of tracks
     const [showWarningDialog, setShowWarningDialog] = useState(false);
     const [numUnfetchedPoints, setNumUnfetchedPoints] = useState(0);
+    const [pendingTrackLoader, setPendingTrackLoader] = useState<(() => void) | null>(null);
+    const [pendingCancelAction, setPendingCancelAction] = useState<(() => void) | null>(null);
+    const [warningMessage, setWarningMessage] = useState<string | undefined>(undefined);
+    const [hoveredTissue, setHoveredTissue] = useState<{ name: string; hexColor: number } | null>(null);
+
+    // Keep a ref to the latest canvas so the mousemove handler is never stale
+    const canvasRef = useRef(canvas);
+    canvasRef.current = canvas;
+    const trackManagerRef = useRef(trackManager);
+    trackManagerRef.current = trackManager;
+
+    // Mousemove raycaster — works in all selector modes, no yellow sphere side effect
+    useEffect(() => {
+        const div = sceneDivRef.current;
+        if (!div) return;
+
+        const onMouseMove = (e: MouseEvent) => {
+            const c = canvasRef.current;
+            const tm = trackManagerRef.current;
+            if (!tm) return;
+            if (c.colorByEvent.type !== "hex" && c.colorByEvent.type !== "hex-binary") {
+                setHoveredTissue(null);
+                return;
+            }
+            const rect = div.getBoundingClientRect();
+            const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const cellIndex = c.getHoveredCellIndex(ndcX, ndcY);
+            console.debug(
+                "[hover] cellIndex:",
+                cellIndex,
+                "colorByEvent:",
+                c.colorByEvent.type,
+                c.colorByEvent.name,
+                "currentAttributes.length:",
+                c.currentAttributes.length,
+            );
+            if (cellIndex === null) {
+                setHoveredTissue(null);
+                return;
+            }
+            const hexInt = c.currentAttributes[cellIndex];
+            console.debug("[hover] hexInt:", hexInt, `(#${hexInt?.toString(16)})`);
+            if (hexInt === undefined || hexInt === 4210752) {
+                setHoveredTissue(null);
+                return;
+            }
+            let name: string | null = null;
+            if (c.colorByEvent.type === "hex-binary") {
+                name = c.colorByEvent.name.replace(/_annot$/, "");
+                console.debug("[hover] hex-binary → tissue:", name);
+            } else if (c.colorByEvent.type === "hex") {
+                name = tm.hexColorToTissueName.get(hexInt) ?? null;
+                console.debug("[hover] hex → reverse lookup:", name, "(map size:", tm.hexColorToTissueName.size, ")");
+            }
+            setHoveredTissue(name !== null ? { name, hexColor: hexInt } : null);
+        };
+
+        div.addEventListener("mousemove", onMouseMove);
+        return () => div.removeEventListener("mousemove", onMouseMove);
+    }, [sceneDivRef]); // stable ref object — .current accessed inside the effect
 
     // Manage shareable state that can persist across sessions.
     const copyShareableUrlToClipboard = () => {
@@ -113,32 +175,148 @@ export default function App() {
         dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy: false });
     };
 
-    // this function fetches the entire lineage for each track
+    // Fetches fatemap attributes for the current timepoint (if lineage mode is active),
+    // stores them directly on the canvas, then resets point colors.
+    // Called after any track loading completes so coloring applies immediately.
+    const finalizeTrackLoading = async () => {
+        let fatemapAttributes: Float32Array | undefined;
+        if (
+            trackManager !== null &&
+            canvas.colorByEvent.type === "hex-binary" &&
+            trackManager.fatemapHexAttributeIndex !== null
+        ) {
+            fatemapAttributes = await trackManager.fetchAttributesAtTime(
+                canvas.curTime,
+                trackManager.fatemapHexAttributeIndex,
+            );
+        }
+        dispatchCanvas({ type: ActionType.RESET_POINTS_COLORS, fatemapAttributes });
+    };
+
+    // this function fetches the entire lineage for each track, using Promise.allSettled
+    // to keep the loading indicator visible until all tracks have been rendered
     const updateTracks = async () => {
         if (!trackManager) return;
         console.debug("updateTracks: ", canvas.selectedPointIds);
-        canvas.selectedPointIds.forEach(async (pointId) => {
+
+        const allTrackPromises: Promise<void>[] = [];
+
+        canvas.selectedPointIds.forEach((pointId) => {
             if (canvas.fetchedPointIds.has(pointId)) return;
+
             setNumLoadingTracks((n) => n + 1);
             canvas.fetchedPointIds.add(pointId);
-            const trackIds = await trackManager.fetchTrackIDsForPoint(pointId);
-            // TODO: points actually only belong to one track, so can get rid of the outer loop
-            trackIds.forEach(async (trackId) => {
-                if (canvas.fetchedRootTrackIds.has(trackId)) return;
-                canvas.fetchedRootTrackIds.add(trackId);
-                const [lineage, trackData] = await trackManager.fetchLineageForTrack(trackId);
-                lineage.forEach(async (relatedTrackId: number, index) => {
-                    if (canvas.tracks.has(relatedTrackId)) return;
-                    const [pos, ids] = await trackManager.fetchPointsForTrack(relatedTrackId);
-                    // adding the track *in* the dispatcher creates issues with duplicate fetching
-                    // but we refresh so the selected/loaded count is updated
-                    canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
-                    dispatchCanvas({ type: ActionType.REFRESH });
-                });
+
+            const trackPromise = trackManager.fetchTrackIDsForPoint(pointId).then(async (trackIds) => {
+                // TODO: points actually only belong to one track, so can get rid of the outer loop
+                const lineagePromises: Promise<void>[] = [];
+
+                for (const trackId of trackIds) {
+                    if (canvas.fetchedRootTrackIds.has(trackId)) continue;
+
+                    canvas.fetchedRootTrackIds.add(trackId);
+
+                    const lineagePromise = trackManager
+                        .fetchLineageForTrack(trackId)
+                        .then(async ([lineage, trackData]) => {
+                            const relatedTrackPromises: Promise<void>[] = [];
+
+                            for (const [index, relatedTrackId] of lineage.entries()) {
+                                if (canvas.tracks.has(relatedTrackId)) continue;
+
+                                const pointsPromise = trackManager
+                                    .fetchPointsForTrack(relatedTrackId)
+                                    .then(([pos, ids]) => {
+                                        // adding the track *in* the dispatcher creates issues with duplicate fetching
+                                        // but we refresh so the selected/loaded count is updated
+                                        canvas.addTrack(relatedTrackId, pos, ids, trackData[index]);
+                                        dispatchCanvas({ type: ActionType.REFRESH });
+                                    });
+
+                                relatedTrackPromises.push(pointsPromise);
+                            }
+
+                            await Promise.allSettled(relatedTrackPromises);
+                        });
+
+                    lineagePromises.push(lineagePromise);
+                }
+
+                await Promise.allSettled(lineagePromises);
             });
-            setNumLoadingTracks((n) => n - 1);
+
+            allTrackPromises.push(trackPromise);
+
+            trackPromise.finally(() => {
+                setNumLoadingTracks((n) => n - 1);
+            });
         });
-    }; // TODO: add missing dependencies
+
+        await Promise.allSettled(allTrackPromises);
+        console.log("All tracks have been rendered on the canvas");
+        await finalizeTrackLoading();
+    };
+
+    // loads only the annotated tracks directly, without expanding to the full lineage
+    const loadTissueTracks = async () => {
+        if (!trackManager) return;
+        const attributeIndex = canvas.colorByEvent.label - numberOfDefaultColorByOptions;
+        const pointIds = trackManager.annotPointIds?.[attributeIndex];
+        if (!pointIds) return;
+
+        // Mark as fetched before dispatching so the selectedPointIds useEffect
+        // sees numUnfetchedPoints = 0 and does not trigger updateTracks.
+        for (const pointId of pointIds) {
+            canvas.fetchedPointIds.add(pointId);
+        }
+        dispatchCanvas({
+            type: ActionType.ADD_SELECTED_POINT_IDS,
+            selectedPointIndices: [],
+            selectedPointIds: new Set(pointIds),
+        });
+
+        const allTrackPromises: Promise<void>[] = [];
+
+        for (const pointId of pointIds) {
+            setNumLoadingTracks((n) => n + 1);
+            const trackPromise = trackManager.fetchTrackIDsForPoint(pointId).then(async (trackIds) => {
+                const perTrackPromises = Array.from(trackIds)
+                    .filter((trackId) => !canvas.tracks.has(trackId))
+                    .map((trackId) =>
+                        trackManager.fetchPointsForTrack(trackId).then(([pos, ids]) => {
+                            canvas.addTrack(trackId, pos, ids, -1);
+                            dispatchCanvas({ type: ActionType.REFRESH });
+                        }),
+                    );
+                await Promise.allSettled(perTrackPromises);
+            });
+            allTrackPromises.push(trackPromise);
+            trackPromise.finally(() => setNumLoadingTracks((n) => n - 1));
+        }
+
+        await Promise.allSettled(allTrackPromises);
+        console.log("All tissue tracks have been rendered on the canvas");
+        await finalizeTrackLoading();
+    };
+
+    const handleTissueTracks = () => {
+        if (!trackManager) return;
+        const attributeIndex = canvas.colorByEvent.label - numberOfDefaultColorByOptions;
+        const pointIds = trackManager.annotPointIds?.[attributeIndex];
+        if (!pointIds) return;
+
+        if (pointIds.length > maxNumSelectedCells) {
+            setNumUnfetchedPoints(pointIds.length);
+            setPendingTrackLoader(() => loadTissueTracks);
+            setPendingCancelAction(null); // tissue path adds no selectedPointIds, nothing to undo
+            setWarningMessage(
+                `This will load ${pointIds.length} tissue tracks, which might take a long time. Continue?`,
+            );
+            setShowWarningDialog(true);
+        } else {
+            loadTissueTracks();
+        }
+    };
 
     // remove the just selected points from selectedPointIds if user 'cancels' the fetching of tracks
     const removeLastSelectedPoints = async () => {
@@ -221,10 +399,41 @@ export default function App() {
                     );
                 }
 
+                let fatemapAttributes: Float32Array | undefined;
+                if (
+                    canvas.colorByEvent.type === "hex-binary" &&
+                    trackManager.fatemapHexAttributeIndex !== null &&
+                    canvas.tracks.size > 0
+                ) {
+                    fatemapAttributes = await trackManager.fetchAttributesAtTime(
+                        time,
+                        trackManager.fatemapHexAttributeIndex,
+                    );
+                }
+
+                let secondaryAttributes: Float32Array | undefined;
+                if (canvas.colorBySecondEvent && canvas.colorByEvent.type === "hex-binary") {
+                    secondaryAttributes = await trackManager.fetchAttributesAtTime(
+                        time,
+                        canvas.colorBySecondEvent.label - numberOfDefaultColorByOptions,
+                    );
+                }
+
+                if (ignore) {
+                    console.debug("IGNORE SET points at time %d (after fatemap fetch)", time);
+                    return;
+                }
+
                 // clearing the timeout prevents the loading indicator from showing at all if the fetch is fast
                 clearTimeout(loadingTimeout);
                 setIsLoadingPoints(false);
-                dispatchCanvas({ type: ActionType.POINTS_POSITIONS, positions: data, attributes });
+                dispatchCanvas({
+                    type: ActionType.POINTS_POSITIONS,
+                    positions: data,
+                    attributes,
+                    fatemapAttributes,
+                    secondaryAttributes,
+                });
             };
             getPoints(canvas.curTime);
         } else {
@@ -242,7 +451,7 @@ export default function App() {
             clearTimeout(loadingTimeout);
             ignore = true;
         };
-    }, [canvas.curTime, canvas.colorByEvent, dispatchCanvas, trackManager]);
+    }, [canvas.curTime, canvas.colorByEvent, canvas.colorBySecondEvent, dispatchCanvas, trackManager]);
 
     // This fetches track IDs based on the selected point IDs.
     useEffect(() => {
@@ -261,6 +470,11 @@ export default function App() {
         // if many cells are selected, let the user decide whether to fetch or cancel
         if (numUnfetchedPoints > maxNumSelectedCells) {
             setNumUnfetchedPoints(numUnfetchedPoints);
+            setPendingTrackLoader(() => updateTracks);
+            setPendingCancelAction(() => removeLastSelectedPoints);
+            setWarningMessage(
+                `This will load the full lineage of ${numUnfetchedPoints} selected cells, which may include many more tracks and could take a long time. Continue?`,
+            );
             setShowWarningDialog(true);
         } else {
             updateTracks();
@@ -391,52 +605,47 @@ export default function App() {
 
     const getTrackDownloadData = () => {
         const trackData: TrackDownloadData[] = [];
+
+        // Build a reverse map from pointId → {trackID, track} for O(1) lookup
+        const pointIdToTrack = new Map<
+            number,
+            { trackID: number; track: typeof canvas.tracks extends Map<infer _K, infer V> ? V : never }
+        >();
         canvas.tracks.forEach((track, trackID) => {
-            // Keep track of the timepoints we've seen in this track to avoid duplication
-            // This is necessary because if a track contains a single point, we set
-            // the start and end positions to be the same
-            const timepointsInTrack = new Set();
-
-            const startPositions = track.threeTrack.geometry.getAttribute("instanceStart");
-            const startTimes = track.threeTrack.geometry.getAttribute("instanceTimeStart");
-
-            for (let i = 0; i < startTimes.count; i++) {
-                timepointsInTrack.add(startTimes.getX(i));
-                trackData.push([
-                    // trackID is 1-indexed in input and output CSVs
-                    trackID + 1,
-                    startTimes.getX(i),
-                    startPositions.getX(i),
-                    startPositions.getY(i),
-                    startPositions.getZ(i),
-                    track.parentTrackID,
-                ]);
+            for (const pointId of track.threeTrack.pointIds) {
+                pointIdToTrack.set(pointId, { trackID, track });
             }
-            const endPositions = track.threeTrack.geometry.getAttribute("instanceEnd");
-            const endTimes = track.threeTrack.geometry.getAttribute("instanceTimeEnd");
-            const lastIndex = endPositions.count - 1;
+        });
 
-            // Only add the end position if it's not the same as the start position
-            if (!timepointsInTrack.has(endTimes.getX(lastIndex))) {
-                trackData.push([
-                    // trackID is 1-indexed in input and output CSVs
-                    trackID + 1,
-                    endTimes.getX(lastIndex),
-                    endPositions.getX(lastIndex),
-                    endPositions.getY(lastIndex),
-                    endPositions.getZ(lastIndex),
-                    track.parentTrackID,
-                ]);
-            }
+        canvas.selectedPointIds.forEach((pointId) => {
+            const time = Math.floor(pointId / canvas.maxPointsPerTimepoint);
+            const entry = pointIdToTrack.get(pointId);
+            if (!entry) return;
+            const { trackID, track } = entry;
+            const pointIndex = track.threeTrack.pointIds.indexOf(pointId);
+            if (pointIndex === -1) return;
+            // The track is a LineSegmentsGeometry: N points → N-1 segments, so
+            // instanceStart only has N-1 entries (one per segment start). The last
+            // point of a track has no instanceStart entry — read it from instanceEnd
+            // (the end vertex of the final segment) instead, otherwise it reads NaN.
+            const instanceStart = track.threeTrack.geometry.getAttribute("instanceStart");
+            const instanceEnd = track.threeTrack.geometry.getAttribute("instanceEnd");
+            const isLastPoint = pointIndex === track.threeTrack.pointIds.length - 1;
+            const positions = isLastPoint && pointIndex > 0 ? instanceEnd : instanceStart;
+            const posIndex = isLastPoint && pointIndex > 0 ? pointIndex - 1 : pointIndex;
+            trackData.push([
+                trackID + 1,
+                time,
+                positions.getX(posIndex),
+                positions.getY(posIndex),
+                positions.getZ(posIndex),
+                track.parentTrackID,
+            ]);
         });
 
         // Sort the trackData by track ID (first column) and then by time (second column)
         trackData.sort((a, b) => {
-            // First compare by trackID (a[0], b[0])
-            if (a[0] !== b[0]) {
-                return a[0] - b[0];
-            }
-            // If trackID is the same, compare by time (a[1], b[1])
+            if (a[0] !== b[0]) return a[0] - b[0];
             return a[1] - b[1];
         });
 
@@ -509,10 +718,21 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.SELECTOR_SCALE, scale });
                                 }}
                                 selectorScale={canvas.selector.sphereSelector.cursor.scale.x}
+                                colorBy={canvas.colorBy}
+                                colorByEvent={canvas.colorByEvent}
+                                colorBySecondEvent={canvas.colorBySecondEvent}
+                                onSelectBinaryValue={(pointIds: Set<number>) => {
+                                    dispatchCanvas({
+                                        type: ActionType.ADD_SELECTED_POINT_IDS,
+                                        selectedPointIndices: [],
+                                        selectedPointIds: pointIds,
+                                    });
+                                }}
+                                onLoadTissueTracks={handleTissueTracks}
                             />
                             <Divider sx={{ marginY: "1em" }} />
                             <LeftSidebarWrapper
-                                hasTracks={numSelectedCells > 0}
+                                hasTracks={numSelectedCells > 0 || numSelectedTracks > 0}
                                 trackManager={trackManager}
                                 trackHighlightLength={trackHighlightLength}
                                 selectionMode={canvas.selector.selectionMode}
@@ -559,6 +779,10 @@ export default function App() {
                                 colorByEvent={canvas.colorByEvent}
                                 changeColorBy={(option: Option) => {
                                     dispatchCanvas({ type: ActionType.CHANGE_COLOR_BY, option });
+                                }}
+                                colorBySecondEvent={canvas.colorBySecondEvent}
+                                changeSecondColorBy={(option: Option | null) => {
+                                    dispatchCanvas({ type: ActionType.CHANGE_SECOND_COLOR_BY, option });
                                 }}
                                 colormapTracks={canvas.colormapTracks}
                                 setColormapTracks={(colormapName: string) => {
@@ -618,17 +842,22 @@ export default function App() {
                 >
                     <Scene isLoading={isLoadingPoints || numLoadingTracks > 0} />
                     {/* <TimestampOverlay timestamp={canvas.curTime} /> */}
-                    {numSelectedCells > 0 && <ColorMapTracks colormapName={canvas.colormapTracks} />}
-                    {canvas.colorByEvent.type !== "default" && canvas.colorByEvent.type !== "hex" && (
-                        <ColorMapCells
-                            colorByEvent={canvas.colorByEvent}
-                            colormapName={
-                                canvas.colorByEvent.type === "categorical"
-                                    ? canvas.colormapCellsCategorical
-                                    : canvas.colormapCellsContinuous
-                            }
-                        />
+                    {hoveredTissue && (
+                        <TissueHoverOverlay name={hoveredTissue.name} hexColor={hoveredTissue.hexColor} />
                     )}
+                    {numSelectedCells > 0 && <ColorMapTracks colormapName={canvas.colormapTracks} />}
+                    {canvas.colorByEvent.type !== "default" &&
+                        canvas.colorByEvent.type !== "hex" &&
+                        canvas.colorByEvent.type !== "hex-binary" && (
+                            <ColorMapCells
+                                colorByEvent={canvas.colorByEvent}
+                                colormapName={
+                                    canvas.colorByEvent.type === "categorical"
+                                        ? canvas.colormapCellsCategorical
+                                        : canvas.colormapCellsContinuous
+                                }
+                            />
+                        )}
                 </Box>
 
                 {/* The playback controls */}
@@ -675,13 +904,18 @@ export default function App() {
             <WarningDialog
                 open={showWarningDialog}
                 numUnfetchedPoints={numUnfetchedPoints}
+                message={warningMessage}
                 onCloseAction={() => {
                     setShowWarningDialog(false);
-                    removeLastSelectedPoints(); // no fetching, remove selection
+                    setWarningMessage(undefined);
+                    pendingCancelAction?.();
+                    setPendingCancelAction(null);
                 }}
                 onContinueAction={() => {
                     setShowWarningDialog(false);
-                    updateTracks(); // Continue loading tracks
+                    setWarningMessage(undefined);
+                    pendingTrackLoader?.();
+                    setPendingTrackLoader(null);
                 }}
             />
         </Box>
