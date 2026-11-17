@@ -1,5 +1,5 @@
 import { Color } from "three";
-import { Lut } from "three/examples/jsm/Addons.js";
+import { Lut } from "three/examples/jsm/math/Lut.js";
 
 // generated using https://waldyrious.net/viridis-palette-generator/
 // and: https://hauselin.github.io/colorpalettejs/

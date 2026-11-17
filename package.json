@@ -25,19 +25,19 @@
     "mp4-muxer": "^5.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.159.0",
+    "three": "^0.185.1",
     "zarr": "^0.6.2"
   },
   "devDependencies": {
     "@testing-library/react": "^14.2.1",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
-    "@types/three": "^0.159.0",
-    "@typescript-eslint/eslint-plugin": "^6.20.0",
-    "@typescript-eslint/parser": "^6.20.0",
+    "@types/three": "^0.185.4",
+    "@typescript-eslint/eslint-plugin": "^8.73.0",
+    "@typescript-eslint/parser": "^8.73.0",
     "@vitejs/plugin-react": "^4.7.0",
-    "@vitest/browser": "^1.2.2",
-    "@vitest/coverage-istanbul": "^1.2.2",
+    "@vitest/browser-playwright": "^4.1.12",
+    "@vitest/coverage-istanbul": "^4.1.12",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
@@ -47,8 +47,8 @@
     "playwright": "^1.60.0",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8",
-    "vitest": "^1.2.2"
+    "vite": "^6.4.6",
+    "vitest": "^4.1.12"
   },
   "prettier": {
     "semi": true,

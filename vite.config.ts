@@ -1,7 +1,8 @@
 /* eslint-disable spaced-comment */
-/// <reference types="vitest" />
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
     plugins: [react()],
@@ -15,13 +16,14 @@ export default defineConfig({
         environment: "jsdom",
         browser: {
             enabled: true,
-            provider: "playwright",
-            name: "chromium", // browser name is required
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
             headless: true,
         },
         coverage: {
             provider: "istanbul",
-            include: ["src/**"],
+            include: ["src/**/*.{ts,tsx}"],
+            exclude: ["**/.ipynb_checkpoints/**"],
         },
     },
 });

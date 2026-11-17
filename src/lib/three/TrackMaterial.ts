@@ -471,12 +471,13 @@ class TrackMaterial extends ShaderMaterial {
             this.needsUpdate = true;
         }
 
+        // `extensions.derivatives` was removed in three r168: derivatives are
+        // core in WebGL2 / GLSL ES 3.0, so the flag became a no-op. Upstream
+        // LineMaterial dropped the same two lines.
         if (value === true) {
             this.defines.USE_ALPHA_TO_COVERAGE = "";
-            this.extensions.derivatives = true;
         } else {
             delete this.defines.USE_ALPHA_TO_COVERAGE;
-            this.extensions.derivatives = false;
         }
     }
 }

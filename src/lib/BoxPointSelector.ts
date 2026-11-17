@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Points, Scene, WebGLRenderer } from "three";
+import { PerspectiveCamera, Points, Scene, Vector2, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SelectionHelper } from "three/addons/interactive/SelectionHelper.js";
 
@@ -18,6 +18,15 @@ export class BoxPointSelector {
     // Used for blocking selections when pointer is held down before
     // entering the canvas.
     blocked: boolean = false;
+
+    // Drag rectangle in client coordinates, tracked here rather than read back
+    // off SelectionHelper. three r185 made the helper's `startPoint`,
+    // `pointTopLeft` and `pointBottomRight` private with no getters, while
+    // @types/three still advertises them as public — so reading them type-checks
+    // and then throws at runtime. The helper is still used, but only for drawing
+    // the rubber-band rectangle.
+    private dragStart = new Vector2();
+    private dragEnd = new Vector2();
 
     constructor(
         scene: Scene,
@@ -52,21 +61,24 @@ export class BoxPointSelector {
         }
     }
 
-    pointerUp(_event: MouseEvent) {
+    pointerUp(event: MouseEvent) {
         console.debug("BoxPointSelector.pointerUp");
         this.blocked = false;
         if (!this.selecting()) return;
+        this.dragEnd.set(event.clientX, event.clientY);
         // Mouse to normalized render/canvas coords from:
         // https://codepen.io/boytchev/pen/NWOMrxW?editors=0011
         const canvasRect = this.renderer.domElement.getBoundingClientRect();
 
-        const topLeft = this.helper.pointTopLeft;
-        const left = ((topLeft.x - canvasRect.left) / canvasRect.width) * 2 - 1;
-        const top = (-(topLeft.y - canvasRect.top) / canvasRect.height) * 2 + 1;
+        const topLeftX = Math.min(this.dragStart.x, this.dragEnd.x);
+        const topLeftY = Math.min(this.dragStart.y, this.dragEnd.y);
+        const left = ((topLeftX - canvasRect.left) / canvasRect.width) * 2 - 1;
+        const top = (-(topLeftY - canvasRect.top) / canvasRect.height) * 2 + 1;
 
-        const bottomRight = this.helper.pointBottomRight;
-        const right = ((bottomRight.x - canvasRect.left) / canvasRect.width) * 2 - 1;
-        const bottom = (-(bottomRight.y - canvasRect.top) / canvasRect.height) * 2 + 1;
+        const bottomRightX = Math.max(this.dragStart.x, this.dragEnd.x);
+        const bottomRightY = Math.max(this.dragStart.y, this.dragEnd.y);
+        const right = ((bottomRightX - canvasRect.left) / canvasRect.width) * 2 - 1;
+        const bottom = (-(bottomRightY - canvasRect.top) / canvasRect.height) * 2 + 1;
         console.debug("updateSelectedPoints, top = %f, left = %f, bottom = %f, right = %f", top, left, bottom, right);
 
         // TODO: check the z-value of these points
@@ -83,8 +95,10 @@ export class BoxPointSelector {
         this.blocked = false;
     }
 
-    pointerDown(_event: MouseEvent) {
+    pointerDown(event: MouseEvent) {
         console.debug("BoxPointSelector.pointerDown");
+        this.dragStart.set(event.clientX, event.clientY);
+        this.dragEnd.copy(this.dragStart);
         this.blocked = true;
     }
 
@@ -97,9 +111,8 @@ export class BoxPointSelector {
         if (event.key === "Shift") {
             this.helper.enabled = false; // Ensure helper starts disabled
             this.helper.element.style.display = "none"; // Hide any visible rectangle
-            this.helper.startPoint.set(0, 0); // Reset the start point
-            this.helper.pointTopLeft.set(0, 0); // Reset the top-left point
-            this.helper.pointBottomRight.set(0, 0); // Reset the bottom-right point
+            this.dragStart.set(0, 0); // Reset the drag rectangle
+            this.dragEnd.set(0, 0);
             this.helper.isDown = false; // Explicitly tell helper no drag is in progress (this was key to solving the shift issue)
             this.setSelecting(true);
         }
