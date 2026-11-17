@@ -336,7 +336,7 @@ export async function loadTrackManager(url: string) {
             scaleSettings.meanY = zattrs["mean_y"];
             scaleSettings.meanZ = zattrs["mean_z"];
             scaleSettings.extentXYZ = zattrs["extent_xyz"];
-        } catch (error) {
+        } catch {
             numberOfValuesPerPoint = 3;
         }
 
@@ -374,7 +374,7 @@ export async function loadTrackManager(url: string) {
                 });
             }
             console.debug("attributeOptions:", attributeOptions);
-        } catch (error) {
+        } catch {
             attributeOptions = resetDropDownOptions(true);
             console.debug("No attributes found in Zarr");
         }
