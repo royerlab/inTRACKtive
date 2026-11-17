@@ -18,16 +18,18 @@ def open_file(
     add_hex_attribute: str | None = None,
     calc_velocity: bool = False,
     velocity_smoothing_windowsize: int = 1,
+    discard_filtered_spots: bool = False,
+    discard_filtered_tracks: bool = False,
 ) -> Path:
     """
-    Open a file in inTRACKtive viewer. Supports Zarr stores, CSV, Parquet, and GEFF files.
+    Open a file in inTRACKtive viewer. Supports Zarr stores, CSV, Parquet, GEFF, and TrackMate/MaMuT XML files.
 
     This is the core function that can be called both programmatically and via CLI.
 
     Parameters
     ----------
     input_path : Path
-        Path to the file (Zarr store, CSV, Parquet, or GEFF)
+        Path to the file (Zarr store, CSV, Parquet, GEFF, or TrackMate/MaMuT XML)
     no_browser : bool, optional
         Don't open browser automatically, just print the URL, by default False
     out_dir : Path | None, optional
@@ -44,6 +46,10 @@ def open_file(
         Boolean indicating whether to calculate velocity of the cells, by default False
     velocity_smoothing_windowsize : int, optional
         Smoothing factor for velocity calculation, by default 1
+    discard_filtered_spots : bool, optional
+        TrackMate XML only: discard spots filtered out in TrackMate, by default False
+    discard_filtered_tracks : bool, optional
+        TrackMate XML only: discard tracks filtered out in TrackMate, by default False
 
     Returns
     -------
@@ -84,12 +90,15 @@ def open_file(
                 "intracktive folders are missing in the zarr, this is probably a wrong path"
             )
     else:
-        # Need to convert CSV/Parquet/GEFF to Zarr
-        if file_extension not in [".csv", ".parquet", ".geff"] and not is_geff_dataset(
-            input_path
-        ):
+        # Need to convert CSV/Parquet/GEFF/XML to Zarr
+        if file_extension not in [
+            ".csv",
+            ".parquet",
+            ".geff",
+            ".xml",
+        ] and not is_geff_dataset(input_path):
             raise click.UsageError(
-                f"Unsupported file format: {file_extension}. Only .zarr, .csv, .parquet and GEFF files are supported."
+                f"Unsupported file format: {file_extension}. Only .zarr, .csv, .parquet, .xml (TrackMate/MaMuT) and GEFF files are supported."
             )
 
         if not input_path.exists():
@@ -106,6 +115,8 @@ def open_file(
             add_hex_attribute=add_hex_attribute,
             calc_velocity=calc_velocity,
             velocity_smoothing_windowsize=velocity_smoothing_windowsize,
+            discard_filtered_spots=discard_filtered_spots,
+            discard_filtered_tracks=discard_filtered_tracks,
         )
         LOG.info(f"Conversion completed! Zarr store created at: {zarr_path}")
 
@@ -174,6 +185,20 @@ def open_file(
     default=1,
     help="Smoothing factor for velocity calculation, using a moving average over n frames around each frame",
 )
+@click.option(
+    "--discard_filtered_spots",
+    is_flag=True,
+    help="TrackMate XML only: discard spots that were filtered out in TrackMate",
+    default=False,
+    type=bool,
+)
+@click.option(
+    "--discard_filtered_tracks",
+    is_flag=True,
+    help="TrackMate XML only: discard tracks that were filtered out in TrackMate",
+    default=False,
+    type=bool,
+)
 def open_cli(
     input_path: Path,
     no_browser: bool,
@@ -184,15 +209,17 @@ def open_cli(
     add_hex_attribute: str | None,
     calc_velocity: bool,
     velocity_smoothing_windowsize: int,
+    discard_filtered_spots: bool,
+    discard_filtered_tracks: bool,
 ) -> None:
     """
-    Open a file in inTRACKtive viewer. Supports Zarr stores, CSV, Parquet, and GEFF files.
+    Open a file in inTRACKtive viewer. Supports Zarr stores, CSV, Parquet, GEFF, and TrackMate/MaMuT XML files.
 
     Arguments:
-        INPUT_PATH: Path to the file (Zarr store, CSV, Parquet, or GEFF)
+        INPUT_PATH: Path to the file (Zarr store, CSV, Parquet, GEFF, or TrackMate/MaMuT XML)
 
     This command will:
-    1. If input is CSV/Parquet/GEFF: Convert to Zarr format first
+    1. If input is CSV/Parquet/GEFF/XML: Convert to Zarr format first
     2. Start a local server to host the Zarr store
     3. Generate a URL for viewing in inTRACKtive
     4. Open the browser (unless --no-browser is specified)
@@ -206,6 +233,7 @@ def open_cli(
     intracktive open /path/to/data.csv
     intracktive open /path/to/data.parquet
     intracktive open /path/to/data.geff
+    intracktive open /path/to/trackmate.xml
     """
     open_file(
         input_path=input_path,
@@ -217,6 +245,8 @@ def open_cli(
         add_hex_attribute=add_hex_attribute,
         calc_velocity=calc_velocity,
         velocity_smoothing_windowsize=velocity_smoothing_windowsize,
+        discard_filtered_spots=discard_filtered_spots,
+        discard_filtered_tracks=discard_filtered_tracks,
     )
 
 

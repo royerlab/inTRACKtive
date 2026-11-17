@@ -252,6 +252,22 @@ def test_convert_cli_geff_file(
     )
 
 
+def test_convert_cli_trackmate_xml(tmp_path: Path) -> None:
+    xml_file = Path(__file__).parent / "data" / "trackmate_mini.xml"
+    _run_command(["convert", str(xml_file), "--out_dir", str(tmp_path)])
+    _run_command(
+        [
+            "convert",
+            str(xml_file),
+            "--out_dir",
+            str(tmp_path),
+            "--add_all_attributes",
+            "--discard_filtered_spots",
+            "--discard_filtered_tracks",
+        ]
+    )
+
+
 def test_convert_cli_negative_coordinates(
     tmp_path: Path,
     make_sample_data: pd.DataFrame,
@@ -474,7 +490,7 @@ def test_open_cli_validates_unsupported_format(tmp_path: Path) -> None:
     result = runner.invoke(main, ["open", str(unsupported_path)])
     assert result.exit_code == 2
     assert (
-        "Unsupported file format: .txt. Only .zarr, .csv, .parquet and GEFF files are supported."
+        "Unsupported file format: .txt. Only .zarr, .csv, .parquet, .xml (TrackMate/MaMuT) and GEFF files are supported."
         in result.output
     )
 

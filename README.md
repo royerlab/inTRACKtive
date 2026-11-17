@@ -155,9 +155,11 @@ intracktive open path/to/tracks.csv
 intracktive open path/to/tracks.parquet
 
 intracktive open path/to/tracks.geff
+
+intracktive open path/to/trackmate.xml
 ```
 
-where the path is the full path to the file, including the filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. If you `intracktive open` a CSV/Parquet/GEFF file, the command will first convert the input to our Zarr format and open that file. 
+where the path is the full path to the file, including the filename (example: `~/Downloads/tracks_bundle.zarr`). This command will spin up a local host at the location of the Zarr bundle, and open a browser tab with `inTRACKtive` running with this dataset. If you `intracktive open` a CSV/Parquet/GEFF/TrackMate XML file, the command will first convert the input to our Zarr format and open that file. 
 
 ---
 
