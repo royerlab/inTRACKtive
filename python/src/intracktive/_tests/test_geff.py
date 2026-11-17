@@ -13,7 +13,12 @@ from geff.testing.data import (
 )
 from geff_spec import GeffMetadata
 from intracktive.convert import convert_dataframe_to_zarr, convert_file
-from intracktive.geff import is_geff_dataset, read_geff_to_df
+from intracktive.geff import (
+    _map_spatial_axes,
+    is_geff_dataset,
+    read_geff_to_df,
+    read_trackmate_xml_to_df,
+)
 from pydantic import ValidationError
 
 
@@ -554,3 +559,51 @@ def test_convert_dataframe_to_zarr_with_nan_values(tmp_path):
     assert np.all(intensity_values <= 1)
 
     print("✅ convert_dataframe_to_zarr handles NaN values correctly!")
+
+
+TRACKMATE_XML = Path(__file__).parent / "data" / "trackmate_mini.xml"
+
+
+@pytest.mark.parametrize(
+    "axis_names,expected",
+    [
+        (["z", "y", "x"], {"z": "z", "y": "y", "x": "x"}),
+        (["X", "Y"], {"X": "x", "Y": "y"}),
+        (
+            ["POSITION_X", "POSITION_Y", "POSITION_Z"],
+            {"POSITION_X": "x", "POSITION_Y": "y", "POSITION_Z": "z"},
+        ),
+        (["pos_a", "pos_b"], {"pos_a": "y", "pos_b": "x"}),  # fallback on order
+    ],
+)
+def test_map_spatial_axes(axis_names, expected):
+    assert _map_spatial_axes(axis_names) == expected
+
+
+def test_read_trackmate_xml_to_df():
+    """2D TrackMate XML: FRAME is used as time, constant z is dropped, RADIUS becomes radius."""
+    df = read_trackmate_xml_to_df(TRACKMATE_XML, include_all_attributes=True)
+
+    assert list(df.columns[:5]) == ["track_id", "t", "y", "x", "parent_track_id"]
+    assert "z" not in df.columns
+    assert "radius" in df.columns
+    assert df["t"].tolist() == [0, 1, 2, 2]  # FRAME, not POSITION_T (0, 5, 10 s)
+    assert df.loc[10, ["x", "y"]].tolist() == [1.0, 2.0]
+
+    # one division: 1 parent track and 2 daughter tracks
+    assert df["track_id"].nunique() == 3
+    daughters = df[df["parent_track_id"] > 0]
+    assert set(daughters.index) == {12, 13}
+    assert (daughters["parent_track_id"] == df.loc[11, "track_id"]).all()
+
+
+def test_convert_trackmate_xml(tmp_path):
+    zarr_path = convert_file(
+        input_file=TRACKMATE_XML,
+        out_dir=tmp_path,
+        add_radius=True,
+        add_attribute="QUALITY",
+    )
+    assert zarr_path == tmp_path / "trackmate_mini_bundle.zarr"
+    root = zarr.open(zarr_path, mode="r")
+    assert root["points"].attrs["ndim"] == 2

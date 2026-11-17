@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrackMate version="7.0.0">
+  <Model spatialunits="micrometer" timeunits="second">
+    <FeatureDeclarations>
+      <SpotFeatures>
+        <Feature feature="QUALITY" name="Quality" shortname="Quality" dimension="QUALITY" isint="false" />
+        <Feature feature="POSITION_X" name="X" shortname="X" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_Y" name="Y" shortname="Y" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_Z" name="Z" shortname="Z" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_T" name="T" shortname="T" dimension="TIME" isint="false" />
+        <Feature feature="FRAME" name="Frame" shortname="Frame" dimension="NONE" isint="true" />
+        <Feature feature="RADIUS" name="Radius" shortname="R" dimension="LENGTH" isint="false" />
+        <Feature feature="VISIBILITY" name="Visibility" shortname="Visibility" dimension="NONE" isint="true" />
+      </SpotFeatures>
+      <EdgeFeatures>
+        <Feature feature="SPOT_SOURCE_ID" name="Source spot ID" shortname="Source ID" dimension="NONE" isint="true" />
+        <Feature feature="SPOT_TARGET_ID" name="Target spot ID" shortname="Target ID" dimension="NONE" isint="true" />
+      </EdgeFeatures>
+      <TrackFeatures>
+        <Feature feature="TRACK_ID" name="Track ID" shortname="ID" dimension="NONE" isint="true" />
+      </TrackFeatures>
+    </FeatureDeclarations>
+    <AllSpots nspots="4">
+      <SpotsInFrame frame="0">
+        <Spot ID="10" name="a" QUALITY="1.0" POSITION_X="1.0" POSITION_Y="2.0" POSITION_Z="0.0" POSITION_T="0.0" FRAME="0" RADIUS="1.5" VISIBILITY="1" />
+      </SpotsInFrame>
+      <SpotsInFrame frame="1">
+        <Spot ID="11" name="b" QUALITY="1.0" POSITION_X="2.0" POSITION_Y="3.0" POSITION_Z="0.0" POSITION_T="5.0" FRAME="1" RADIUS="1.5" VISIBILITY="1" />
+      </SpotsInFrame>
+      <SpotsInFrame frame="2">
+        <Spot ID="12" name="c" QUALITY="1.0" POSITION_X="1.0" POSITION_Y="4.0" POSITION_Z="0.0" POSITION_T="10.0" FRAME="2" RADIUS="1.5" VISIBILITY="1" />
+        <Spot ID="13" name="d" QUALITY="1.0" POSITION_X="3.0" POSITION_Y="4.0" POSITION_Z="0.0" POSITION_T="10.0" FRAME="2" RADIUS="1.5" VISIBILITY="1" />
+      </SpotsInFrame>
+    </AllSpots>
+    <AllTracks>
+      <Track name="Track_0" TRACK_ID="0">
+        <Edge SPOT_SOURCE_ID="10" SPOT_TARGET_ID="11" />
+        <Edge SPOT_SOURCE_ID="11" SPOT_TARGET_ID="12" />
+        <Edge SPOT_SOURCE_ID="11" SPOT_TARGET_ID="13" />
+      </Track>
+    </AllTracks>
+    <FilteredTracks>
+      <TrackID TRACK_ID="0" />
+    </FilteredTracks>
+  </Model>
+  <Settings />
+</TrackMate>

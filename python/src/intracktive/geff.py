@@ -1,8 +1,10 @@
 import logging
+import tempfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import zarr
+from geff.convert import from_trackmate_xml_to_geff
 from geff.convert._dataframe import geff_to_dataframes
 from geff.core_io._utils import remove_tilde
 from geff.validate.structure import validate_structure
@@ -141,6 +143,119 @@ def remove_merging_edges(edge_df: pd.DataFrame) -> tuple[bool, pd.DataFrame]:
     return no_merging, df_no_merging
 
 
+def _map_spatial_axes(
+    axis_names: list[str], display_hints: object | None = None
+) -> dict[str, str]:
+    """
+    Map the names of the GEFF spatial axes to the inTRACKtive column names (x, y, z).
+
+    Strategies are tried in order, the first one giving a complete one-to-one mapping wins:
+    1. axis names are already x/y/z (case-insensitive)
+    2. GEFF display hints (horizontal -> x, vertical -> y, depth -> z)
+    3. axis names ending with x/y/z (e.g. POSITION_X, centroid-y)
+    4. metadata order, assuming (z), y, x
+
+    Parameters
+    ----------
+    axis_names : list[str]
+        Names of the spatial axes, in metadata order
+    display_hints : object | None
+        GEFF DisplayHint metadata, by default None
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping from GEFF axis name to inTRACKtive column name
+    """
+    targets = ["z", "y", "x"][-len(axis_names) :]
+
+    def is_valid(mapping: dict[str, str]) -> bool:
+        return set(mapping) == set(axis_names) and sorted(mapping.values()) == sorted(
+            targets
+        )
+
+    candidates = [{name: name.lower() for name in axis_names}]
+    if display_hints is not None:
+        hints = {
+            getattr(display_hints, "display_horizontal", None): "x",
+            getattr(display_hints, "display_vertical", None): "y",
+            getattr(display_hints, "display_depth", None): "z",
+        }
+        candidates.append({k: v for k, v in hints.items() if k in axis_names})
+    candidates.append({name: name.lower()[-1] for name in axis_names})
+
+    for mapping in candidates:
+        if is_valid(mapping):
+            return mapping
+
+    LOG.warning(
+        f"Could not infer x/y/z from spatial axis names {axis_names}, "
+        f"assuming they are ordered as {targets}"
+    )
+    return dict(zip(axis_names, targets))
+
+
+def _normalize_axis_columns(
+    node_df: pd.DataFrame, metadata: GeffMetadata
+) -> tuple[pd.DataFrame, int]:
+    """
+    Rename the GEFF time and space columns to t/(z)/y/x and apply format-specific fixes.
+
+    - TrackMate (detected via `extra.other_trackmate_metadata`): use FRAME instead of
+      POSITION_T (which is in physical time units) and RADIUS as radius
+    - A z axis with a single constant value (e.g. 2D TrackMate data) is dropped
+
+    Parameters
+    ----------
+    node_df : pd.DataFrame
+        Node DataFrame as returned by geff_to_dataframes
+    metadata : GeffMetadata
+        GEFF metadata
+
+    Returns
+    -------
+    tuple[pd.DataFrame, int]
+        Renamed node DataFrame and the number of spatial dimensions (2 or 3)
+    """
+    temporal_axes = [axis for axis in metadata.axes if axis.type == "time"]
+    spatial_axes = [axis for axis in metadata.axes if axis.type == "space"]
+    if len(spatial_axes) < 2 or len(spatial_axes) > 3:
+        raise ValueError(f"Expected 2 or 3 spatial axes, got {len(spatial_axes)}")
+    if len(temporal_axes) == 0:
+        raise ValueError("No temporal axis found in metadata")
+
+    is_trackmate = "other_trackmate_metadata" in (metadata.extra or {})
+
+    # Use first temporal axis, or the integer frame index for TrackMate
+    time_col = temporal_axes[0].name
+    if is_trackmate and "FRAME" in node_df.columns:
+        time_col = "FRAME"
+
+    rename = {time_col: "t"}
+    rename.update(
+        _map_spatial_axes([axis.name for axis in spatial_axes], metadata.display_hints)
+    )
+    if is_trackmate and "RADIUS" in node_df.columns and "radius" not in node_df:
+        rename["RADIUS"] = "radius"
+
+    # Drop existing columns that would collide with the renamed ones
+    collisions = [
+        col for col in node_df.columns if col in rename.values() and col not in rename
+    ]
+    if collisions:
+        LOG.warning(f"Dropping columns {collisions}, they collide with the axis names")
+        node_df = node_df.drop(columns=collisions)
+    node_df = node_df.rename(columns=rename)
+
+    ndim = len(spatial_axes)
+    if ndim == 3 and node_df["z"].nunique() <= 1:
+        LOG.info("z coordinate is constant, treating data as 2D")
+        node_df = node_df.drop(columns=["z"])
+        ndim = 2
+
+    return node_df, ndim
+
+
 def read_geff_to_df(
     zarr_store: StoreLike,
     include_all_attributes: bool = False,
@@ -172,49 +287,18 @@ def read_geff_to_df(
 
     zarr_store = remove_tilde(zarr_store)
     metadata = GeffMetadata.read(zarr_store)
-    group = zarr.open(zarr_store, mode="r")
-
     assert metadata.directed, "Geff dataset must be directed"
 
-    # Get and check spatial/temporal axes
-    temporal_axes = [axis for axis in metadata.axes if axis.type == "time"]
-    spatial_axes = [axis for axis in metadata.axes if axis.type == "space"]
-    if len(spatial_axes) < 2 or len(spatial_axes) > 3:
-        raise ValueError(f"Expected 2 or 3 spatial axes, got {len(spatial_axes)}")
-
-    if len(temporal_axes) == 0:
-        raise ValueError("No temporal axis found in metadata")
-
-    # Use first temporal axis and spatial axes in metadata order
-    temporal_axis = temporal_axes[0]  # Take the first temporal axis
-    prop_names = [temporal_axis.name] + [axis.name for axis in spatial_axes]
-
-    # Add all available properties if requested
-    if include_all_attributes:
-        # Discover available node properties from the zarr store structure
-        available_props = list(group["nodes/props"].keys())
-        # Exclude spatial and temporal axes from additional properties since they're already included
-        spatial_temporal_names = {temporal_axis.name} | {
-            axis.name for axis in spatial_axes
-        }
-        additional_props = [
-            prop for prop in available_props if prop not in spatial_temporal_names
-        ]
-        prop_names.extend(additional_props)
-        LOG.info(f"Loading all properties: {prop_names}")
-
     node_df, edge_df = geff_to_dataframes(zarr_store)
+    node_df, ndim = _normalize_axis_columns(node_df, metadata)
 
     # Checks on edges
     node_ids = node_df["id"].to_numpy()
-    node_times = node_df[temporal_axes[0].name].to_numpy()
+    node_times = node_df["t"].to_numpy()
     _, edge_df = remove_non_consecutive_edges(node_ids, node_times, edge_df)
     _, edge_df = remove_merging_edges(edge_df)
 
     df = node_df.copy()
-
-    # Determine dimensionality from spatial axes
-    ndim = len(spatial_axes)
 
     # Create mapping from string IDs to integers
     parent_df = edge_df[["source", "target"]].astype(int)
@@ -294,3 +378,44 @@ def read_geff_to_df(
             if remove_column:
                 df = df.drop(columns=[prop_name])
     return df
+
+
+def read_trackmate_xml_to_df(
+    xml_path: Path | str,
+    include_all_attributes: bool = False,
+    discard_filtered_spots: bool = False,
+    discard_filtered_tracks: bool = False,
+) -> pd.DataFrame:
+    """
+    Read a TrackMate/MaMuT XML file into a tracks DataFrame.
+
+    The XML is first converted to a temporary GEFF with geff's TrackMate converter,
+    which is then read with `read_geff_to_df`.
+
+    Parameters
+    ----------
+    xml_path : Path | str
+        Path to the TrackMate/MaMuT XML file
+    include_all_attributes : bool, optional
+        Whether to include all available attributes, by default False
+    discard_filtered_spots : bool, optional
+        Whether to discard spots filtered out in TrackMate, by default False
+    discard_filtered_tracks : bool, optional
+        Whether to discard tracks filtered out in TrackMate, by default False
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame in the same format as returned by `read_geff_to_df`
+    """
+    xml_path = Path(xml_path).expanduser()
+    LOG.info(f"Converting TrackMate XML {xml_path} to GEFF...")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        geff_path = Path(tmp_dir) / f"{xml_path.stem}.geff"
+        from_trackmate_xml_to_geff(
+            xml_path,
+            geff_path,
+            discard_filtered_spots=discard_filtered_spots,
+            discard_filtered_tracks=discard_filtered_tracks,
+        )
+        return read_geff_to_df(geff_path, include_all_attributes=include_all_attributes)
