@@ -256,11 +256,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
             newCanvas.updateAllTrackHighlights();
-            // THROWAWAY (Luxar-layer spike, Gate 0c): drive the Luxar layer's
-            // time dimension from inTRACKtive's timepoint. Fire-and-forget on
-            // purpose — the tracks must not stall waiting on splat streaming,
-            // so the splats show the nearest committed timepoint and catch up.
-            newCanvas.syncLuxarTime();
+            newCanvas.imaging?.setTime(newCanvas.curTime);
             break;
         }
         case ActionType.AUTO_ROTATE:
@@ -269,7 +265,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
             if (action.scaleSettings) {
-                newCanvas.alignLuxarToTracks(action.scaleSettings);
+                newCanvas.imaging?.alignToTracks(action.scaleSettings);
             }
             break;
         case ActionType.TRACK_WIDTH:

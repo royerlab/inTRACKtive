@@ -523,7 +523,7 @@ export default function App() {
                                 setShowTracks={(show: boolean) => {
                                     dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
                                 }}
-                                hasImaging={canvas.luxarLayer !== null}
+                                hasImaging={canvas.imaging !== null}
                                 showImaging={canvas.showImaging}
                                 setShowImaging={(show: boolean) => {
                                     dispatchCanvas({ type: ActionType.SHOW_IMAGING, showImaging: show });
