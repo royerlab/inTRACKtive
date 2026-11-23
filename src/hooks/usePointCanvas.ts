@@ -3,7 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
-import { DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
+import { DatasetImaging, DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
@@ -22,6 +22,8 @@ enum ActionType {
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
     IMAGING_BRIGHTNESS = "IMAGING_BRIGHTNESS",
+    DATASET_IMAGING = "DATASET_IMAGING",
+    IMAGING_OVERRIDE = "IMAGING_OVERRIDE",
     SHOW_IMAGING = "SHOW_IMAGING",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
@@ -113,6 +115,17 @@ interface RemoveAllTracks {
 interface SelectionMode {
     type: ActionType.SELECTION_MODE;
     selectionMode: PointSelectionMode;
+}
+
+interface DatasetImagingAction {
+    type: ActionType.DATASET_IMAGING;
+    imaging: DatasetImaging | null;
+}
+
+interface ImagingOverride {
+    type: ActionType.IMAGING_OVERRIDE;
+    url: string | null;
+    brightness: number | null;
 }
 
 interface ShowImaging {
@@ -216,6 +229,8 @@ type PointCanvasAction =
     | RemoveAllTracks
     | SelectionMode
     | ShowImaging
+    | DatasetImagingAction
+    | ImagingOverride
     | ImagingBrightness
     | ShowTracks
     | ShowTrackHighlights
@@ -256,7 +271,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
             newCanvas.updateAllTrackHighlights();
-            newCanvas.imaging?.setTime(newCanvas.curTime);
+            newCanvas.imaging.setTime(newCanvas.curTime);
             break;
         }
         case ActionType.AUTO_ROTATE:
@@ -265,7 +280,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
             if (action.scaleSettings) {
-                newCanvas.imaging?.alignToTracks(action.scaleSettings);
+                newCanvas.imaging.alignToTracks(action.scaleSettings);
             }
             break;
         case ActionType.TRACK_WIDTH:
@@ -317,6 +332,12 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             }
             break;
         }
+        case ActionType.DATASET_IMAGING:
+            newCanvas.setDatasetImaging(action.imaging);
+            break;
+        case ActionType.IMAGING_OVERRIDE:
+            newCanvas.setImagingOverride(action.url, action.brightness);
+            break;
         case ActionType.SHOW_IMAGING:
             newCanvas.setShowImaging(action.showImaging);
             break;

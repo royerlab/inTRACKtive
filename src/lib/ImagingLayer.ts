@@ -22,31 +22,48 @@ interface ImagingLayerOptions {
  * exposure, time, alignment) and applies whatever was last requested once the
  * layer is ready. Callers never need to wait on the load.
  *
+ * The source can change at any time (`setSource`): it may come from the URL,
+ * from a shared link, or from the tracks zarr once that has loaded.
+ *
  * `PointCanvas.shallowCopy` copies this object by reference, so every copy
  * React holds talks to the same layer.
  */
 export class ImagingLayer {
     private layer: LuxarLayer | null = null;
-    private disposed = false;
+    private src: string | null = null;
+    /** Bumped on every source change, so a slow load for an old source is discarded. */
+    private generation = 0;
 
     private visible = true;
     private exposure = 1.0;
     private time: number | null = null;
     private scaleSettings: ImagingScaleSettings | null = null;
 
-    constructor(
-        src: string,
-        private readonly options: ImagingLayerOptions,
-    ) {
-        void this.load(src);
+    constructor(private readonly options: ImagingLayerOptions) {}
+
+    /** The scene URL currently shown (or loading), or null for none. */
+    get source(): string | null {
+        return this.src;
     }
 
-    private async load(src: string) {
+    /** Load a scene, replacing any current one. `null` removes the imaging. */
+    setSource(src: string | null) {
+        if (src === this.src) return;
+        this.src = src;
+        this.generation++;
+        void this.layer?.dispose();
+        this.layer = null;
+        if (src !== null) void this.load(src, this.generation);
+    }
+
+    private async load(src: string, generation: number) {
+        const stale = () => generation !== this.generation;
+        let layer: LuxarLayer | null = null;
         try {
             const { LuxarLayer } = await import("@luxar/viewer");
-            if (this.disposed) return;
+            if (stale()) return;
             const { renderer, getCamera, scene } = this.options;
-            const layer = new LuxarLayer({
+            layer = new LuxarLayer({
                 renderer,
                 getCamera,
                 getViewportSize: () => {
@@ -56,7 +73,7 @@ export class ImagingLayer {
                 scene,
             });
             await layer.load(src);
-            if (this.disposed) {
+            if (stale()) {
                 await layer.dispose();
                 return;
             }
@@ -69,7 +86,8 @@ export class ImagingLayer {
             this.applyAlignment();
             this.applyTime();
         } catch (e: unknown) {
-            console.error("[ImagingLayer] load failed", e);
+            console.error("[ImagingLayer] failed to load %s", src, e);
+            void layer?.dispose();
         }
     }
 
@@ -138,9 +156,7 @@ export class ImagingLayer {
     }
 
     dispose() {
-        this.disposed = true;
-        void this.layer?.dispose();
-        this.layer = null;
+        this.setSource(null);
     }
 
     private applyAlignment() {

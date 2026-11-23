@@ -37,6 +37,10 @@ export class ViewerState {
     colormapCellsCategorical: string = config.settings.colormap_colorby_categorical;
     colormapCellsContinuous: string = config.settings.colormap_colorby_continuous;
     selectionMode: PointSelectionMode | null = PointSelectionMode.BOX;
+    // Imaging layer (e.g. Luxar splats). null = not specified, so the tracks
+    // zarr's own imaging attributes (if any) apply.
+    imagingUrl: string | null = null;
+    imagingBrightness: number | null = null;
     sphereSelector: {
         position: [number, number, number];
         scale: [number, number, number];

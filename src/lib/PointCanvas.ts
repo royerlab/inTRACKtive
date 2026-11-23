@@ -1,5 +1,6 @@
 import {
     ACESFilmicToneMapping,
+    NoToneMapping,
     AxesHelper,
     BufferAttribute,
     BufferGeometry,
@@ -27,7 +28,7 @@ import { Track } from "@/lib/three/Track";
 import { ImagingLayer } from "@/lib/ImagingLayer";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
-import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
+import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION, DatasetImaging } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 import { buildHighlightLUTTexture } from "@/lib/three/TrackMaterial";
 
@@ -54,6 +55,12 @@ type Tracks = Map<number, TrackType>;
 
 export class PointCanvas {
     readonly scene: Scene;
+    /**
+     * Holds only the imaging layer. A separate scene so it can be rendered
+     * after the bloom pass: bloom is tuned for the small cell sprites, and on
+     * large additive splats it turns every bright region into a halo.
+     */
+    readonly imagingScene: Scene;
     readonly renderer: WebGLRenderer;
     readonly camera: PerspectiveCamera;
     readonly points: Points;
@@ -63,8 +70,11 @@ export class PointCanvas {
     readonly selector: PointSelector;
     private axesHelper: AxesHelper | null = null;
     showAxes: boolean = true; // Track the visibility of the axes helper
-    /** Luxar imaging layer sharing this renderer/camera/scene (`?luxar=<url>`). */
-    readonly imaging: ImagingLayer | null = null;
+    /**
+     * Imaging layer (Luxar splats) sharing this renderer/camera/scene. Always
+     * present; it only downloads Luxar once it is given a source.
+     */
+    readonly imaging: ImagingLayer;
 
     // Maps from track ID to three.js Track objects.
     // This contains all tracks or tracklets across the lineages of all
@@ -86,10 +96,16 @@ export class PointCanvas {
     selectedPointIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
-    /** Whether the Luxar imaging layer is shown (no-op without `?luxar=`). */
+    /** Whether the imaging layer is shown (no-op without imaging). */
     showImaging = true;
     /** Imaging exposure multiplier; 1 = the scene's authored appearance. */
     imagingBrightness = 1.0;
+    /** Imaging from the URL/CLI or a shared link; wins over the dataset's own. */
+    imagingUrlOverride: string | null = null;
+    /** Imaging declared in the tracks zarr's attributes. */
+    datasetImaging: DatasetImaging | null = null;
+    /** Brightness came from a shared link or the slider, so the dataset default must not overwrite it. */
+    private imagingBrightnessPinned = false;
     curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
@@ -110,6 +126,7 @@ export class PointCanvas {
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
+        this.imagingScene = new Scene();
         this.renderer = new WebGLRenderer({ preserveDrawingBuffer: true });
 
         this.camera = new PerspectiveCamera(
@@ -168,20 +185,16 @@ export class PointCanvas {
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
-        // `?luxar=<zarr-url>` renders a Luxar imaging scene into THIS scene,
-        // sharing this renderer and camera. `?luxar-align=none` skips aligning
-        // it to the tracks.
+        // `?imaging-align=none` (alias `?luxar-align=none`) skips aligning the
+        // imaging to the tracks, for scenes already in viewer space.
         const params = new URLSearchParams(window.location.search);
-        const luxarSrc = params.get("luxar");
-        if (luxarSrc !== null) {
-            this.enableToneMapping(params);
-            this.imaging = new ImagingLayer(luxarSrc, {
-                renderer: this.renderer,
-                getCamera: () => this.camera,
-                scene: this.scene,
-                align: params.get("luxar-align") !== "none",
-            });
-        }
+        const alignParam = params.get("imaging-align") ?? params.get("luxar-align");
+        this.imaging = new ImagingLayer({
+            renderer: this.renderer,
+            getCamera: () => this.camera,
+            scene: this.imagingScene,
+            align: alignParam !== "none",
+        });
 
         // Effect composition.
         const renderModel = new RenderPass(this.scene, this.camera);
@@ -191,10 +204,19 @@ export class PointCanvas {
             0, // radius
             0.2, // threshold
         );
+        // Imaging is drawn after bloom, into the same buffer without clearing
+        // it, so it still depth-tests against the cells and tracks but gets no
+        // glow. `?imaging-bloom=on` draws it before bloom instead (the old
+        // look, for comparison).
+        const imagingPass = new RenderPass(this.imagingScene, this.camera);
+        imagingPass.clear = false;
+        const bloomImaging = params.get("imaging-bloom") === "on";
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderModel);
+        if (bloomImaging) this.composer.addPass(imagingPass);
         this.composer.addPass(this.bloomPass);
+        if (!bloomImaging) this.composer.addPass(imagingPass);
         this.composer.addPass(outputPass);
 
         // Set up controls
@@ -238,6 +260,8 @@ export class PointCanvas {
         state.colormapCellsCategorical = this.colormapCellsCategorical;
         state.colormapCellsContinuous = this.colormapCellsContinuous;
         state.selectionMode = this.selector.selectionMode;
+        state.imagingUrl = this.imagingUrl;
+        state.imagingBrightness = this.imagingUrl !== null ? this.imagingBrightness : null;
 
         // Add sphere selector state
         if (this.selector.sphereSelector) {
@@ -272,6 +296,7 @@ export class PointCanvas {
         this.colormapTracks = state.colormapTracks ?? defaultState.colormapTracks;
         this.colormapCellsCategorical = state.colormapCellsCategorical ?? defaultState.colormapCellsCategorical;
         this.colormapCellsContinuous = state.colormapCellsContinuous ?? defaultState.colormapCellsContinuous;
+        this.setImagingOverride(state.imagingUrl ?? null, state.imagingBrightness ?? null);
 
         // Respect device constraints when setting selection mode
         let newSelectionMode = state.selectionMode ?? defaultState.selectionMode;
@@ -337,15 +362,54 @@ export class PointCanvas {
      * appearance. `?tonemap=none` opts out; `?exposure=<n>` trims the curve's
      * input without re-authoring the scene.
      */
-    private enableToneMapping(params: URLSearchParams) {
-        if (params.get("tonemap") === "none") return;
-        this.renderer.toneMapping = ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = Number(params.get("exposure")) || 1.0;
+    private setToneMapping(enabled: boolean) {
+        const params = new URLSearchParams(window.location.search);
+        if (enabled && params.get("tonemap") !== "none") {
+            this.renderer.toneMapping = ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = Number(params.get("exposure")) || 1.0;
+        } else {
+            this.renderer.toneMapping = NoToneMapping;
+            this.renderer.toneMappingExposure = 1.0;
+        }
+    }
+
+    /**
+     * The imaging scene to show. Precedence: URL parameter / CLI or shared
+     * link (`imagingUrlOverride`), then the tracks zarr's own attributes.
+     */
+    get imagingUrl(): string | null {
+        return this.imagingUrlOverride ?? this.datasetImaging?.url ?? null;
+    }
+
+    /** Imaging from the URL/CLI or a shared link. `brightness` null = not specified. */
+    setImagingOverride(url: string | null, brightness: number | null) {
+        this.imagingUrlOverride = url;
+        this.imagingBrightnessPinned = brightness !== null;
+        if (brightness !== null) this.imagingBrightness = brightness;
+        this.syncImaging();
+    }
+
+    /** Imaging declared by the tracks zarr, set once the dataset has loaded. */
+    setDatasetImaging(imaging: DatasetImaging | null) {
+        this.datasetImaging = imaging;
+        this.syncImaging();
+    }
+
+    private syncImaging() {
+        const url = this.imagingUrl;
+        if (!this.imagingBrightnessPinned) {
+            const fromDataset =
+                url !== null && url === this.datasetImaging?.url ? this.datasetImaging.brightness : undefined;
+            this.imagingBrightness = fromDataset ?? 1.0;
+        }
+        this.setToneMapping(url !== null);
+        this.imaging.setExposure(this.imagingBrightness);
+        this.imaging.setSource(url);
     }
 
     setShowImaging(visible: boolean) {
         this.showImaging = visible;
-        this.imaging?.setVisible(visible);
+        this.imaging.setVisible(visible);
     }
 
     /**
@@ -356,14 +420,15 @@ export class PointCanvas {
      */
     setImagingBrightness(value: number) {
         this.imagingBrightness = value;
-        this.imaging?.setExposure(value);
+        this.imagingBrightnessPinned = true;
+        this.imaging.setExposure(value);
     }
 
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
     animate = () => {
         requestAnimationFrame(this.animate);
-        this.imaging?.update(); // must run before the render
+        this.imaging.update(); // must run before the render
         // Render the scene
         this.composer.render();
         this.controls.update();
@@ -613,7 +678,7 @@ export class PointCanvas {
         this.bloomPass.resolution.set(width, height);
         this.renderer.setSize(width, height, updateStyle);
         this.composer.setSize(width, height);
-        this.imaging?.resize();
+        this.imaging.resize();
     }
 
     initPointsGeometry(maxPointsPerTimepoint: number) {
@@ -769,7 +834,7 @@ export class PointCanvas {
     }
 
     dispose() {
-        this.imaging?.dispose();
+        this.imaging.dispose();
         this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();
