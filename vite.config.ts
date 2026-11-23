@@ -1,9 +1,10 @@
 /* eslint-disable spaced-comment */
-/// <reference types="vitest" />
+/// <reference types="vitest/config" />
 import path from "node:path";
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { playwright } from "@vitest/browser-playwright";
 
 // TEMPORARY: @royerlab/luxar-viewer is not on npm yet, so resolve it from the
 // sibling checkout's source entry point. The import specifier in application
@@ -33,13 +34,14 @@ export default defineConfig({
         environment: "jsdom",
         browser: {
             enabled: true,
-            provider: "playwright",
-            name: "chromium", // browser name is required
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
             headless: true,
         },
         coverage: {
             provider: "istanbul",
-            include: ["src/**"],
+            include: ["src/**/*.{ts,tsx}"],
+            exclude: ["**/.ipynb_checkpoints/**"],
         },
     },
 });
