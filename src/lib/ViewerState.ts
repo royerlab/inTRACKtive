@@ -67,7 +67,9 @@ export class ViewerState {
         // is encoded using URLSearchParams to handle special characters.
         const searchParams = new URLSearchParams(urlHash.slice(1));
         if (searchParams.has(HASH_KEY)) {
-            return JSON.parse(searchParams.get(HASH_KEY)!);
+            // Fill in defaults for any field the link leaves out (e.g. a
+            // hand-written link with no dataUrl).
+            return Object.assign(state, JSON.parse(searchParams.get(HASH_KEY)!));
         } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }

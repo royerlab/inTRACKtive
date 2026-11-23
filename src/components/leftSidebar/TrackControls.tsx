@@ -6,27 +6,27 @@ import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
 
 /**
- * Imaging-brightness slider scale.
+ * Imaging brightness slider <-> exposure, RELATIVE to the opening brightness
+ * (`anchor`): logarithmic, three decades either side, with x1 in the middle.
  *
- * Piecewise linear with 1.0x — the scene's authored exposure — parked at 40%,
- * rather than centred. A scene authored against a standalone viewer usually
- * needs boosting once inTRACKtive's bloom and OutputPass are in the chain, so
- * the useful range above unity is larger than below it. Below 40% the mapping
- * reaches 0 (fully dark) so the slider can dim as well as lift.
+ * Relative because the right absolute gain differs by orders of magnitude
+ * between datasets (Luxar's brightness depends on the scene's coordinate
+ * units: a scene in nm needs ~1000x less than one in voxels). An absolute
+ * track either cannot reach the useful value or has no resolution around it.
  */
-const IMAGING_UNITY_PCT = 40;
-const IMAGING_MAX_EXPOSURE = 5;
+const IMAGING_DECADES = 3;
 
-function sliderToExposure(pct: number): number {
-    if (pct <= IMAGING_UNITY_PCT) return pct / IMAGING_UNITY_PCT;
-    const t = (pct - IMAGING_UNITY_PCT) / (100 - IMAGING_UNITY_PCT);
-    return 1 + t * (IMAGING_MAX_EXPOSURE - 1);
+function sliderToFactor(pct: number): number {
+    return 10 ** (((pct - 50) / 50) * IMAGING_DECADES);
 }
 
-function exposureToSlider(exposure: number): number {
-    if (exposure <= 1) return exposure * IMAGING_UNITY_PCT;
-    const t = (exposure - 1) / (IMAGING_MAX_EXPOSURE - 1);
-    return IMAGING_UNITY_PCT + t * (100 - IMAGING_UNITY_PCT);
+function factorToSlider(factor: number): number {
+    const pct = 50 + (Math.log10(Math.max(factor, 1e-12)) / IMAGING_DECADES) * 50;
+    return Math.min(100, Math.max(0, pct));
+}
+
+function formatFactor(factor: number): string {
+    return factor < 0.1 ? factor.toFixed(3) : factor < 10 ? factor.toFixed(2) : factor.toFixed(0);
 }
 
 function buildGradient(colormapName: string): string {
@@ -84,6 +84,7 @@ interface TrackControlsProps {
     showImaging: boolean;
     setShowImaging: (showImaging: boolean) => void;
     imagingBrightness: number;
+    imagingBrightnessAnchor: number;
     setImagingBrightness: (imagingBrightness: number) => void;
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
@@ -297,11 +298,11 @@ export default function TrackControls(props: TrackControlsProps) {
                         min={0}
                         max={100}
                         valueLabelDisplay="on"
-                        valueLabelFormat={(value) => `${sliderToExposure(value as number).toFixed(2)}x`}
+                        valueLabelFormat={(value) => `${formatFactor(sliderToFactor(value as number))}x`}
                         onChange={(_, value) => {
-                            props.setImagingBrightness(sliderToExposure(value as number));
+                            props.setImagingBrightness(props.imagingBrightnessAnchor * sliderToFactor(value as number));
                         }}
-                        value={exposureToSlider(props.imagingBrightness)}
+                        value={factorToSlider(props.imagingBrightness / props.imagingBrightnessAnchor)}
                     />
                 </>
             )}

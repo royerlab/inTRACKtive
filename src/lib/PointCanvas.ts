@@ -100,6 +100,13 @@ export class PointCanvas {
     showImaging = true;
     /** Imaging exposure multiplier; 1 = the scene's authored appearance. */
     imagingBrightness = 1.0;
+    /**
+     * The opening brightness (from the zarr attributes or a link), which the
+     * slider is centred on. Gains differ by orders of magnitude between
+     * datasets, because Luxar's brightness depends on the scene's coordinate
+     * units, so the slider is relative to this rather than absolute.
+     */
+    imagingBrightnessAnchor = 1.0;
     /** Imaging from the URL/CLI or a shared link; wins over the dataset's own. */
     imagingUrlOverride: string | null = null;
     /** Imaging declared in the tracks zarr's attributes. */
@@ -185,15 +192,15 @@ export class PointCanvas {
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
-        // `?imaging-align=none` (alias `?luxar-align=none`) skips aligning the
-        // imaging to the tracks, for scenes already in viewer space.
+        // `?imaging-align=none|fit` (alias `?luxar-align=`) overrides aligning
+        // the imaging to the tracks — see `ImagingLayer` for the modes.
         const params = new URLSearchParams(window.location.search);
         const alignParam = params.get("imaging-align") ?? params.get("luxar-align");
         this.imaging = new ImagingLayer({
             renderer: this.renderer,
             getCamera: () => this.camera,
             scene: this.imagingScene,
-            align: alignParam !== "none",
+            align: alignParam === "none" || alignParam === "fit" ? alignParam : "tracks",
         });
 
         // Effect composition.
@@ -208,7 +215,7 @@ export class PointCanvas {
         // it, so it still depth-tests against the cells and tracks but gets no
         // glow. `?imaging-bloom=on` draws it before bloom instead (the old
         // look, for comparison).
-        const imagingPass = new RenderPass(this.imagingScene, this.camera);
+        const imagingPass = new RenderPass(this.imagingScene, this.imaging.camera);
         imagingPass.clear = false;
         const bloomImaging = params.get("imaging-bloom") === "on";
         const outputPass = new OutputPass();
@@ -385,7 +392,10 @@ export class PointCanvas {
     setImagingOverride(url: string | null, brightness: number | null) {
         this.imagingUrlOverride = url;
         this.imagingBrightnessPinned = brightness !== null;
-        if (brightness !== null) this.imagingBrightness = brightness;
+        if (brightness !== null) {
+            this.imagingBrightness = brightness;
+            this.imagingBrightnessAnchor = brightness;
+        }
         this.syncImaging();
     }
 
@@ -401,6 +411,7 @@ export class PointCanvas {
             const fromDataset =
                 url !== null && url === this.datasetImaging?.url ? this.datasetImaging.brightness : undefined;
             this.imagingBrightness = fromDataset ?? 1.0;
+            this.imagingBrightnessAnchor = this.imagingBrightness;
         }
         this.setToneMapping(url !== null);
         this.imaging.setExposure(this.imagingBrightness);

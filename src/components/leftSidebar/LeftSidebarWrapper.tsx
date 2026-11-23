@@ -15,6 +15,7 @@ interface LeftSidebarWrapperProps {
     showImaging: boolean;
     setShowImaging: (showImaging: boolean) => void;
     imagingBrightness: number;
+    imagingBrightnessAnchor: number;
     setImagingBrightness: (imagingBrightness: number) => void;
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
@@ -46,6 +47,7 @@ export default function LeftSidebarWrapper({
     showImaging,
     setShowImaging,
     imagingBrightness,
+    imagingBrightnessAnchor,
     setImagingBrightness,
     setShowTracks,
     showTrackHighlights,
@@ -78,6 +80,7 @@ export default function LeftSidebarWrapper({
                 showImaging={showImaging}
                 setShowImaging={setShowImaging}
                 imagingBrightness={imagingBrightness}
+                imagingBrightnessAnchor={imagingBrightnessAnchor}
                 setImagingBrightness={setImagingBrightness}
                 setShowTracks={setShowTracks}
                 showTrackHighlights={showTrackHighlights}

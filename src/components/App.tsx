@@ -541,6 +541,7 @@ export default function App() {
                                     dispatchCanvas({ type: ActionType.SHOW_IMAGING, showImaging: show });
                                 }}
                                 imagingBrightness={canvas.imagingBrightness}
+                                imagingBrightnessAnchor={canvas.imagingBrightnessAnchor}
                                 setImagingBrightness={(value: number) => {
                                     dispatchCanvas({ type: ActionType.IMAGING_BRIGHTNESS, imagingBrightness: value });
                                 }}

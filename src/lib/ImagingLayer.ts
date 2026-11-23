@@ -1,4 +1,4 @@
-import { Camera, Matrix4, Scene, Vector2, WebGLRenderer } from "three";
+import { Matrix4, PerspectiveCamera, Scene, Vector2, Vector3, WebGLRenderer } from "three";
 // Type-only: erased at build time, so it costs nothing for sessions without imaging.
 import type { LuxarLayer } from "@luxar/viewer";
 
@@ -6,10 +6,16 @@ export type ImagingScaleSettings = { meanX?: number; meanY?: number; meanZ?: num
 
 interface ImagingLayerOptions {
     renderer: WebGLRenderer;
-    getCamera: () => Camera;
+    getCamera: () => PerspectiveCamera;
     scene: Scene;
-    /** Apply the tracks' normalization to the splats. `false` when the scene is already in viewer space. */
-    align: boolean;
+    /**
+     * How to place the splats in world space:
+     * - `tracks`: apply the tracks' normalization (the default).
+     * - `none`: leave them as they are, for scenes already in viewer space.
+     * - `fit`: center the scene's own bounds and scale them to the cells' unit
+     *   box. For looking at imaging that has no matching tracks.
+     */
+    align: "tracks" | "none" | "fit";
 }
 
 /**
@@ -30,6 +36,21 @@ interface ImagingLayerOptions {
  */
 export class ImagingLayer {
     private layer: LuxarLayer | null = null;
+    /**
+     * The camera the imaging is rendered with: the host camera, scaled up by
+     * `1 / worldScale` about the origin.
+     *
+     * The splats are NOT shrunk into inTRACKtive's unit box. Luxar's splat
+     * brightness depends on world-space size (volumetric optical depth most of
+     * all), so scaling the layer root down by `extent_xyz` (~1e-3..1e-5) left
+     * the imaging nearly black. Scaling the camera up instead gives the same
+     * image, and the same depth buffer, because near and far scale with it.
+     */
+    readonly camera = new PerspectiveCamera();
+    /** inTRACKtive world units per splat unit (the tracks' 1 / extent_xyz). */
+    private worldScale = 1;
+    /** `fit` mode: placement computed once from the scene's own bounds. */
+    private fitPlacement: { matrix: Matrix4; scale: number } | null = null;
     private src: string | null = null;
     /** Bumped on every source change, so a slow load for an old source is discarded. */
     private generation = 0;
@@ -51,6 +72,7 @@ export class ImagingLayer {
         if (src === this.src) return;
         this.src = src;
         this.generation++;
+        this.fitPlacement = null;
         void this.layer?.dispose();
         this.layer = null;
         if (src !== null) void this.load(src, this.generation);
@@ -62,10 +84,10 @@ export class ImagingLayer {
         try {
             const { LuxarLayer } = await import("@luxar/viewer");
             if (stale()) return;
-            const { renderer, getCamera, scene } = this.options;
+            const { renderer, scene } = this.options;
             layer = new LuxarLayer({
                 renderer,
-                getCamera,
+                getCamera: () => this.camera,
                 getViewportSize: () => {
                     const s = renderer.getSize(new Vector2());
                     return { width: s.x, height: s.y };
@@ -148,7 +170,19 @@ export class ImagingLayer {
 
     /** Must run before each render. */
     update() {
+        this.syncCamera();
         this.layer?.update();
+    }
+
+    private syncCamera() {
+        const host = this.options.getCamera();
+        const k = 1 / this.worldScale;
+        this.camera.copy(host);
+        this.camera.position.multiplyScalar(k);
+        this.camera.near = host.near * k;
+        this.camera.far = host.far * k;
+        this.camera.updateProjectionMatrix();
+        this.camera.updateMatrixWorld();
     }
 
     resize() {
@@ -163,8 +197,24 @@ export class ImagingLayer {
         const layer = this.layer;
         // Both inputs arrive independently: scaleSettings from the tracks fetch,
         // the splat axis names only once the scene has loaded.
+        if (layer && this.options.align === "fit") {
+            if (!this.fitPlacement) {
+                // Bounds before any placement, so compute once per scene.
+                const box = layer.getBounds();
+                if (!box || box.isEmpty()) return;
+                const center = box.getCenter(new Vector3());
+                const size = box.getSize(new Vector3());
+                this.fitPlacement = {
+                    matrix: new Matrix4().makeTranslation(-center.x, -center.y, -center.z),
+                    scale: 2 / Math.max(size.x, size.y, size.z),
+                };
+            }
+            this.worldScale = this.fitPlacement.scale;
+            layer.alignTo(this.fitPlacement.matrix);
+            return;
+        }
         if (!layer || !this.scaleSettings) return;
-        if (!this.options.align) {
+        if (this.options.align === "none") {
             // The splats are already in viewer space (a synthetic scene, or one
             // exported pre-normalized); applying the normalization again would
             // shrink them by `extent_xyz` — ~1000x on a real dataset.
@@ -176,8 +226,10 @@ export class ImagingLayer {
             console.warn("[ImagingLayer] tracks have no scale settings; imaging left unaligned");
             return;
         }
-        const m = trackAlignmentMatrix([meanZ, meanY, meanX], extentXYZ, spatialPermutation(layer.getDimensionNames()));
-        layer.alignTo(m);
+        // Translation and axis permutation only; the 1 / extent_xyz scale goes on
+        // the camera (see `camera`).
+        this.worldScale = 1 / extentXYZ;
+        layer.alignTo(trackAlignmentMatrix([meanZ, meanY, meanX], 1, spatialPermutation(layer.getDimensionNames())));
     }
 
     private applyTime() {
@@ -244,7 +296,7 @@ export function timeDimension(byName: number | null, ndim: number, displayed: nu
     const hidden = [];
     for (let i = 0; i < ndim; i++) if (!displayed.includes(i)) hidden.push(i);
     if (hidden.length !== 1) {
-        if (ndim > 0)
+        if (hidden.length > 1)
             console.warn("[ImagingLayer] no 'time' dimension and %d candidates; time sync off", hidden.length);
         return null;
     }
