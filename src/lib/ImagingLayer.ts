@@ -104,7 +104,7 @@ export class ImagingLayer {
             // shared link restoring t=150 would otherwise show the scene's own
             // first slice until the slider is touched.
             layer.setVisible(this.visible);
-            layer.setExposure(this.exposure);
+            this.applyBrightness();
             this.applyAlignment();
             this.applyTime();
         } catch (e: unknown) {
@@ -128,7 +128,20 @@ export class ImagingLayer {
      */
     setExposure(value: number) {
         this.exposure = value;
-        this.layer?.setExposure(value);
+        this.applyBrightness();
+    }
+
+    /**
+     * Prefer Luxar's colour gain (`setGain`, newer @luxar/viewer) over
+     * `setExposure`: exposure scales opacity, so in volumetric scenes values
+     * above 1 make splats opaque instead of brighter. Older builds fall back to
+     * exposure, clamped to 1 for that reason.
+     */
+    private applyBrightness() {
+        const layer = this.layer as (LuxarLayer & { setGain?: (gain: number) => void }) | null;
+        if (!layer) return;
+        if (typeof layer.setGain === "function") layer.setGain(this.exposure);
+        else layer.setExposure(Math.min(this.exposure, 1));
     }
 
     /**

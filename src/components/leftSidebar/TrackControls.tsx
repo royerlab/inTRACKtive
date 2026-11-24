@@ -7,23 +7,25 @@ import config from "../../../CONFIG.ts";
 
 /**
  * Imaging brightness slider <-> exposure, RELATIVE to the opening brightness
- * (`anchor`): logarithmic, three decades BELOW x1, with x1 at the top. Capped
- * at x1 because exposure scales opacity: in volumetric scenes going above x1
- * only makes splats opaque (hard-edged, with black discs), not brighter.
+ * (`anchor`): logarithmic, three decades below x1 and one above (x1 at 75%).
+ * Above x1 only brightens with Luxar's `setGain`; older builds clamp it to x1
+ * in `ImagingLayer`, since exposure above x1 makes volumetric splats opaque.
  *
  * Relative because the right absolute gain differs by orders of magnitude
  * between datasets (Luxar's brightness depends on the scene's coordinate
  * units: a scene in nm needs ~1000x less than one in voxels). An absolute
  * track either cannot reach the useful value or has no resolution around it.
  */
-const IMAGING_DECADES = 3;
+const IMAGING_DECADES_BELOW = 3;
+const IMAGING_DECADES_ABOVE = 1;
+const IMAGING_DECADES = IMAGING_DECADES_BELOW + IMAGING_DECADES_ABOVE;
 
 function sliderToFactor(pct: number): number {
-    return 10 ** (((pct - 100) / 100) * IMAGING_DECADES);
+    return 10 ** ((pct / 100) * IMAGING_DECADES - IMAGING_DECADES_BELOW);
 }
 
 function factorToSlider(factor: number): number {
-    const pct = 100 + (Math.log10(Math.max(factor, 1e-12)) / IMAGING_DECADES) * 100;
+    const pct = ((Math.log10(Math.max(factor, 1e-12)) + IMAGING_DECADES_BELOW) / IMAGING_DECADES) * 100;
     return Math.min(100, Math.max(0, pct));
 }
 
