@@ -551,6 +551,8 @@ export class PointCanvas {
     }
 
     resetPointColors(attributesInput?: Float32Array) {
+        // brightness 0 hides the dots instead of drawing opaque black discs over the imaging
+        this.points.visible = this.pointBrightness > 0;
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
