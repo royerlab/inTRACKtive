@@ -127,11 +127,13 @@ export class PointCanvas {
         const pointFragmentShader = `
             varying vec3 vColor;
             uniform sampler2D pointTexture;
+            uniform float opacity;
 
             void main() {
             gl_FragColor = vec4(vColor, 1.0);
             gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
             if (gl_FragColor.a < .5) discard;
+            gl_FragColor.a = opacity;
             }
         `;
 
@@ -139,6 +141,7 @@ export class PointCanvas {
             uniforms: {
                 color: { value: new Color(0xffffff) },
                 pointTexture: { value: new TextureLoader().load("/spark1.png") },
+                opacity: { value: 1.0 },
             },
             vertexShader: pointVertexShader,
             fragmentShader: pointFragmentShader,
@@ -404,6 +407,19 @@ export class PointCanvas {
     }
 
     resetPointColors(attributesInput?: Float32Array) {
+        // brightness sets the dots' opacity; below 5% depth is off so near-invisible dots
+        // don't occlude what is drawn after them
+        this.points.visible = this.pointBrightness > 0;
+        const material = this.points.material as ShaderMaterial;
+        const opaque = this.pointBrightness >= 1;
+        const useDepth = this.pointBrightness >= 0.05;
+        material.uniforms.opacity.value = Math.min(this.pointBrightness, 1);
+        material.depthWrite = useDepth;
+        material.depthTest = useDepth;
+        if (material.transparent === opaque) {
+            material.transparent = !opaque;
+            material.needsUpdate = true;
+        }
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
@@ -450,7 +466,6 @@ export class PointCanvas {
         if (this.colorByEvent.type === "default") {
             const color = new Color();
             color.setRGB(pointColor[0], pointColor[1], pointColor[2], SRGBColorSpace); // cyan/turquoise
-            color.multiplyScalar(this.pointBrightness);
             for (let i = 0; i < numPoints; i++) {
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
@@ -463,7 +478,6 @@ export class PointCanvas {
                 }
                 const hexStr = `#${hexInt.toString(16).padStart(6, "0").toUpperCase()}`;
                 const color = new Color(hexStr);
-                color.multiplyScalar(this.pointBrightness);
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
         } else {
@@ -478,7 +492,6 @@ export class PointCanvas {
                 const colorOfScalar = colormaps.getColor(scalar); // remove the bright/dark edges of colormap
                 // const colorOfScalar = colormaps.getColor(scalar*0.8+0.1); //remove the bright/dark edges of colormap
                 color.setRGB(colorOfScalar.r, colorOfScalar.g, colorOfScalar.b, SRGBColorSpace);
-                color.multiplyScalar(this.pointBrightness);
                 colorAttribute.setXYZ(i, color.r, color.g, color.b);
             }
         }
