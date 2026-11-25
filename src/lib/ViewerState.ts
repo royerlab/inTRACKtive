@@ -37,6 +37,10 @@ export class ViewerState {
     colormapCellsCategorical: string = config.settings.colormap_colorby_categorical;
     colormapCellsContinuous: string = config.settings.colormap_colorby_continuous;
     selectionMode: PointSelectionMode | null = PointSelectionMode.BOX;
+    // Imaging layer (e.g. Luxar splats). null = not specified, so the tracks
+    // zarr's own imaging attributes (if any) apply.
+    imagingUrl: string | null = null;
+    imagingBrightness: number | null = null;
     sphereSelector: {
         position: [number, number, number];
         scale: [number, number, number];
@@ -63,7 +67,9 @@ export class ViewerState {
         // is encoded using URLSearchParams to handle special characters.
         const searchParams = new URLSearchParams(urlHash.slice(1));
         if (searchParams.has(HASH_KEY)) {
-            return JSON.parse(searchParams.get(HASH_KEY)!);
+            // Fill in defaults for any field the link leaves out (e.g. a
+            // hand-written link with no dataUrl).
+            return Object.assign(state, JSON.parse(searchParams.get(HASH_KEY)!));
         } else if (urlHash.length > 0) {
             console.error("failed to find state key in hash: %s", urlHash);
         }

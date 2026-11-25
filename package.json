@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:python": "tsc && vite build && mkdir -p python/src/intracktive/frontend/assets && cp dist/index.html dist/spark1.png dist/Biohub_logo_60x60.png dist/icon_zebrafish.png python/src/intracktive/frontend/ && cp dist/assets/* python/src/intracktive/frontend/assets/",
+    "build:python": "tsc && vite build && mkdir -p python/src/intracktive/frontend/assets python/src/intracktive/frontend/wasm && cp dist/index.html dist/spark1.png dist/Biohub_logo_60x60.png dist/icon_zebrafish.png python/src/intracktive/frontend/ && cp dist/assets/* python/src/intracktive/frontend/assets/ && cp dist/wasm/* python/src/intracktive/frontend/wasm/",
     "preview": "vite preview",
     "lint": "eslint src",
     "format": "prettier --write src",
@@ -18,6 +18,7 @@
     "@emotion/css": "^11.11.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@luxar/viewer": "2026.10.19",
     "@mui/base": "^5.0.0-beta.40",
     "@mui/icons-material": "^5.15.15",
     "@mui/lab": "^5.0.0-alpha.170",

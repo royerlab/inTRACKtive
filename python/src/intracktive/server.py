@@ -40,6 +40,15 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         super().end_headers()
 
+    def handle(self):
+        # Browsers abort in-flight requests all the time (e.g. the imaging
+        # layer cancels chunk fetches that a time change made obsolete). That
+        # is not an error, so don't print a traceback for it.
+        try:
+            super().handle()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def log_message(self, format, *args):
         if self.enable_logging:
             super().log_message(format, *args)

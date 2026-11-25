@@ -1,5 +1,5 @@
 // @ts-expect-error - types for zarr are not working right now, but a PR is open https://github.com/gzuidhof/zarr.js/pull/149
-import { ZarrArray, slice, Slice, openArray, NestedArray } from "zarr";
+import { ZarrArray, slice, Slice, openArray, openGroup, NestedArray } from "zarr";
 export let numberOfValuesPerPoint = 0; // 3 if points=[x,y,z], 4 if points=[x,y,z,size]
 
 import config from "../../CONFIG.ts";
@@ -104,8 +104,42 @@ class SparseZarrArray {
     }
 }
 
+/** An imaging scene (e.g. Luxar splats) that belongs with a tracks dataset. */
+export interface DatasetImaging {
+    url: string;
+    brightness?: number;
+}
+
+/**
+ * Read the imaging entry from a tracks zarr's root attributes:
+ *
+ *     "imaging": [{"url": "<relative-or-absolute>", "brightness": 1.0}]
+ *
+ * A list so more layers can be added later without a format change; only the
+ * first entry is used for now. A relative `url` resolves against the tracks
+ * zarr, so a folder holding both can be moved or uploaded as one.
+ */
+export function parseDatasetImaging(attrs: unknown, storeUrl: string): DatasetImaging | null {
+    const list = (attrs as { imaging?: unknown } | null)?.imaging;
+    if (!Array.isArray(list) || list.length === 0) return null;
+    const entry = list[0] as { url?: unknown; brightness?: unknown };
+    if (typeof entry?.url !== "string" || entry.url === "") return null;
+    let url: string;
+    try {
+        // The base needs a trailing slash, or the last path segment (the zarr
+        // itself) would be replaced instead of descended into.
+        const base = new URL(storeUrl.endsWith("/") ? storeUrl : storeUrl + "/", window.location.href);
+        url = new URL(entry.url, base).href;
+    } catch {
+        console.warn("could not resolve imaging url %s against %s", entry.url, storeUrl);
+        return null;
+    }
+    const brightness = typeof entry.brightness === "number" ? entry.brightness : undefined;
+    return { url, brightness };
+}
+
 // class that contains the settings to "scale" the data, i.e., scale and center the dataset to fit nicely in the viewer
-class ScaleSettings {
+export class ScaleSettings {
     meanX?: number;
     meanY?: number;
     meanZ?: number;
@@ -177,6 +211,8 @@ export class TrackManager {
     scaleSettings: ScaleSettings;
     defaultExtent: number;
     ndim: number;
+    /** Imaging declared in the zarr's root attributes, with its URL made absolute. */
+    imaging: DatasetImaging | null = null;
 
     constructor(
         store: string,
@@ -396,6 +432,12 @@ export async function loadTrackManager(url: string) {
         if (datasetNdim == 2) {
             trackManager.ndim = 2;
             console.debug("2D dataset detected in loadTrackManager");
+        }
+        try {
+            const root = await openGroup(url, null, "r");
+            trackManager.imaging = parseDatasetImaging(await root.attrs.asObject(), url);
+        } catch {
+            // No root attributes (or no .zgroup) is normal for older zarrs.
         }
     } catch (err) {
         console.error("Error opening TrackManager: %s", err);

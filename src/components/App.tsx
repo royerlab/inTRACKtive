@@ -28,6 +28,14 @@ const maxNumSelectedCells = config.settings.max_num_selected_cells || 100;
 
 // Ideally we do this here so that we can use initial values as default values for React state.
 const initialViewerState = ViewerState.fromUrlHash(window.location.hash);
+// `?imaging=<scene-url>` (alias `?luxar=`, from before the rename) overlays an
+// imaging scene on the initial dataset, taking precedence over the link state
+// and the zarr's own imaging attributes. `intracktive open --imaging` uses it.
+{
+    const params = new URLSearchParams(window.location.search);
+    const imagingParam = params.get("imaging") ?? params.get("luxar");
+    if (imagingParam) initialViewerState.imagingUrl = imagingParam;
+}
 console.log("initial viewer state: ", initialViewerState);
 clearUrlHash();
 
@@ -111,6 +119,9 @@ export default function App() {
         dispatchCanvas({ type: ActionType.RESET_CAMERA });
         dispatchCanvas({ type: ActionType.RESET_POINT_SIZE });
         dispatchCanvas({ type: ActionType.TOGGLE_COLOR_BY, colorBy: false });
+        // Imaging from the URL or a shared link belonged to the previous dataset.
+        dispatchCanvas({ type: ActionType.IMAGING_OVERRIDE, url: null, brightness: null });
+        dispatchCanvas({ type: ActionType.DATASET_IMAGING, imaging: null });
     };
 
     // this function fetches the entire lineage for each track
@@ -178,11 +189,15 @@ export default function App() {
         dispatchCanvas({
             type: ActionType.INIT_POINTS_GEOMETRY,
             maxPointsPerTimepoint: trackManager.maxPointsPerTimepoint,
+            // Same normalization the cells get, handed to the Luxar imaging
+            // layer so the two land in one world space.
+            scaleSettings: trackManager.scaleSettings,
         });
         dispatchCanvas({
             type: ActionType.CHECK_CAMERA_LOCK,
             ndim: trackManager.ndim,
         });
+        dispatchCanvas({ type: ActionType.DATASET_IMAGING, imaging: trackManager.imaging });
     }, [dispatchCanvas, trackManager]);
 
     // update the points when the array or timepoint changes
@@ -519,6 +534,16 @@ export default function App() {
                                 showTracks={canvas.showTracks}
                                 setShowTracks={(show: boolean) => {
                                     dispatchCanvas({ type: ActionType.SHOW_TRACKS, showTracks: show });
+                                }}
+                                hasImaging={canvas.imagingUrl !== null}
+                                showImaging={canvas.showImaging}
+                                setShowImaging={(show: boolean) => {
+                                    dispatchCanvas({ type: ActionType.SHOW_IMAGING, showImaging: show });
+                                }}
+                                imagingBrightness={canvas.imagingBrightness}
+                                imagingBrightnessAnchor={canvas.imagingBrightnessAnchor}
+                                setImagingBrightness={(value: number) => {
+                                    dispatchCanvas({ type: ActionType.IMAGING_BRIGHTNESS, imagingBrightness: value });
                                 }}
                                 showTrackHighlights={canvas.showTrackHighlights}
                                 setShowTrackHighlights={(show: boolean) => {

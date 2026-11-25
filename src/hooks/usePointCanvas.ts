@@ -3,7 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, Dispatch, RefObject } from 
 import { PointCanvas } from "@/lib/PointCanvas";
 import { PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "@/lib/ViewerState";
-import { DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
+import { DatasetImaging, DEFAULT_DROPDOWN_OPTION, Option } from "@/lib/TrackManager";
 
 enum ActionType {
     AUTO_ROTATE = "AUTO_ROTATE",
@@ -21,6 +21,10 @@ enum ActionType {
     REFRESH = "REFRESH",
     REMOVE_ALL_TRACKS = "REMOVE_ALL_TRACKS",
     SELECTION_MODE = "SELECTION_MODE",
+    IMAGING_BRIGHTNESS = "IMAGING_BRIGHTNESS",
+    DATASET_IMAGING = "DATASET_IMAGING",
+    IMAGING_OVERRIDE = "IMAGING_OVERRIDE",
+    SHOW_IMAGING = "SHOW_IMAGING",
     SHOW_TRACKS = "SHOW_TRACKS",
     SHOW_TRACK_HIGHLIGHTS = "SHOW_TRACK_HIGHLIGHTS",
     SIZE = "SIZE",
@@ -63,6 +67,12 @@ interface ResetPointSize {
 interface InitPointsGeometry {
     type: ActionType.INIT_POINTS_GEOMETRY;
     maxPointsPerTimepoint: number;
+    /**
+     * The tracks' normalization attrs, so the Luxar imaging layer can be placed
+     * in the same world space. Optional: a dataset whose zattrs omit them has
+     * them computed in the browser from the first frame instead.
+     */
+    scaleSettings?: { meanX?: number; meanY?: number; meanZ?: number; extentXYZ?: number };
 }
 
 interface TrackWidth {
@@ -105,6 +115,27 @@ interface RemoveAllTracks {
 interface SelectionMode {
     type: ActionType.SELECTION_MODE;
     selectionMode: PointSelectionMode;
+}
+
+interface DatasetImagingAction {
+    type: ActionType.DATASET_IMAGING;
+    imaging: DatasetImaging | null;
+}
+
+interface ImagingOverride {
+    type: ActionType.IMAGING_OVERRIDE;
+    url: string | null;
+    brightness: number | null;
+}
+
+interface ShowImaging {
+    type: ActionType.SHOW_IMAGING;
+    showImaging: boolean;
+}
+
+interface ImagingBrightness {
+    type: ActionType.IMAGING_BRIGHTNESS;
+    imagingBrightness: number;
 }
 
 interface ShowTracks {
@@ -197,6 +228,10 @@ type PointCanvasAction =
     | Refresh
     | RemoveAllTracks
     | SelectionMode
+    | ShowImaging
+    | DatasetImagingAction
+    | ImagingOverride
+    | ImagingBrightness
     | ShowTracks
     | ShowTrackHighlights
     | Size
@@ -236,6 +271,7 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             newCanvas.minTime += action.curTime - canvas.curTime;
             newCanvas.maxTime += action.curTime - canvas.curTime;
             newCanvas.updateAllTrackHighlights();
+            newCanvas.imaging.setTime(newCanvas.curTime);
             break;
         }
         case ActionType.AUTO_ROTATE:
@@ -243,6 +279,9 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             break;
         case ActionType.INIT_POINTS_GEOMETRY:
             newCanvas.initPointsGeometry(action.maxPointsPerTimepoint);
+            if (action.scaleSettings) {
+                newCanvas.imaging.alignToTracks(action.scaleSettings);
+            }
             break;
         case ActionType.TRACK_WIDTH:
             newCanvas.trackWidthFactor = action.factor;
@@ -293,6 +332,18 @@ function reducer(canvas: PointCanvas, action: PointCanvasAction): PointCanvas {
             }
             break;
         }
+        case ActionType.DATASET_IMAGING:
+            newCanvas.setDatasetImaging(action.imaging);
+            break;
+        case ActionType.IMAGING_OVERRIDE:
+            newCanvas.setImagingOverride(action.url, action.brightness);
+            break;
+        case ActionType.SHOW_IMAGING:
+            newCanvas.setShowImaging(action.showImaging);
+            break;
+        case ActionType.IMAGING_BRIGHTNESS:
+            newCanvas.setImagingBrightness(action.imagingBrightness);
+            break;
         case ActionType.SHOW_TRACKS:
             newCanvas.showTracks = action.showTracks;
             newCanvas.updateAllTrackHighlights();

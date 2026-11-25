@@ -1,4 +1,6 @@
 import {
+    ACESFilmicToneMapping,
+    NoToneMapping,
     AxesHelper,
     BufferAttribute,
     BufferGeometry,
@@ -23,9 +25,10 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
 import { Track } from "@/lib/three/Track";
+import { ImagingLayer } from "@/lib/ImagingLayer";
 import { PointSelector, PointSelectionMode } from "@/lib/PointSelector";
 import { ViewerState } from "./ViewerState";
-import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION } from "./TrackManager";
+import { numberOfValuesPerPoint, Option, DEFAULT_DROPDOWN_OPTION, DatasetImaging } from "./TrackManager";
 import { colormaps } from "@/lib/Colormaps";
 import { buildHighlightLUTTexture } from "@/lib/three/TrackMaterial";
 
@@ -52,6 +55,12 @@ type Tracks = Map<number, TrackType>;
 
 export class PointCanvas {
     readonly scene: Scene;
+    /**
+     * Holds only the imaging layer. A separate scene so it can be rendered
+     * after the bloom pass: bloom is tuned for the small cell sprites, and on
+     * large additive splats it turns every bright region into a halo.
+     */
+    readonly imagingScene: Scene;
     readonly renderer: WebGLRenderer;
     readonly camera: PerspectiveCamera;
     readonly points: Points;
@@ -61,6 +70,11 @@ export class PointCanvas {
     readonly selector: PointSelector;
     private axesHelper: AxesHelper | null = null;
     showAxes: boolean = true; // Track the visibility of the axes helper
+    /**
+     * Imaging layer (Luxar splats) sharing this renderer/camera/scene. Always
+     * present; it only downloads Luxar once it is given a source.
+     */
+    readonly imaging: ImagingLayer;
 
     // Maps from track ID to three.js Track objects.
     // This contains all tracks or tracklets across the lineages of all
@@ -82,6 +96,23 @@ export class PointCanvas {
     selectedPointIds: Set<number> = new Set();
     showTracks = true;
     showTrackHighlights = true;
+    /** Whether the imaging layer is shown (no-op without imaging). */
+    showImaging = true;
+    /** Imaging exposure multiplier; 1 = the scene's authored appearance. */
+    imagingBrightness = 1.0;
+    /**
+     * The opening brightness (from the zarr attributes or a link), which the
+     * slider is centred on. Gains differ by orders of magnitude between
+     * datasets, because Luxar's brightness depends on the scene's coordinate
+     * units, so the slider is relative to this rather than absolute.
+     */
+    imagingBrightnessAnchor = 1.0;
+    /** Imaging from the URL/CLI or a shared link; wins over the dataset's own. */
+    imagingUrlOverride: string | null = null;
+    /** Imaging declared in the tracks zarr's attributes. */
+    datasetImaging: DatasetImaging | null = null;
+    /** Brightness came from a shared link or the slider, so the dataset default must not overwrite it. */
+    private imagingBrightnessPinned = false;
     curTime: number = 0;
     minTime: number = -6;
     maxTime: number = 5;
@@ -102,6 +133,7 @@ export class PointCanvas {
 
     constructor(width: number, height: number) {
         this.scene = new Scene();
+        this.imagingScene = new Scene();
         this.renderer = new WebGLRenderer({ preserveDrawingBuffer: true });
 
         this.camera = new PerspectiveCamera(
@@ -160,6 +192,17 @@ export class PointCanvas {
         this.scene.add(this.points);
         this.scene.fog = new FogExp2(0x000000, 0.0005); // default is 0.00025
 
+        // `?imaging-align=none|fit` (alias `?luxar-align=`) overrides aligning
+        // the imaging to the tracks — see `ImagingLayer` for the modes.
+        const params = new URLSearchParams(window.location.search);
+        const alignParam = params.get("imaging-align") ?? params.get("luxar-align");
+        this.imaging = new ImagingLayer({
+            renderer: this.renderer,
+            getCamera: () => this.camera,
+            scene: this.imagingScene,
+            align: alignParam === "none" || alignParam === "fit" ? alignParam : "tracks",
+        });
+
         // Effect composition.
         const renderModel = new RenderPass(this.scene, this.camera);
         this.bloomPass = new UnrealBloomPass(
@@ -168,10 +211,19 @@ export class PointCanvas {
             0, // radius
             0.2, // threshold
         );
+        // Imaging is drawn after bloom, into the same buffer without clearing
+        // it, so it still depth-tests against the cells and tracks but gets no
+        // glow. `?imaging-bloom=on` draws it before bloom instead (the old
+        // look, for comparison).
+        const imagingPass = new RenderPass(this.imagingScene, this.imaging.camera);
+        imagingPass.clear = false;
+        const bloomImaging = params.get("imaging-bloom") === "on";
         const outputPass = new OutputPass();
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderModel);
+        if (bloomImaging) this.composer.addPass(imagingPass);
         this.composer.addPass(this.bloomPass);
+        if (!bloomImaging) this.composer.addPass(imagingPass);
         this.composer.addPass(outputPass);
 
         // Set up controls
@@ -215,6 +267,8 @@ export class PointCanvas {
         state.colormapCellsCategorical = this.colormapCellsCategorical;
         state.colormapCellsContinuous = this.colormapCellsContinuous;
         state.selectionMode = this.selector.selectionMode;
+        state.imagingUrl = this.imagingUrl;
+        state.imagingBrightness = this.imagingUrl !== null ? this.imagingBrightness : null;
 
         // Add sphere selector state
         if (this.selector.sphereSelector) {
@@ -249,6 +303,7 @@ export class PointCanvas {
         this.colormapTracks = state.colormapTracks ?? defaultState.colormapTracks;
         this.colormapCellsCategorical = state.colormapCellsCategorical ?? defaultState.colormapCellsCategorical;
         this.colormapCellsContinuous = state.colormapCellsContinuous ?? defaultState.colormapCellsContinuous;
+        this.setImagingOverride(state.imagingUrl ?? null, state.imagingBrightness ?? null);
 
         // Respect device constraints when setting selection mode
         let newSelectionMode = state.selectionMode ?? defaultState.selectionMode;
@@ -289,10 +344,102 @@ export class PointCanvas {
         this.selector.setSelectionMode(mode);
     }
 
+    /**
+     * Give the composite a filmic (ACES) rolloff, for imaging sessions only.
+     *
+     * Imaging splats blend additively: contributions are SUMMED into a
+     * framebuffer that clamps at 1.0, so overlapping bright structure clips
+     * flat to white however carefully the amplitudes were normalized. A tone
+     * curve compresses those highlights instead of truncating them, which is
+     * the only fix that does not also dim everything else — measured on the
+     * C. elegans scene, flat-white area drops 6.5x (0.33% -> 0.05% of pixels)
+     * while mean brightness barely moves, where reaching the same result by
+     * lowering exposure cost nearly half the brightness.
+     *
+     * It has to live on the renderer, not on the Luxar layer: Luxar tone-maps
+     * in a post-processing pass that `LuxarLayer` deliberately does not own, so
+     * a scene's own `tone_mapping` attribute is inert in layer mode. Verified —
+     * a scene authored with ACES renders pixel-identical to one authored with
+     * None.
+     *
+     * `OutputPass` reads this, so it applies to the WHOLE composite, cells and
+     * tracks included. That is why it is scoped to sessions that loaded an
+     * imaging layer rather than being set unconditionally: the saturation it
+     * fixes does not exist without splats, so no existing view changes
+     * appearance. `?tonemap=none` opts out; `?exposure=<n>` trims the curve's
+     * input without re-authoring the scene.
+     */
+    private setToneMapping(enabled: boolean) {
+        const params = new URLSearchParams(window.location.search);
+        if (enabled && params.get("tonemap") !== "none") {
+            this.renderer.toneMapping = ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = Number(params.get("exposure")) || 1.0;
+        } else {
+            this.renderer.toneMapping = NoToneMapping;
+            this.renderer.toneMappingExposure = 1.0;
+        }
+    }
+
+    /**
+     * The imaging scene to show. Precedence: URL parameter / CLI or shared
+     * link (`imagingUrlOverride`), then the tracks zarr's own attributes.
+     */
+    get imagingUrl(): string | null {
+        return this.imagingUrlOverride ?? this.datasetImaging?.url ?? null;
+    }
+
+    /** Imaging from the URL/CLI or a shared link. `brightness` null = not specified. */
+    setImagingOverride(url: string | null, brightness: number | null) {
+        this.imagingUrlOverride = url;
+        this.imagingBrightnessPinned = brightness !== null;
+        if (brightness !== null) {
+            this.imagingBrightness = brightness;
+            this.imagingBrightnessAnchor = brightness;
+        }
+        this.syncImaging();
+    }
+
+    /** Imaging declared by the tracks zarr, set once the dataset has loaded. */
+    setDatasetImaging(imaging: DatasetImaging | null) {
+        this.datasetImaging = imaging;
+        this.syncImaging();
+    }
+
+    private syncImaging() {
+        const url = this.imagingUrl;
+        if (!this.imagingBrightnessPinned) {
+            const fromDataset =
+                url !== null && url === this.datasetImaging?.url ? this.datasetImaging.brightness : undefined;
+            this.imagingBrightness = fromDataset ?? 1.0;
+            this.imagingBrightnessAnchor = this.imagingBrightness;
+        }
+        this.setToneMapping(url !== null);
+        this.imaging.setExposure(this.imagingBrightness);
+        this.imaging.setSource(url);
+    }
+
+    setShowImaging(visible: boolean) {
+        this.showImaging = visible;
+        this.imaging.setVisible(visible);
+    }
+
+    /**
+     * Imaging exposure multiplier. The slider range is deliberately asymmetric
+     * — 1.0 sits at 40% — because a scene authored for a standalone viewer
+     * usually needs boosting here, and the useful range above unity is much
+     * larger than below it.
+     */
+    setImagingBrightness(value: number) {
+        this.imagingBrightness = value;
+        this.imagingBrightnessPinned = true;
+        this.imaging.setExposure(value);
+    }
+
     // Use an arrow function so that each instance of the class is bound and
     // can be passed to requestAnimationFrame.
     animate = () => {
         requestAnimationFrame(this.animate);
+        this.imaging.update(); // must run before the render
         // Render the scene
         this.composer.render();
         this.controls.update();
@@ -404,6 +551,8 @@ export class PointCanvas {
     }
 
     resetPointColors(attributesInput?: Float32Array) {
+        // brightness 0 hides the dots instead of drawing opaque black discs over the imaging
+        this.points.visible = this.pointBrightness > 0;
         if (!this.points.geometry.hasAttribute("color")) {
             return;
         }
@@ -542,6 +691,7 @@ export class PointCanvas {
         this.bloomPass.resolution.set(width, height);
         this.renderer.setSize(width, height, updateStyle);
         this.composer.setSize(width, height);
+        this.imaging.resize();
     }
 
     initPointsGeometry(maxPointsPerTimepoint: number) {
@@ -697,6 +847,7 @@ export class PointCanvas {
     }
 
     dispose() {
+        this.imaging.dispose();
         this.selector.dispose();
         this.renderer.dispose();
         this.removeAllTracks();

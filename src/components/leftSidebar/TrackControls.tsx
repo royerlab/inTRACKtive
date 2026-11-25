@@ -5,6 +5,34 @@ import { Box, MenuItem, Select, SelectChangeEvent, Stack } from "@mui/material";
 import { ControlLabel, FontS } from "@/components/Styled";
 import config from "../../../CONFIG.ts";
 
+/**
+ * Imaging brightness slider <-> exposure, RELATIVE to the opening brightness
+ * (`anchor`): logarithmic, three decades below x1 and one above (x1 at 75%).
+ * Above x1 only brightens with Luxar's `setGain`; older builds clamp it to x1
+ * in `ImagingLayer`, since exposure above x1 makes volumetric splats opaque.
+ *
+ * Relative because the right absolute gain differs by orders of magnitude
+ * between datasets (Luxar's brightness depends on the scene's coordinate
+ * units: a scene in nm needs ~1000x less than one in voxels). An absolute
+ * track either cannot reach the useful value or has no resolution around it.
+ */
+const IMAGING_DECADES_BELOW = 3;
+const IMAGING_DECADES_ABOVE = 1;
+const IMAGING_DECADES = IMAGING_DECADES_BELOW + IMAGING_DECADES_ABOVE;
+
+function sliderToFactor(pct: number): number {
+    return 10 ** ((pct / 100) * IMAGING_DECADES - IMAGING_DECADES_BELOW);
+}
+
+function factorToSlider(factor: number): number {
+    const pct = ((Math.log10(Math.max(factor, 1e-12)) + IMAGING_DECADES_BELOW) / IMAGING_DECADES) * 100;
+    return Math.min(100, Math.max(0, pct));
+}
+
+function formatFactor(factor: number): string {
+    return factor < 0.1 ? factor.toFixed(3) : factor < 10 ? factor.toFixed(2) : factor.toFixed(0);
+}
+
 function buildGradient(colormapName: string): string {
     colormaps.setColorMap(colormapName);
     const colors = Array.from({ length: 32 }, (_, i) => `#${colormaps.getColor(i / 31).getHexString()}`);
@@ -55,6 +83,13 @@ interface TrackControlsProps {
     trackHighlightLength: number;
     showTracks: boolean;
     setShowTracks: (showTracks: boolean) => void;
+    /** Only rendered when an imaging layer is actually loaded. */
+    hasImaging: boolean;
+    showImaging: boolean;
+    setShowImaging: (showImaging: boolean) => void;
+    imagingBrightness: number;
+    imagingBrightnessAnchor: number;
+    setImagingBrightness: (imagingBrightness: number) => void;
     showTrackHighlights: boolean;
     setShowTrackHighlights: (showTrackHighlights: boolean) => void;
     setTrackHighlightLength: (trackHighlightLength: number) => void;
@@ -126,6 +161,24 @@ export default function TrackControls(props: TrackControlsProps) {
                     options={TRACK_COLORMAP_NAMES}
                     onChange={props.setColormapTracks}
                 />
+            )}
+
+            {/* Imaging (Luxar splats) toggle — only when a layer is loaded */}
+            {props.hasImaging && (
+                <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
+                    <label htmlFor="show-imaging">
+                        <FontS>Imaging</FontS>
+                    </label>
+                    <Box>
+                        <InputToggle
+                            id="show-imaging"
+                            checked={props.showImaging}
+                            onChange={() => {
+                                props.setShowImaging(!props.showImaging);
+                            }}
+                        />
+                    </Box>
+                </Box>
             )}
 
             {/* Axes toggle */}
@@ -235,6 +288,28 @@ export default function TrackControls(props: TrackControlsProps) {
                 }}
                 value={props.pointBrightness * 100}
             />
+
+            {/* Imaging brightness — only meaningful while the layer is showing */}
+            {props.hasImaging && props.showImaging && (
+                <>
+                    <label htmlFor="imaging-brightness-slider" style={{ marginTop: "1.0em" }}>
+                        <FontS id="input-slider-imaging-brightness-slider">Imaging Brightness</FontS>
+                    </label>
+                    <InputSlider
+                        style={{ marginTop: "1.5em" }}
+                        id="imaging-brightness-slider"
+                        aria-labelledby="input-slider-imaging-brightness-slider"
+                        min={0}
+                        max={100}
+                        valueLabelDisplay="on"
+                        valueLabelFormat={(value) => `${formatFactor(sliderToFactor(value as number))}x`}
+                        onChange={(_, value) => {
+                            props.setImagingBrightness(props.imagingBrightnessAnchor * sliderToFactor(value as number));
+                        }}
+                        value={factorToSlider(props.imagingBrightness / props.imagingBrightnessAnchor)}
+                    />
+                </>
+            )}
 
             {/* Track width slider */}
             {props.hasTracks && (props.showTracks || props.showTrackHighlights) && (
